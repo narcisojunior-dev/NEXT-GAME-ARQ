@@ -244,5 +244,68 @@
   {
     "id": "mesa-gamer",
     "targets": []
+  },
+  {
+    "id": "mb-b550m",
+    "targets": [
+      "mb-b550m-am4",
+      "mb-gigabyte-b550m-ds3h"
+    ]
+  },
+  {
+    "id": "mb-b450-atx",
+    "targets": [
+      "mb-msi-b550-tomahawk"
+    ]
+  },
+  {
+    "id": "pasta-termica",
+    "targets": [
+      "paste-silicone-white",
+      "paste-arctic-mx4",
+      "paste-arctic-mx6",
+      "paste-noctua-nth1",
+      "paste-kryonaut"
+    ]
+  },
+  {
+    "id": "gpu-gtx-1660",
+    "targets": [
+      "gpu-gtx-1650"
+    ]
+  },
+  {
+    "id": "gpu-rtx-4080",
+    "targets": [
+      "gpu-rtx-4090"
+    ]
+  },
+  {
+    "id": "cooler-passivo-noctua",
+    "targets": []
+  },
+  {
+    "id": "stream-deck",
+    "targets": []
+  },
+  {
+    "id": "volante-gamer",
+    "targets": []
+  },
+  {
+    "id": "case-nzxt-h500",
+    "targets": []
+  },
+  {
+    "id": "microfone-mesa",
+    "targets": []
+  },
+  {
+    "id": "cpu-ryzen-am5",
+    "targets": []
+  },
+  {
+    "id": "ram-ddr5-corsair",
+    "targets": []
   }
 ]
