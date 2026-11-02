@@ -45,10 +45,11 @@ const SlotThumb: React.FC<{ component: HardwareComponent | null; icon: React.Rea
 );
 
 export const WorkbenchMat: React.FC = () => {
-  const [is3DMode, setIs3DMode] = React.useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return isWebGLAvailable();
-  });
+  const [is3DMode, setIs3DMode] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    setIs3DMode(isWebGLAvailable());
+  }, []);
 
   const {
     assembly,

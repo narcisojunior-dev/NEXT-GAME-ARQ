@@ -15,14 +15,14 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
 
     // Alterna para o modo 2D leve
     await btn2D.click();
-    // No modo 2D deve renderizar o SVG da placa-mãe
-    const svgMotherboard = page.locator('svg[viewBox*="0 0 680 720"], svg').first();
-    await expect(svgMotherboard).toBeVisible();
+    // No modo 2D deve renderizar o container 2D da bancada
+    const heading2D = page.getByRole('heading', { name: 'Bancada Pronta: Escolha uma Placa-Mãe' });
+    await expect(heading2D).toBeVisible();
 
     // Retorna para o modo 3D
     await btn3D.click();
     // No modo 3D deve carregar o Canvas WebGL
-    const canvas = page.locator('div:has-text("Bancada 3D Interativa")').locator('..').locator('canvas');
+    const canvas = page.locator('canvas').first();
     await expect(canvas).toBeVisible({ timeout: 15000 });
   });
 
