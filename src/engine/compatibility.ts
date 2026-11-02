@@ -116,6 +116,26 @@ export function validateThermalPasteApplication(state: AssemblyState): Validatio
   return null;
 }
 
+/** O cooler só é fixado sobre uma CPU já coberta de pasta térmica (regra única para o 2D e o 3D) */
+export function validateCoolerPrerequisites(state: AssemblyState): ValidationIssue | null {
+  if (!state.cpuInstalled) {
+    return {
+      type: 'ERROR',
+      title: 'Soquete Vazio!',
+      message: 'Instale o processador no soquete antes de fixar o cooler.',
+    };
+  }
+  if (!state.thermalPasteApplied) {
+    return {
+      type: 'ERROR',
+      title: 'Pasta Térmica Obrigatória!',
+      message: 'Você não pode instalar o cooler sem antes aplicar a pasta térmica sobre o processador!',
+      suggestedAction: 'Selecione a pasta térmica no catálogo e aplique uma gota do tamanho de uma ervilha no centro da CPU.',
+    };
+  }
+  return null;
+}
+
 export function validateEsdDischarged(state: AssemblyState): ValidationIssue | null {
   if (!state.esdDischarged) {
     return {

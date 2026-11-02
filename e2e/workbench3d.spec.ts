@@ -3,7 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('body')).toBeVisible();
+    // Aguarda a hidratação (o alternador 3D/2D só liga o WebGL depois do mount)
+    await page.waitForFunction(() => typeof (window as any).useAssemblyStore !== 'undefined', { timeout: 15000 });
   });
 
   test('exibe o alternador 3D / 2D na bancada e permite trocar de modo', async ({ page }) => {
@@ -15,9 +16,9 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
 
     // Alterna para o modo 2D leve
     await btn2D.click();
-    // No modo 2D deve renderizar o SVG da placa-mãe
-    const svgMotherboard = page.locator('svg[viewBox*="0 0 680 720"], svg').first();
-    await expect(svgMotherboard).toBeVisible();
+    // No modo 2D deve renderizar a bancada vetorial (placa-mãe SVG ou a área para assentá-la)
+    await expect(page.getByTestId('workbench-2d')).toBeVisible();
+    await expect(btn2D).toHaveAttribute('aria-pressed', 'true');
 
     // Retorna para o modo 3D
     await btn3D.click();
@@ -51,7 +52,7 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
     await isoBtn.click();
   });
 
-  test('oferece controles de câmera (Frente, Zoom, Reset) e exibe barra de EZ Debug LEDs', async ({ page }) => {
+  test('oferece controles de câmera (Frente, Zoom, Reset) e exibe barra de EZ Debug LEDs', async ({ page }, testInfo) => {
     const btn3D = page.locator('button[title*="Modo 3D da Bancada"]');
     await btn3D.click();
 
@@ -84,6 +85,44 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
     // Salva screenshot do visual limpo da bancada
     await page.waitForTimeout(1000);
     const canvas = page.locator('canvas').first();
-    await canvas.screenshot({ path: 'workbench3d-clean.png' });
+    await canvas.screenshot({ path: testInfo.outputPath('workbench3d-clean.png') });
+  });
+
+  test('pinos 3D são operáveis só pelo teclado: Tab alcança a ação do tooltip e Esc o dispensa', async ({ page }) => {
+    await page.locator('button[title*="Modo 3D da Bancada"]').click();
+    const pin = page.getByRole('button', { name: 'Painel Frontal', exact: true });
+    await expect(pin).toBeAttached({ timeout: 15000 });
+
+    await pin.focus();
+    const actions = page.getByRole('group', { name: 'Ações: Painel Frontal' });
+    await expect(actions).toBeVisible();
+
+    // O tooltip continua aberto quando o foco entra nele (antes ele sumia no blur do pino)
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Abrir Zoom F_PANEL' })).toBeFocused();
+    await expect(actions).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(actions).toBeHidden();
+  });
+
+  test('modo 2D: a placa-mãe é assentada com Enter, sem mouse', async ({ page }) => {
+    await page.locator('button[title*="Modo 2D Leve da Bancada"]').click();
+    await page.evaluate(() => {
+      const store = (window as any).useAssemblyStore.getState();
+      store.resetAssembly();
+      store.dischargeEsd();
+      const mb = { id: 'mb-b550m-am4', name: 'ASRock B550M', category: 'MOTHERBOARD', formFactor: 'Micro-ATX', socket: 'AM4',
+        chipset: 'B550', supportedRam: 'DDR4', ramSlotsCount: 4, maxMemoryGb: 128, pciSlots16x: 1, m2SlotsCount: 1,
+        sataPortsCount: 4, hasIntegratedIoShield: false, price: 500, description: '', levelRequired: 1, tdpWatts: 30, image: '' };
+      store.setSelectedComponentForPlacement(mb);
+    });
+
+    const dropZone = page.getByRole('button', { name: /Assentar ASRock B550M na bancada/ });
+    await dropZone.focus();
+    await page.keyboard.press('Enter');
+
+    await expect(page.getByRole('group', { name: /Bancada 2D: placa-mãe ASRock B550M/ })).toBeVisible();
+    expect(await page.evaluate(() => (window as any).useAssemblyStore.getState().selectedMotherboard?.id)).toBe('mb-b550m-am4');
   });
 });

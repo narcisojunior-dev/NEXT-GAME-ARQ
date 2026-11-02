@@ -2,10 +2,19 @@
 
 import React from 'react';
 import { useAssemblyStore, selectCurrentPhase } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Bot, Lightbulb, Sparkles } from 'lucide-react';
 
 export const DidacticCompanion: React.FC = () => {
-  const { activeAlert, dismissAlert } = useAssemblyStore();
+  const {
+    activeAlert,
+    dismissAlert,
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      activeAlert: s.activeAlert,
+      dismissAlert: s.dismissAlert,
+    }))
+  );
   const currentPhase = useAssemblyStore(selectCurrentPhase);
 
   const getPhaseAdvice = () => {
@@ -77,7 +86,10 @@ export const DidacticCompanion: React.FC = () => {
       </div>
 
       {activeAlert && (
-        <div className={`p-3 rounded-2xl border text-xs max-w-md shrink-0 flex items-start gap-2 shadow-lg animate-in fade-in slide-in-from-bottom-2 ${
+        <div
+          // Equivalência multimodal: o mesmo aviso do som de erro/sucesso é anunciado pelo leitor de tela
+          role={activeAlert.type === 'error' ? 'alert' : 'status'}
+          className={`p-3 rounded-2xl border text-xs max-w-md shrink-0 flex items-start gap-2 shadow-lg animate-in fade-in slide-in-from-bottom-2 ${
           activeAlert.type === 'error'
             ? 'bg-rose-950/90 border-rose-600/80 text-rose-200'
             : activeAlert.type === 'warning'
@@ -89,7 +101,9 @@ export const DidacticCompanion: React.FC = () => {
             <div className="text-[11px] opacity-90 leading-normal">{activeAlert.message}</div>
           </div>
           <button
+            type="button"
             onClick={dismissAlert}
+            aria-label="Fechar aviso"
             className="text-xs opacity-60 hover:opacity-100 p-1 cursor-pointer font-bold"
           >
             ✕

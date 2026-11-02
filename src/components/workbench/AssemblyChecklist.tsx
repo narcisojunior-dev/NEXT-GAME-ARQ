@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import { getRequiredCables, cableById } from '@/engine/cabling';
 import {
   CheckCircle2,
@@ -20,7 +21,19 @@ import {
 } from 'lucide-react';
 
 export const AssemblyChecklist: React.FC = () => {
-  const { assembly, selectedMotherboard, selectedComponentForPlacement, cableConnections } = useAssemblyStore();
+  const {
+    assembly,
+    selectedMotherboard,
+    selectedComponentForPlacement,
+    cableConnections,
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      assembly: s.assembly,
+      selectedMotherboard: s.selectedMotherboard,
+      selectedComponentForPlacement: s.selectedComponentForPlacement,
+      cableConnections: s.cableConnections,
+    }))
+  );
   const [isOpen, setIsOpen] = useState(true);
 
   // Lista de etapas de montagem e seus status

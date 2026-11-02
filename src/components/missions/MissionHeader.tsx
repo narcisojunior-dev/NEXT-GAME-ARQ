@@ -2,11 +2,22 @@
 
 import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import { CLIENT_MISSIONS } from '@/engine/hardwareCatalog';
 import { Briefcase, Coins, Target, Users } from 'lucide-react';
 
 export const MissionHeader: React.FC = () => {
-  const { gameMode, activeMission, selectMission } = useAssemblyStore();
+  const {
+    gameMode,
+    activeMission,
+    selectMission,
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      gameMode: s.gameMode,
+      activeMission: s.activeMission,
+      selectMission: s.selectMission,
+    }))
+  );
 
   if (gameMode !== 'MISSAO' || !activeMission) return null;
 

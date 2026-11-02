@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import confetti from 'canvas-confetti';
 import { Terminal, CheckCircle2, AlertTriangle, XCircle, ArrowRight, RotateCcw } from 'lucide-react';
 
@@ -15,7 +16,18 @@ export const BIOSSimulatorModal: React.FC = () => {
     resetAssembly,
     calculateFinalScore,
     openAcademyOS,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      isBiosOpen: s.isBiosOpen,
+      closeBios: s.closeBios,
+      postResult: s.postResult,
+      assembly: s.assembly,
+      selectedMotherboard: s.selectedMotherboard,
+      resetAssembly: s.resetAssembly,
+      calculateFinalScore: s.calculateFinalScore,
+      openAcademyOS: s.openAcademyOS,
+    }))
+  );
 
   useEffect(() => {
     if (isBiosOpen && postResult?.bootSuccess) {

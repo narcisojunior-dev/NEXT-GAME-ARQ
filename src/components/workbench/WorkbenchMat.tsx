@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import { MotherboardSvg } from './MotherboardSvg';
 import { CableTray } from './CableTray';
 import { CableTargetBox } from './CableTargets';
@@ -24,6 +25,7 @@ import { HardwareImage } from '@/components/common/HardwareImage';
 import dynamic from 'next/dynamic';
 import { Box } from 'lucide-react';
 import { isWebGLAvailable } from '@/components/three/webglDetect';
+import { pressableProps, FOCUS_RING } from '@/components/common/pressable';
 
 const Workbench3D = dynamic(() => import('@/components/three/Workbench3D'), {
   ssr: false,
@@ -45,10 +47,12 @@ const SlotThumb: React.FC<{ component: HardwareComponent | null; icon: React.Rea
 );
 
 export const WorkbenchMat: React.FC = () => {
-  const [is3DMode, setIs3DMode] = React.useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return isWebGLAvailable();
-  });
+  // Começa no 2D (o mesmo HTML do servidor) e só então liga o 3D se houver WebGL:
+  // ler `window` no estado inicial gerava hydration mismatch (SVG no SSR x Canvas no cliente)
+  const [is3DMode, setIs3DMode] = React.useState(false);
+  React.useEffect(() => {
+    if (isWebGLAvailable()) setIs3DMode(true);
+  }, []);
 
   const {
     assembly,
@@ -65,7 +69,24 @@ export const WorkbenchMat: React.FC = () => {
     resetAssembly,
     openFrontPanelModal,
     selectedComponentForPlacement,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      assembly: s.assembly,
+      dischargeEsd: s.dischargeEsd,
+      installIoShield: s.installIoShield,
+      installStandoffs: s.installStandoffs,
+      installPsu: s.installPsu,
+      installCase: s.installCase,
+      installStorage: s.installStorage,
+      cableConnections: s.cableConnections,
+      screwMotherboard: s.screwMotherboard,
+      togglePsuSwitch: s.togglePsuSwitch,
+      triggerPostBoot: s.triggerPostBoot,
+      resetAssembly: s.resetAssembly,
+      openFrontPanelModal: s.openFrontPanelModal,
+      selectedComponentForPlacement: s.selectedComponentForPlacement,
+    }))
+  );
 
   const handlePsuAreaClick = () => {
     if (selectedComponentForPlacement?.category === 'PSU') {
@@ -199,6 +220,8 @@ export const WorkbenchMat: React.FC = () => {
           {/* Alternador 3D / 2D da Bancada */}
           <div className="bg-slate-950/80 rounded-xl border border-slate-800 p-1 flex items-center gap-1">
             <button
+              type="button"
+              aria-pressed={is3DMode}
               onClick={() => setIs3DMode(true)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
                 is3DMode
@@ -211,6 +234,8 @@ export const WorkbenchMat: React.FC = () => {
               <span>3D</span>
             </button>
             <button
+              type="button"
+              aria-pressed={!is3DMode}
               onClick={() => setIs3DMode(false)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
                 !is3DMode
@@ -227,6 +252,7 @@ export const WorkbenchMat: React.FC = () => {
           <button
             onClick={resetAssembly}
             title="Reiniciar Montagem da Bancada"
+            aria-label="Reiniciar Montagem da Bancada"
             className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" />
@@ -251,7 +277,8 @@ export const WorkbenchMat: React.FC = () => {
         {/* Gabinete */}
         <div
           onClick={handleCaseAreaClick}
-          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+          {...pressableProps(`Gabinete: preparar ${selectedComponentForPlacement?.name ?? ''}`, handleCaseAreaClick, isCaseTarget)}
+          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${FOCUS_RING} ${
             assembly.caseInstalled
               ? 'bg-slate-950/90 border-emerald-500/50 text-emerald-300 shadow-md'
               : isCaseTarget
@@ -282,7 +309,8 @@ export const WorkbenchMat: React.FC = () => {
         {/* Baia SATA (SSD 2,5" / HD 3,5") */}
         <div
           onClick={handleSataBayClick}
-          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${
+          {...pressableProps(`Baia SATA: fixar ${selectedComponentForPlacement?.name ?? ''}`, handleSataBayClick, isSataTarget)}
+          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${FOCUS_RING} ${
             sataStorage
               ? 'bg-slate-950/90 border-emerald-500/50 text-emerald-300 shadow-md'
               : isSataTarget
@@ -317,7 +345,8 @@ export const WorkbenchMat: React.FC = () => {
         {/* Slot da Fonte de Alimentação */}
         <div
           onClick={handlePsuAreaClick}
-          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+          {...pressableProps(`Compartimento da fonte: encaixar ${selectedComponentForPlacement?.name ?? ''}`, handlePsuAreaClick, isPsuTarget)}
+          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${FOCUS_RING} ${
             assembly.psuInstalled
               ? 'bg-slate-950/90 border-emerald-500/50 text-emerald-300 shadow-md'
               : isPsuTarget
