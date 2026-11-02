@@ -1,7 +1,7 @@
 # ADR-003: Motor de Regras de Hardware e Validação de Compatibilidade
 
 ## Status
-Aprovado
+Aprovado. **Ampliado na v2.1:** novas regras de cooler, armazenamento, gabinete, ESD, pasta térmica e fonte × GPU, com política de penalidade ([ADR-008](./ADR-008-fases-derivadas-e-regras-de-montagem.md)), e regras de cabeamento ([ADR-010](./ADR-010-cabeamento-e-arrastar-e-soltar.md)).
 
 ## Contexto
 O coração educativo do simulador é ensinar o funcionamento técnico das peças de um computador e por que determinadas peças funcionam juntas e outras não. No mundo real, a montagem incorreta de peças incompatíveis pode resultar em danos físicos irreversíveis (como pinos tortos no soquete da CPU, slots de memória quebrados ou queima da fonte de alimentação).
