@@ -13,6 +13,7 @@ import {
   StudentSetupConfig,
 } from '@/engine/peripheralsCatalog';
 import { ROOM_THEMES, RoomThemeId } from '@/engine/roomThemes';
+import { View3DButton } from '@/components/three/View3DButton';
 import {
   X,
   Camera,
@@ -584,7 +585,10 @@ export const VirtualRoomModal: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-white">{item.name}</span>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                          <span className="flex items-center gap-1.5">
+                            <View3DButton catalogId={item.id} name={item.name} />
+                            {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                          </span>
                         </div>
                         <span className="inline-block text-[10px] font-mono text-cyan-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
                           {item.featureBadge}
@@ -610,7 +614,10 @@ export const VirtualRoomModal: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-white">{item.name}</span>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                          <span className="flex items-center gap-1.5">
+                            <View3DButton catalogId={item.id} name={item.name} />
+                            {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                          </span>
                         </div>
                         <span className="inline-block text-[10px] font-mono text-purple-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
                           {item.featureBadge}
@@ -636,7 +643,10 @@ export const VirtualRoomModal: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-white">{item.name}</span>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                          <span className="flex items-center gap-1.5">
+                            <View3DButton catalogId={item.id} name={item.name} />
+                            {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                          </span>
                         </div>
                         <span className="inline-block text-[10px] font-mono text-emerald-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
                           {item.featureBadge}
@@ -662,7 +672,10 @@ export const VirtualRoomModal: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-white">{item.name}</span>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                          <span className="flex items-center gap-1.5">
+                            <View3DButton catalogId={item.id} name={item.name} />
+                            {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                          </span>
                         </div>
                         <span className="inline-block text-[10px] font-mono text-blue-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
                           {item.featureBadge}
@@ -688,7 +701,10 @@ export const VirtualRoomModal: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-white">{item.name}</span>
-                          {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                          <span className="flex items-center gap-1.5">
+                            <View3DButton catalogId={item.id} name={item.name} />
+                            {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                          </span>
                         </div>
                         <span className="inline-block text-[10px] font-mono text-amber-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
                           {item.featureBadge}

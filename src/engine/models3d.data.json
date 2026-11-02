@@ -1,0 +1,662 @@
+[
+  {
+    "id": "cpu-intel-lga1700",
+    "uid": "fe534a3cae7c4e66b6131da9b5dae6ff",
+    "name": "(FREE) intel cpu",
+    "author": "moonway3d",
+    "license": "CC-BY-4.0",
+    "faces": 11206,
+    "group": "COMPONENT",
+    "category": "CPU",
+    "targets": [
+      "cpu-i5-13400f",
+      "cpu-i7-13700k"
+    ],
+    "illustrative": true,
+    "note": "Processador Intel LGA (contatos no soquete, sem pinos na CPU)."
+  },
+  {
+    "id": "cpu-intel-simples",
+    "uid": "89904e625a6b4a098030045f0f0faa24",
+    "name": "Intel CPU - Dirty",
+    "author": "jcbinet",
+    "license": "CC-BY-4.0",
+    "faces": 368,
+    "group": "COMPONENT",
+    "category": "CPU",
+    "targets": [
+      "cpu-i3-12100"
+    ],
+    "illustrative": true,
+    "note": "Modelo leve de processador Intel."
+  },
+  {
+    "id": "cpu-ryzen-am4",
+    "uid": "249fb5e8c1e94686a2c2b1cd6df72bc5",
+    "name": "CPU Ryzen 5 3600",
+    "author": "bazyaev08",
+    "license": "CC-BY-4.0",
+    "faces": 26300,
+    "group": "COMPONENT",
+    "category": "CPU",
+    "targets": [
+      "cpu-r5-5600"
+    ],
+    "illustrative": true,
+    "note": "Ryzen AM4 com pinos (PGA) no processador. Não usar em CPUs AM5, que não têm pinos."
+  },
+  {
+    "id": "mb-z790-atx",
+    "uid": "7ac2ed91599a4239aba96770a00874ce",
+    "name": "Motherboard MSI Z790 Low Poly",
+    "author": "cityon360",
+    "license": "CC-BY-4.0",
+    "faces": 4516,
+    "group": "COMPONENT",
+    "category": "MOTHERBOARD",
+    "targets": [
+      "mb-z790-max"
+    ],
+    "illustrative": true,
+    "note": "Placa ATX Z790 (LGA1700)."
+  },
+  {
+    "id": "mb-generica",
+    "uid": "02acc04c6ac743b28d6591763afe0a50",
+    "name": "Motherboard",
+    "author": "user12350",
+    "license": "CC-BY-4.0",
+    "faces": 10056,
+    "group": "COMPONENT",
+    "category": "MOTHERBOARD",
+    "targets": [],
+    "illustrative": true,
+    "note": "Placa genérica para a vitrine; soquete e formato não correspondem a nenhuma placa do catálogo."
+  },
+  {
+    "id": "ram-ddr4-crucial",
+    "uid": "6fa0d3b8c5684741be7d7e396e01bc9f",
+    "name": "Crucial 8 GB DDR4 2133 RAM",
+    "author": "blackcube4",
+    "license": "CC-BY-4.0",
+    "faces": 2428,
+    "group": "COMPONENT",
+    "category": "RAM",
+    "targets": [
+      "ram-8gb-d4-single",
+      "ram-16gb-d4-dual"
+    ],
+    "illustrative": true,
+    "note": "Pente DDR4 (chanfro na posição DDR4)."
+  },
+  {
+    "id": "ram-ddr4-rgb-corsair",
+    "uid": "ee5c6e6b2e524d63a7043365e73a2420",
+    "name": "RAM Corsair Vengeance DDR4 RGB Pro",
+    "author": "lime.ball.animations.official",
+    "license": "CC-BY-4.0",
+    "faces": 2824,
+    "group": "COMPONENT",
+    "category": "RAM",
+    "targets": [],
+    "illustrative": false,
+    "note": "Corsair Vengeance DDR4 RGB. Não usar nas memórias DDR5 (chanfro em outra posição)."
+  },
+  {
+    "id": "ram-generica",
+    "uid": "ab2b1c25c31b44c1a757911734bdf942",
+    "name": "Random Access Memory - RAM Stick - PC",
+    "author": "empty_mirror",
+    "license": "CC-BY-4.0",
+    "faces": 3699,
+    "group": "COMPONENT",
+    "category": "RAM",
+    "targets": [],
+    "illustrative": true,
+    "note": "Pente genérico para a vitrine; geração não identificada."
+  },
+  {
+    "id": "cooler-torre",
+    "uid": "672a0a74a98c452a862016bee99f3579",
+    "name": "CPU Cooler",
+    "author": "bazyaev08",
+    "license": "CC-BY-4.0",
+    "faces": 6504,
+    "group": "COMPONENT",
+    "category": "COOLER",
+    "targets": [
+      "cooler-deepcool-ag400"
+    ],
+    "illustrative": true,
+    "note": "Air cooler em torre."
+  },
+  {
+    "id": "cooler-noctua-nh-d15",
+    "uid": "23e225925e174a9f929d995cd9bd22e2",
+    "name": "Noctua NH-D15 CPU cooler",
+    "author": "SzaBa",
+    "license": "CC-BY-4.0",
+    "faces": 10676,
+    "group": "COMPONENT",
+    "category": "COOLER",
+    "targets": [],
+    "illustrative": false,
+    "note": "Torre dupla Noctua NH-D15 (presente no catálogo expandido da main, #18)."
+  },
+  {
+    "id": "cooler-aio-240",
+    "uid": "1c60872e45144239aadb4e188c43bce3",
+    "name": "liquid-cooler",
+    "author": "snrnsrk5",
+    "license": "CC-BY-4.0",
+    "faces": 7768,
+    "group": "COMPONENT",
+    "category": "COOLER",
+    "targets": [
+      "cooler-water-240mm"
+    ],
+    "illustrative": true,
+    "note": "Water cooler AIO."
+  },
+  {
+    "id": "fan-lian-li-sl120",
+    "uid": "5abd0d8e89ea4241b7216f4b6d5a2ca4",
+    "name": "Lian Li UNI FAN SL120 RGB BLACK",
+    "author": "DIEKO",
+    "license": "CC-BY-4.0",
+    "faces": 4648,
+    "group": "COMPONENT",
+    "category": "FAN",
+    "targets": [],
+    "illustrative": false,
+    "note": "Ventoinha RGB de gabinete (vitrine)."
+  },
+  {
+    "id": "fan-corsair",
+    "uid": "27f023b65e814d1c946460fcc0cb8250",
+    "name": "Corsair Fan",
+    "author": "umkhero",
+    "license": "CC-BY-4.0",
+    "faces": 4832,
+    "group": "COMPONENT",
+    "category": "FAN",
+    "targets": [],
+    "illustrative": false,
+    "note": "Ventoinha de gabinete (vitrine)."
+  },
+  {
+    "id": "gpu-rx-6700xt",
+    "uid": "648b333a485040f68c6d47d166ee7532",
+    "name": "GPU AMD RX 6700 XT",
+    "author": "BlenderFace1",
+    "license": "CC-BY-4.0",
+    "faces": 7620,
+    "group": "COMPONENT",
+    "category": "GPU",
+    "targets": [
+      "gpu-rx-6700xt"
+    ],
+    "illustrative": false,
+    "note": "Modelo do mesmo produto do catálogo."
+  },
+  {
+    "id": "gpu-rx-570",
+    "uid": "5a8b14b3d3cd4ae3acd6532e4ec505aa",
+    "name": "PowerColor RADEON RX 570 Graphics card",
+    "author": "jiet17",
+    "license": "CC-BY-4.0",
+    "faces": 7552,
+    "group": "COMPONENT",
+    "category": "GPU",
+    "targets": [
+      "gpu-rx-6600"
+    ],
+    "illustrative": true,
+    "note": "AMD de duas ventoinhas, tamanho próximo da RX 6600."
+  },
+  {
+    "id": "gpu-rtx-3060ti",
+    "uid": "b65c5c0807be4ece9a95090d1a1794bb",
+    "name": "RTX 3060 TI - LOW POLY",
+    "author": "alexlh2003",
+    "license": "CC-BY-4.0",
+    "faces": 14215,
+    "group": "COMPONENT",
+    "category": "GPU",
+    "targets": [
+      "gpu-rtx-4060"
+    ],
+    "illustrative": true,
+    "note": "NVIDIA de duas ventoinhas, formato próximo da RTX 4060."
+  },
+  {
+    "id": "gpu-rtx-3080-msi",
+    "uid": "e5c384afae914d548a591f722e1878fc",
+    "name": "MSI RTX 3080 Graphics card",
+    "author": "kaif.3d",
+    "license": "CC-BY-4.0",
+    "faces": 21917,
+    "group": "COMPONENT",
+    "category": "GPU",
+    "targets": [
+      "gpu-rtx-4070-super"
+    ],
+    "illustrative": true,
+    "note": "NVIDIA de três ventoinhas, formato próximo da RTX 4070 Super."
+  },
+  {
+    "id": "ssd-nvme-990pro",
+    "uid": "41b7bfda7eab40f8b13330913fd66fc2",
+    "name": "M.2 NVME SSD Samsung 990 Pro 1TB 3D model",
+    "author": "lime.ball.animations.official",
+    "license": "CC-BY-4.0",
+    "faces": 2052,
+    "group": "COMPONENT",
+    "category": "STORAGE",
+    "targets": [
+      "ssd-samsung-990pro",
+      "ssd-nvme-1tb"
+    ],
+    "illustrative": true,
+    "note": "SSD M.2 2280 (exato para o 990 Pro; ilustrativo para o Kingston NV2)."
+  },
+  {
+    "id": "ssd-sata-25",
+    "uid": "5a182a80361f407e965adaaee077e3cd",
+    "name": "SSD NoName Sata",
+    "author": "hlupich",
+    "license": "CC-BY-4.0",
+    "faces": 4126,
+    "group": "COMPONENT",
+    "category": "STORAGE",
+    "targets": [
+      "ssd-sata-480gb"
+    ],
+    "illustrative": true,
+    "note": "SSD SATA de 2,5\"."
+  },
+  {
+    "id": "ssd-sata-samsung",
+    "uid": "dcc1150ede274cccb7f2ddc0f2345dcb",
+    "name": "Samsung SSD 2.5in - Dirty",
+    "author": "jcbinet",
+    "license": "CC-BY-4.0",
+    "faces": 918,
+    "group": "COMPONENT",
+    "category": "STORAGE",
+    "targets": [],
+    "illustrative": false,
+    "note": "SSD SATA Samsung com desgaste (vitrine)."
+  },
+  {
+    "id": "hdd-35",
+    "uid": "946666a390b44c90901e7dd07fb509a5",
+    "name": "Hard Drive",
+    "author": "Jamoues",
+    "license": "CC-BY-SA-4.0",
+    "faces": 5131,
+    "group": "COMPONENT",
+    "category": "STORAGE",
+    "targets": [
+      "hdd-seagate-2tb"
+    ],
+    "illustrative": true,
+    "note": "HD mecânico de 3,5\" (licença CC-BY-SA: modificações mantêm a mesma licença)."
+  },
+  {
+    "id": "psu-modular",
+    "uid": "69ccd1be3a77497cb2acc9e39e7c52b3",
+    "name": "PSU Power Supply Unit",
+    "author": "dhafintaufiqi21",
+    "license": "CC-BY-4.0",
+    "faces": 12488,
+    "group": "COMPONENT",
+    "category": "PSU",
+    "targets": [
+      "psu-750w-gold"
+    ],
+    "illustrative": true,
+    "note": "Fonte ATX."
+  },
+  {
+    "id": "psu-atx",
+    "uid": "28df0f2fc76f4bc181492e6c1f3e5231",
+    "name": "Power Supply",
+    "author": "its.przvl._",
+    "license": "CC-BY-4.0",
+    "faces": 7980,
+    "group": "COMPONENT",
+    "category": "PSU",
+    "targets": [
+      "psu-650w-bronze",
+      "psu-500w-white"
+    ],
+    "illustrative": true,
+    "note": "Fonte ATX."
+  },
+  {
+    "id": "case-corsair-4000d",
+    "uid": "bc15e007d6634579bc0e8ffdf238e665",
+    "name": "Corsair 4000D  PC case",
+    "author": "SzaBa",
+    "license": "CC-BY-4.0",
+    "faces": 7686,
+    "group": "COMPONENT",
+    "category": "CASE",
+    "targets": [
+      "case-gamer-mesh"
+    ],
+    "illustrative": true,
+    "note": "Mid-tower com frente ventilada (Corsair 4000D, também no catálogo da main)."
+  },
+  {
+    "id": "case-compacto",
+    "uid": "3cb0c95b955747aea22476264eecf390",
+    "name": "Computer case",
+    "author": "simonpasi96",
+    "license": "CC-BY-4.0",
+    "faces": 548,
+    "group": "COMPONENT",
+    "category": "CASE",
+    "targets": [
+      "case-office-compact"
+    ],
+    "illustrative": true,
+    "note": "Gabinete simples."
+  },
+  {
+    "id": "monitor-24-office",
+    "uid": "1d4ee42eda804b02b05b63721921c1d7",
+    "name": "Computer Monitor Lowpoly Model",
+    "author": "marcoZakaria",
+    "license": "CC-BY-4.0",
+    "faces": 1004,
+    "group": "PERIPHERAL",
+    "category": "MONITOR",
+    "targets": [
+      "mon-24-75hz"
+    ],
+    "illustrative": true,
+    "note": "Monitor plano de escritório."
+  },
+  {
+    "id": "monitor-27-gamer",
+    "uid": "58a2dba70e4f4752962ee98a9d6827be",
+    "name": "Basic PC Monitors",
+    "author": "sousinho",
+    "license": "CC-BY-4.0",
+    "faces": 4636,
+    "group": "PERIPHERAL",
+    "category": "MONITOR",
+    "targets": [
+      "mon-27-180hz"
+    ],
+    "illustrative": true,
+    "note": "Monitor plano."
+  },
+  {
+    "id": "monitor-ultrawide",
+    "uid": "f7445b4b5d84412aa58ed7379483267c",
+    "name": "Ultra-Wide Monitor",
+    "author": "Dumb_Yet_Creative",
+    "license": "CC-BY-4.0",
+    "faces": 6570,
+    "group": "PERIPHERAL",
+    "category": "MONITOR",
+    "targets": [
+      "mon-34-ultrawide"
+    ],
+    "illustrative": true,
+    "note": "Monitor ultrawide."
+  },
+  {
+    "id": "monitor-curvo-gamer",
+    "uid": "2d272e0133524db9b6503d5d265b2278",
+    "name": "Curved Gaming Monitor",
+    "author": "DatSketch",
+    "license": "CC-BY-4.0",
+    "faces": 1628,
+    "group": "PERIPHERAL",
+    "category": "MONITOR",
+    "targets": [],
+    "illustrative": false,
+    "note": "Monitor gamer curvo (vitrine)."
+  },
+  {
+    "id": "teclado-membrana",
+    "uid": "66f5ca31bf154c82ae5284a32a362a4e",
+    "name": "Keyboard",
+    "author": "oscarherry3d",
+    "license": "CC-BY-4.0",
+    "faces": 4874,
+    "group": "PERIPHERAL",
+    "category": "KEYBOARD",
+    "targets": [
+      "kb-membrane-office"
+    ],
+    "illustrative": true,
+    "note": "Teclado de membrana completo."
+  },
+  {
+    "id": "teclado-mecanico",
+    "uid": "1ba4055c33674567b51b783701ed05ce",
+    "name": "Mechanical keyboard",
+    "author": "FelikinRuslan",
+    "license": "CC-BY-4.0",
+    "faces": 11128,
+    "group": "PERIPHERAL",
+    "category": "KEYBOARD",
+    "targets": [
+      "kb-mech-tkl-red"
+    ],
+    "illustrative": true,
+    "note": "Teclado mecânico."
+  },
+  {
+    "id": "teclado-mecanico-custom",
+    "uid": "44bb12d306864e2cb4256a61d4168942",
+    "name": "Mechanical Keyboard - Aesthetic",
+    "author": "mreslan",
+    "license": "CC-BY-4.0",
+    "faces": 18056,
+    "group": "PERIPHERAL",
+    "category": "KEYBOARD",
+    "targets": [
+      "kb-mech-60-blue"
+    ],
+    "illustrative": true,
+    "note": "Teclado mecânico customizado."
+  },
+  {
+    "id": "combo-teclado-mouse-rgb",
+    "uid": "df00ce3e66dc4b75a5f9b49c2e6b1406",
+    "name": "RGB Keyboard and Mouse",
+    "author": "leyjames",
+    "license": "CC-BY-4.0",
+    "faces": 26766,
+    "group": "PERIPHERAL",
+    "category": "KEYBOARD",
+    "targets": [],
+    "illustrative": false,
+    "note": "Kit teclado e mouse RGB (vitrine)."
+  },
+  {
+    "id": "mouse-gamer",
+    "uid": "95eb7d0363bb4db79bd50168280ea1c7",
+    "name": "Computer Mouse (low-poly)",
+    "author": "LagzDesign",
+    "license": "CC-BY-4.0",
+    "faces": 1198,
+    "group": "PERIPHERAL",
+    "category": "MOUSE",
+    "targets": [
+      "mouse-gamer-65g"
+    ],
+    "illustrative": true,
+    "note": "Mouse de formato simétrico."
+  },
+  {
+    "id": "mousepad-gamer",
+    "uid": "8c551e4f6bf248db99aa77a3d0221497",
+    "name": "Silver Crest Gaming Mousepad",
+    "author": "Cymen05",
+    "license": "CC-BY-4.0",
+    "faces": 296,
+    "group": "PERIPHERAL",
+    "category": "MOUSEPAD",
+    "targets": [],
+    "illustrative": false,
+    "note": "Mousepad gamer (vitrine)."
+  },
+  {
+    "id": "headphone-estudio",
+    "uid": "05735b74d3524f00b648231138122a28",
+    "name": "Sony MDR-7506 Headphones",
+    "author": "AndreiVNK",
+    "license": "CC-BY-4.0",
+    "faces": 10795,
+    "group": "PERIPHERAL",
+    "category": "AUDIO",
+    "targets": [
+      "audio-headset-71"
+    ],
+    "illustrative": true,
+    "note": "Fone fechado (sem o microfone do headset do catálogo)."
+  },
+  {
+    "id": "headphone-bluetooth",
+    "uid": "4e902017e4624547b440da0a6658a689",
+    "name": "Headphones Skullcandy Crusher Wireless",
+    "author": "Ankledot",
+    "license": "CC-BY-4.0",
+    "faces": 3688,
+    "group": "PERIPHERAL",
+    "category": "AUDIO",
+    "targets": [],
+    "illustrative": false,
+    "note": "Fone sem fio (vitrine)."
+  },
+  {
+    "id": "caixas-madeira",
+    "uid": "08c8c695fb004f10965303df36e0b087",
+    "name": "Desktop speaker with a wooden enclosure",
+    "author": "itrek47",
+    "license": "CC-BY-4.0",
+    "faces": 27118,
+    "group": "PERIPHERAL",
+    "category": "AUDIO",
+    "targets": [
+      "audio-wood-speakers"
+    ],
+    "illustrative": false,
+    "note": "Caixa de som de mesa em madeira."
+  },
+  {
+    "id": "caixas-pc",
+    "uid": "60ea790042904974b3361a2add8e7921",
+    "name": "Computer Speakers",
+    "author": "DarrenMcnerney3D",
+    "license": "CC-BY-4.0",
+    "faces": 754,
+    "group": "PERIPHERAL",
+    "category": "AUDIO",
+    "targets": [],
+    "illustrative": false,
+    "note": "Caixas de som de PC (vitrine)."
+  },
+  {
+    "id": "gamepad-moderno",
+    "uid": "f75caead1dc1474195eb32a7f4c71117",
+    "name": "ps5 controller",
+    "author": "FredDrabble",
+    "license": "CC-BY-4.0",
+    "faces": 2752,
+    "group": "PERIPHERAL",
+    "category": "GAMEPAD",
+    "targets": [
+      "gamepad-hall-effect"
+    ],
+    "illustrative": true,
+    "note": "Controle sem fio."
+  },
+  {
+    "id": "gamepad-classico",
+    "uid": "a7c82b41d2524ffeba28798b357daebd",
+    "name": "Gamepad Sony DualShock 3",
+    "author": "NPCxBot",
+    "license": "CC-BY-4.0",
+    "faces": 1576,
+    "group": "PERIPHERAL",
+    "category": "GAMEPAD",
+    "targets": [],
+    "illustrative": false,
+    "note": "Controle com fio clássico (vitrine)."
+  },
+  {
+    "id": "suporte-articulado",
+    "uid": "16f7f2939a944f9da39cd77ac90ae409",
+    "name": "NEXT MONITOR ARM",
+    "author": "Jake-norsemandirect",
+    "license": "CC-BY-4.0",
+    "faces": 11364,
+    "group": "PERIPHERAL",
+    "category": "STAND",
+    "targets": [
+      "stand-gas-arm"
+    ],
+    "illustrative": true,
+    "note": "Braço articulado para monitor."
+  },
+  {
+    "id": "webcam",
+    "uid": "a0bf7bcc50f04a109d5212a6da0c3f4a",
+    "name": "webcamera",
+    "author": "OlegJob",
+    "license": "CC-BY-4.0",
+    "faces": 6850,
+    "group": "PERIPHERAL",
+    "category": "WEBCAM",
+    "targets": [],
+    "illustrative": false,
+    "note": "Webcam (vitrine; candidata a novo periférico)."
+  },
+  {
+    "id": "microfone-boom",
+    "uid": "2b8236d4329a439baff0bc2056fcbb80",
+    "name": "Boom Mic",
+    "author": "glowbox3d",
+    "license": "CC-BY-4.0",
+    "faces": 6150,
+    "group": "PERIPHERAL",
+    "category": "MICROPHONE",
+    "targets": [],
+    "illustrative": false,
+    "note": "Microfone com braço (vitrine; candidato a novo periférico)."
+  },
+  {
+    "id": "cadeira-escritorio",
+    "uid": "675f34f7304e4d92812a41e9750539aa",
+    "name": "Office Chair Modern",
+    "author": "thethieme",
+    "license": "CC-BY-4.0",
+    "faces": 1234,
+    "group": "PERIPHERAL",
+    "category": "CHAIR",
+    "targets": [],
+    "illustrative": false,
+    "note": "Cadeira de escritório (vitrine; ergonomia)."
+  },
+  {
+    "id": "mesa-gamer",
+    "uid": "6f1bc394de704e488d44e77134f23993",
+    "name": "Low Poly Gaming Desk",
+    "author": "abdullahyeahyea",
+    "license": "CC-BY-4.0",
+    "faces": 4782,
+    "group": "PERIPHERAL",
+    "category": "DESK",
+    "targets": [],
+    "illustrative": false,
+    "note": "Mesa gamer (vitrine; ergonomia)."
+  }
+]

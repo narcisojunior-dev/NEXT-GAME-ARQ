@@ -16,8 +16,14 @@ import { FrontPanelZoomModal } from '@/components/modals/FrontPanelZoomModal';
 import { AcademyOSDesktop } from '@/components/os/AcademyOSDesktop';
 import { VirtualRoomModal } from '@/components/room/VirtualRoomModal';
 import { TeacherDashboardModal } from '@/components/teacher/TeacherDashboardModal';
+import dynamic from 'next/dynamic';
+import { useModel3DStore } from '@/components/three/model3dStore';
+
+// Manifesto 3D e modal só são baixados quando o aluno abre o 3D (RNF08)
+const Model3DModal = dynamic(() => import('@/components/three/Model3DModal').then((m) => m.Model3DModal), { ssr: false });
 
 export default function Home() {
+  const is3DOpen = useModel3DStore((s) => Boolean(s.modelId) || s.isGalleryOpen);
   return (
     <LazyMotion features={domAnimation} strict>
     <MotionConfig reducedMotion="user">
@@ -55,6 +61,7 @@ export default function Home() {
       <AcademyOSDesktop />
       <VirtualRoomModal />
       <TeacherDashboardModal />
+      {is3DOpen && <Model3DModal />}
     </main>
     </MotionConfig>
     </LazyMotion>

@@ -10,6 +10,7 @@ Bem-vindo à documentação oficial do **PC Builder Academy**, a plataforma educ
 | :--- | :--- |
 | 📄 **[PRD v2.1 (Product Requirements Document)](./PRD.md)** | Visão geral pedagógica, montagem canônica, modo diagnóstico ("O que está quebrado?"), minigame do painel frontal (`F_PANEL`), AcademyOS com benchmarks e gargalo (bottleneck), setup de periféricos e sala virtual. **v2.1:** regras de montagem revisadas, ilustrações por dados, cabeamento completo, roadmap 3D e backlog. |
 | 🎨 **[Design System v2.0](./design-system.md)** | Identidade visual (Cyber-Industrial & Clean Tech), design de periféricos, paletas de cores das salas virtuais (Gamer RGB, Escritório Minimalista, Laboratório Tech), áudio procedural e layout do selo de certificação em alta resolução. |
+| 🧊 **[Modelos 3D — Download e Créditos](./modelos-3d.md)** | 46 modelos do Sketchfab aprovados (licença CC BY/BY-SA, até 30 mil faces), peça do catálogo atendida por cada um, passo a passo de download e otimização e modelos rejeitados. |
 | 🏛️ **[ADRs (Architecture Decision Records)](./adr/)** | Decisões técnicas fundamentadas para todo o ecossistema da aplicação. |
 
 ---
