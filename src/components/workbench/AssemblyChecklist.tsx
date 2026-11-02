@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 export const AssemblyChecklist: React.FC = () => {
-  const { assembly, selectedComponentForPlacement } = useAssemblyStore();
+  const { assembly, selectedMotherboard, selectedComponentForPlacement } = useAssemblyStore();
   const [isOpen, setIsOpen] = useState(true);
 
   // Lista de etapas de montagem e seus status
@@ -31,50 +31,56 @@ export const AssemblyChecklist: React.FC = () => {
       isDone: assembly.esdDischarged,
     },
     {
+      id: 'motherboard',
+      title: '2. Escolher e Posicionar Placa-Mãe',
+      desc: 'Escolha a placa-mãe no inventário e assente-a na bancada.',
+      isDone: selectedMotherboard !== null,
+    },
+    {
       id: 'cpu',
-      title: '2. Instalar Processador (CPU)',
+      title: '3. Instalar Processador (CPU)',
       desc: 'Alinhe o triângulo dourado com o soquete.',
       isDone: assembly.cpuInstalled !== null,
     },
     {
       id: 'lever',
-      title: '3. Travar a Alavanca do Soquete',
+      title: '4. Travar a Alavanca do Soquete',
       desc: 'Faça pressão na alavanca lateral para fixar os pinos.',
       isDone: assembly.socketLeverLocked,
     },
     {
       id: 'paste',
-      title: '4. Aplicar Pasta Térmica',
+      title: '5. Aplicar Pasta Térmica',
       desc: 'Uma gota central do tamanho de uma ervilha.',
       isDone: assembly.thermalPasteApplied,
     },
     {
       id: 'cooler',
-      title: '5. Fixar Cooler & Conectar CPU_FAN',
+      title: '6. Fixar Cooler & Conectar CPU_FAN',
       desc: 'Aperte os parafusos e ligue o cabo do ventilador.',
       isDone: assembly.coolerInstalled !== null && assembly.coolerFanConnected,
     },
     {
       id: 'ram',
-      title: '6. Instalar Memória RAM (Dual Channel)',
+      title: '7. Instalar Memória RAM (Dual Channel)',
       desc: 'Encaixe nos slots 2 e 4 até ouvir o duplo clique.',
       isDone: assembly.ramInstalledSlot2 !== null || assembly.ramInstalledSlot4 !== null,
     },
     {
       id: 'storage',
-      title: '7. Instalar SSD M.2 NVMe',
+      title: '8. Instalar SSD M.2 NVMe',
       desc: 'Encaixe a 30° no slot M.2 e aperte o parafuso.',
       isDone: assembly.storageInstalled !== null,
     },
     {
       id: 'case_prep',
-      title: '8. Espelho I/O & Espaçadores',
+      title: '9. Espelho I/O & Espaçadores',
       desc: 'Instale o espelho traseiro e os espaçadores dourados.',
       isDone: assembly.ioShieldInstalled && assembly.standoffsInstalled,
     },
     {
       id: 'psu',
-      title: '9. Instalar Fonte & Conectar Cabos',
+      title: '10. Instalar Fonte & Conectar Cabos',
       desc: 'Fixe a fonte e plugue os cabos ATX 24P, CPU 8P e Power SW.',
       isDone:
         assembly.psuInstalled !== null &&
@@ -84,7 +90,7 @@ export const AssemblyChecklist: React.FC = () => {
     },
     {
       id: 'boot',
-      title: '10. Ligar o PC (Teste POST)',
+      title: '11. Ligar o PC (Teste POST)',
       desc: 'Ligue a chave da fonte [I] e pressione o botão Ligar!',
       isDone: assembly.psuSwitchOn,
     },
@@ -174,3 +180,4 @@ export const AssemblyChecklist: React.FC = () => {
     </div>
   );
 };
+

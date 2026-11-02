@@ -87,7 +87,7 @@ export const BIOSSimulatorModal: React.FC = () => {
 
           <div className="flex justify-between">
             <span className="text-slate-400">PLACA-MÃE:</span>
-            <span className="text-white font-bold">{selectedMotherboard.name} ({selectedMotherboard.chipset})</span>
+            <span className="text-white font-bold">{selectedMotherboard ? `${selectedMotherboard.name} (${selectedMotherboard.chipset})` : 'NENHUMA PLACA'}</span>
           </div>
 
           <div className="flex justify-between">

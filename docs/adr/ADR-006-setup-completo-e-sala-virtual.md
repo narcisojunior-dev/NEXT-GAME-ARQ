@@ -40,3 +40,4 @@ Desafios técnicos:
   * Facilidade de avaliação para os professores.
 * **Negativas / Mitigações:**
   * Não se trata de renderização 3D fotorrealista com Ray Tracing; no entanto, a estética vetorial limpa Cyber-Industrial e isométrica garante identidade visual marcante e performance fluida a 60 FPS.
+

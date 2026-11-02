@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
-import { Cpu, Zap, HardDrive, Fan, AlertTriangle, CheckCircle2, ArrowDown } from 'lucide-react';
+import { MotherboardComponent } from '@/engine/types';
+import { Cpu, Zap, HardDrive, Fan, AlertTriangle, CheckCircle2, ArrowDown, CircuitBoard, RefreshCw } from 'lucide-react';
 
 interface MotherboardSvgProps {
   onSlotClick?: (slotId: string) => void;
@@ -11,6 +12,8 @@ interface MotherboardSvgProps {
 export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) => {
   const {
     selectedMotherboard,
+    installMotherboard,
+    selectMotherboard,
     assembly,
     postResult,
     selectedComponentForPlacement,
@@ -65,8 +68,75 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
   const isStorageTarget = selectedComponentForPlacement?.category === 'STORAGE';
   const isGpuTarget = selectedComponentForPlacement?.category === 'GPU';
 
+  if (!selectedMotherboard) {
+    const isMbInHand = selectedComponentForPlacement?.category === 'MOTHERBOARD';
+    return (
+      <div
+        onClick={() => {
+          if (isMbInHand) {
+            installMotherboard(selectedComponentForPlacement as MotherboardComponent);
+          }
+        }}
+        className={`relative w-full aspect-4/3 max-w-4xl mx-auto rounded-3xl border-2 transition-all duration-300 flex flex-col items-center justify-center p-8 text-center cursor-pointer select-none overflow-hidden ${
+          isMbInHand
+            ? 'bg-cyan-950/40 border-cyan-400 ring-4 ring-cyan-400/20 shadow-2xl shadow-cyan-500/20 animate-pulse'
+            : 'bg-slate-950/60 border-dashed border-slate-700 hover:border-slate-500'
+        }`}
+      >
+        <div className="w-20 h-20 rounded-3xl bg-slate-900 border border-slate-800 flex items-center justify-center mb-4 shadow-inner">
+          <CircuitBoard className={`w-10 h-10 ${isMbInHand ? 'text-cyan-400' : 'text-slate-500'}`} />
+        </div>
+
+        {isMbInHand ? (
+          <div className="space-y-3">
+            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+              Placa pronta para assentamento
+            </span>
+            <h3 className="text-xl font-black text-white">
+              👉 CLIQUE AQUI PARA POSICIONAR {selectedComponentForPlacement.name.toUpperCase()} NA BANCADA!
+            </h3>
+            <p className="text-xs text-cyan-200/80 max-w-md mx-auto">
+              Soquete: {(selectedComponentForPlacement as MotherboardComponent).socket} • Memória: {(selectedComponentForPlacement as MotherboardComponent).supportedRam} • Formato: {(selectedComponentForPlacement as MotherboardComponent).formFactor}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3 max-w-md">
+            <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-slate-800 text-slate-400">
+              Etapa 2 da Montagem
+            </span>
+            <h3 className="text-lg font-bold text-white">
+              Bancada Pronta: Escolha uma Placa-Mãe
+            </h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Abra a aba <strong className="text-cyan-300">Placa-Mãe</strong> no inventário abaixo e clique em <strong className="text-cyan-300">&quot;Usar&quot;</strong> na placa que deseja usar (LGA1700, AM4 ou AM5). Depois clique aqui para assentá-la na manta antiestática.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full aspect-4/3 max-w-4xl mx-auto bg-slate-950/90 rounded-3xl border-2 border-slate-800 p-4 shadow-2xl backdrop-blur-md overflow-hidden select-none">
+      {/* Informações da Placa-Mãe Ativa */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-lg text-[11px] text-slate-300">
+        <CircuitBoard className="w-3.5 h-3.5 text-cyan-400" />
+        <span className="font-bold text-white">{selectedMotherboard.name}</span>
+        <span className="font-mono text-cyan-300 bg-slate-800 px-1.5 py-0.5 rounded text-[10px]">
+          {selectedMotherboard.socket}
+        </span>
+        <span className="font-mono text-purple-300 bg-slate-800 px-1.5 py-0.5 rounded text-[10px]">
+          {selectedMotherboard.supportedRam}
+        </span>
+        <button
+          onClick={() => selectMotherboard(null)}
+          title="Substituir Placa-Mãe por outro modelo"
+          className="ml-1 text-slate-400 hover:text-white flex items-center gap-1 hover:bg-slate-800 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+        >
+          <RefreshCw className="w-3 h-3" />
+          <span className="text-[10px]">Trocar</span>
+        </button>
+      </div>
       {/* Banner Superior com Orientação Dinâmica para o Aluno */}
       {selectedComponentForPlacement && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-2xl bg-cyan-500 text-slate-950 text-xs font-black shadow-xl flex items-center gap-2 animate-bounce">

@@ -22,7 +22,7 @@ export type GameMode = 'OFICINA' | 'MISSAO' | 'DESAFIO';
 interface AssemblyStore {
   // Configurações Gerais
   gameMode: GameMode;
-  selectedMotherboard: MotherboardComponent;
+  selectedMotherboard: MotherboardComponent | null;
   currentPhase: AssemblyPhase;
   activeMission: ClientMission | null;
   teamName: string;
@@ -45,7 +45,8 @@ interface AssemblyStore {
   setGameMode: (mode: GameMode) => void;
   setTeamName: (name: string) => void;
   selectMission: (missionId: string) => void;
-  selectMotherboard: (mb: MotherboardComponent) => void;
+  selectMotherboard: (mb: MotherboardComponent | null) => void;
+  installMotherboard: (mb: MotherboardComponent) => void;
   setCurrentPhase: (phase: AssemblyPhase) => void;
   setInspectedComponent: (comp: HardwareComponent | null) => void;
   setSelectedComponentForPlacement: (comp: HardwareComponent | null) => void;
@@ -103,7 +104,7 @@ const initialAssemblyState: AssemblyState = {
 
 export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   gameMode: 'OFICINA',
-  selectedMotherboard: MOTHERBOARDS[0], // B760M DDR5
+  selectedMotherboard: null,
   currentPhase: 'PHASE_1_PREPARATION',
   activeMission: null,
   teamName: 'Equipe Alfa',
@@ -141,6 +142,47 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
     get().resetAssembly();
   },
 
+  installMotherboard: (mb) => {
+    soundEngine.playSlotClick();
+    const current = get().selectedMotherboard;
+    if (current && current.id !== mb.id) {
+      set((state) => ({
+        selectedMotherboard: mb,
+        selectedComponentForPlacement: null,
+        assembly: {
+          ...state.assembly,
+          cpuInstalled: null,
+          socketLeverLocked: false,
+          thermalPasteApplied: false,
+          coolerInstalled: null,
+          coolerFanConnected: false,
+          ramInstalledSlot2: null,
+          ramInstalledSlot4: null,
+          storageInstalled: null,
+          gpuInstalled: null,
+          gpuScrewed: false,
+          motherboardScrewed: false,
+        },
+        activeAlert: {
+          type: 'warning',
+          title: 'Placa-Mãe Trocada!',
+          message: `Você substituiu a placa por ${mb.name}. Os componentes do soquete anterior foram devolvidos ao inventário para revalidação.`,
+        },
+      }));
+      return;
+    }
+
+    set({
+      selectedMotherboard: mb,
+      selectedComponentForPlacement: null,
+      activeAlert: {
+        type: 'success',
+        title: 'Placa-Mãe Posicionada!',
+        message: `${mb.name} foi colocada sobre a bancada antiestática. Soquete ${mb.socket}, suporta memórias ${mb.supportedRam}.`,
+      },
+    });
+  },
+
   setCurrentPhase: (phase) => set({ currentPhase: phase }),
 
   setInspectedComponent: (comp) => set({ inspectedComponent: comp }),
@@ -176,6 +218,18 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
 
   installCpu: (cpu) => {
     const mb = get().selectedMotherboard;
+    if (!mb) {
+      soundEngine.playErrorBuzz();
+      set({
+        activeAlert: {
+          type: 'error',
+          title: 'Onde encaixar a CPU?',
+          message: 'Você precisa posicionar uma placa-mãe na bancada antes de instalar o processador!',
+        },
+      });
+      return false;
+    }
+
     const socketError = validateSocket(cpu, mb);
 
     if (socketError) {
@@ -270,6 +324,18 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
 
   installRam: (slot, ram) => {
     const mb = get().selectedMotherboard;
+    if (!mb) {
+      soundEngine.playErrorBuzz();
+      set({
+        activeAlert: {
+          type: 'error',
+          title: 'Sem Placa-Mãe',
+          message: 'Instale uma placa-mãe na bancada antes de encaixar os pentes de memória RAM!',
+        },
+      });
+      return false;
+    }
+
     const ramError = validateRamType(ram, mb);
 
     if (ramError) {
@@ -302,6 +368,19 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   },
 
   installStorage: (storage) => {
+    const mb = get().selectedMotherboard;
+    if (!mb) {
+      soundEngine.playErrorBuzz();
+      set({
+        activeAlert: {
+          type: 'error',
+          title: 'Sem Placa-Mãe',
+          message: 'Instale uma placa-mãe na bancada antes de fixar o SSD M.2!',
+        },
+      });
+      return;
+    }
+
     soundEngine.playScrewSound();
     set((state) => ({
       assembly: { ...state.assembly, storageInstalled: storage },
@@ -355,6 +434,19 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   },
 
   installGpu: (gpu) => {
+    const mb = get().selectedMotherboard;
+    if (!mb) {
+      soundEngine.playErrorBuzz();
+      set({
+        activeAlert: {
+          type: 'error',
+          title: 'Sem Placa-Mãe',
+          message: 'Instale uma placa-mãe na bancada antes de encaixar a placa de vídeo no slot PCIe x16!',
+        },
+      });
+      return;
+    }
+
     soundEngine.playSlotClick();
     set((state) => ({
       assembly: { ...state.assembly, gpuInstalled: gpu },
@@ -398,6 +490,18 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
 
   triggerPostBoot: () => {
     const { assembly, selectedMotherboard } = get();
+    if (!selectedMotherboard) {
+      soundEngine.playErrorBuzz();
+      set({
+        activeAlert: {
+          type: 'error',
+          title: 'Nenhuma Placa-Mãe Instalada!',
+          message: 'Você precisa escolher e colocar uma placa-mãe na bancada antes de ligar o PC!',
+        },
+      });
+      return;
+    }
+
     const result = evaluatePostTest(assembly, selectedMotherboard);
 
     if (result.canPowerOn) {
@@ -424,7 +528,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   },
 
   calculateFinalScore: () => {
-    const { elapsedSeconds, penaltiesCount, assembly, activeMission, teamName } = get();
+    const { elapsedSeconds, penaltiesCount, assembly, selectedMotherboard, activeMission, teamName } = get();
     let precision = 4000 - penaltiesCount * 500;
     if (precision < 500) precision = 500;
 
@@ -437,6 +541,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
     let budgetRemaining = 0;
     if (activeMission) {
       let spent = 0;
+      if (selectedMotherboard) spent += selectedMotherboard.price;
       if (assembly.cpuInstalled) spent += assembly.cpuInstalled.price;
       if (assembly.coolerInstalled) spent += assembly.coolerInstalled.price;
       if (assembly.ramInstalledSlot2) spent += assembly.ramInstalledSlot2.price;
@@ -472,6 +577,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
 
   resetAssembly: () => {
     set({
+      selectedMotherboard: null,
       assembly: { ...initialAssemblyState },
       currentPhase: 'PHASE_1_PREPARATION',
       elapsedSeconds: 0,

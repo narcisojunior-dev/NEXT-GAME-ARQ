@@ -67,11 +67,9 @@ export function calculateTotalTdp(state: AssemblyState, mb: MotherboardComponent
  */
 export function evaluatePostTest(
   state: AssemblyState,
-  mb: MotherboardComponent
+  mb: MotherboardComponent | null
 ): PostResult {
   const issues: ValidationIssue[] = [];
-  const totalTdp = calculateTotalTdp(state, mb);
-  const psuCapacity = state.psuInstalled ? state.psuInstalled.wattage : 0;
 
   const debugLed = {
     cpu: 'OFF' as 'OFF' | 'RED' | 'GREEN',
@@ -79,6 +77,20 @@ export function evaluatePostTest(
     vga: 'OFF' as 'OFF' | 'RED' | 'GREEN',
     boot: 'OFF' as 'OFF' | 'RED' | 'GREEN',
   };
+
+  // 0. Verificação da Placa-Mãe
+  if (!mb) {
+    issues.push({
+      type: 'ERROR',
+      title: 'Nenhuma Placa-Mãe Instalada!',
+      message: 'O computador precisa de uma placa-mãe instalada na bancada para conectar os componentes e conduzir os sinais elétricos.',
+      suggestedAction: 'Escolha e posicione uma placa-mãe na bancada a partir do inventário.',
+    });
+    return { canPowerOn: false, bootSuccess: false, debugLed, totalTdpWatts: 0, psuWatts: 0, issues };
+  }
+
+  const totalTdp = calculateTotalTdp(state, mb);
+  const psuCapacity = state.psuInstalled ? state.psuInstalled.wattage : 0;
 
   // 1. Verificação da Fonte e Chave de Energia
   if (!state.psuInstalled) {

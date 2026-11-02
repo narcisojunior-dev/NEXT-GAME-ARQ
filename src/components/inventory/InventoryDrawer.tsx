@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { ComponentCategory, HardwareComponent } from '@/engine/types';
 import {
   CPUS,
+  MOTHERBOARDS,
   RAMS,
   COOLERS,
   THERMAL_PASTES,
@@ -21,9 +22,11 @@ import {
   HardDrive,
   Zap,
   Box,
+  CircuitBoard,
 } from 'lucide-react';
 
 const ALL_COMPONENTS: HardwareComponent[] = [
+  ...MOTHERBOARDS,
   ...CPUS,
   ...RAMS,
   ...COOLERS,
@@ -41,6 +44,7 @@ export const InventoryDrawer: React.FC = () => {
 
   const categories: { id: FilterCategory; label: string; icon: React.ReactNode }[] = [
     { id: 'ALL', label: 'Todos', icon: <Box className="w-3.5 h-3.5" /> },
+    { id: 'MOTHERBOARD', label: 'Placa-Mãe', icon: <CircuitBoard className="w-3.5 h-3.5" /> },
     { id: 'CPU', label: 'Processador', icon: <Cpu className="w-3.5 h-3.5" /> },
     { id: 'RAM', label: 'Memória RAM', icon: <Layers className="w-3.5 h-3.5" /> },
     { id: 'COOLER', label: 'Cooler & Pasta', icon: <ThermometerSnowflake className="w-3.5 h-3.5" /> },

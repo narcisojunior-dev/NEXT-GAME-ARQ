@@ -275,3 +275,4 @@ export const HardwareImage: React.FC<HardwareImageProps> = ({
       return null;
   }
 };
+

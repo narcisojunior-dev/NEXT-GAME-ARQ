@@ -51,3 +51,4 @@ O sistema injeta o estado defeituoso na bancada e avalia continuamente as açõe
 * **Positivas:**
   * O aluno entende com números e gráficos reais porque não adianta colocar uma RTX 4070 com um processador fraco ou 1 pente de memória RAM.
   * O aprendizado transcende a montagem e entra na esfera de otimização de sistemas.
+

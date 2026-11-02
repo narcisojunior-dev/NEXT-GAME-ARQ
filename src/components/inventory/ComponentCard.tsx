@@ -37,9 +37,26 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({ component }) => {
     >
       {/* Topo do Card com Badge e Botão de Info */}
       <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-slate-800 text-cyan-300 font-mono">
-          {component.category}
-        </span>
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-slate-800 text-cyan-300 font-mono">
+            {component.category}
+          </span>
+          {component.category === 'MOTHERBOARD' && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/60 font-mono">
+              {(component as any).socket} | {(component as any).supportedRam}
+            </span>
+          )}
+          {component.category === 'CPU' && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800/60 font-mono">
+              {(component as any).socket}
+            </span>
+          )}
+          {component.category === 'RAM' && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800/60 font-mono">
+              {(component as any).ramType}
+            </span>
+          )}
+        </div>
         <button
           onClick={() => setInspectedComponent(component)}
           title="Ver para que serve e curiosidades"

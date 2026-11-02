@@ -99,5 +99,12 @@ describe('Teste de Diagnóstico do POST (Power-On Self-Test)', () => {
     expect(result.bootSuccess).toBe(false);
     expect(result.issues.some((i) => i.title.includes('Fonte Subdimensionada'))).toBe(true);
   });
+
+  it('deve reprovar o boot com erro caso nenhuma placa-mãe esteja instalada na bancada', () => {
+    const result = evaluatePostTest(validAssemblyState, null);
+    expect(result.canPowerOn).toBe(false);
+    expect(result.bootSuccess).toBe(false);
+    expect(result.issues.some((i) => i.title.includes('Nenhuma Placa-Mãe Instalada'))).toBe(true);
+  });
 });
 
