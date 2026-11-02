@@ -51,6 +51,26 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({ component }) => {
               {(component as any).socket}
             </span>
           )}
+          {component.category === 'STORAGE' && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-800/60 font-mono">
+              {component.storageType === 'NVMe_M2' ? 'M.2 NVMe' : component.storageType === 'SATA_SSD' ? 'SATA SSD' : 'SATA HD'}
+            </span>
+          )}
+          {component.category === 'COOLER' && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800/60 font-mono">
+              {component.supportedSockets.join('/')} | {component.maxTdpWatts}W
+            </span>
+          )}
+          {component.category === 'CASE' && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700 font-mono">
+              {component.supportedFormFactors.join('/')} | GPU {component.maxGpuLengthMm}mm
+            </span>
+          )}
+          {component.category === 'GPU' && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800/60 font-mono">
+              {component.lengthMm}mm | Fonte {component.requiredPsuWatts}W
+            </span>
+          )}
           {component.category === 'RAM' && (
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800/60 font-mono">
               {(component as any).ramType}

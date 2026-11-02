@@ -17,12 +17,14 @@ import {
 
 export const WorkbenchMat: React.FC = () => {
   const {
-    currentPhase,
     assembly,
     dischargeEsd,
     installIoShield,
     installStandoffs,
     installPsu,
+    installCase,
+    installStorage,
+    connectCable,
     screwMotherboard,
     togglePsuSwitch,
     triggerPostBoot,
@@ -37,7 +39,23 @@ export const WorkbenchMat: React.FC = () => {
     }
   };
 
+  const handleCaseAreaClick = () => {
+    if (selectedComponentForPlacement?.category === 'CASE') {
+      installCase(selectedComponentForPlacement);
+    }
+  };
+
+  const handleSataBayClick = () => {
+    if (selectedComponentForPlacement?.category === 'STORAGE') {
+      installStorage(selectedComponentForPlacement, 'SATA');
+    }
+  };
+
   const isPsuTarget = selectedComponentForPlacement?.category === 'PSU';
+  const isCaseTarget = selectedComponentForPlacement?.category === 'CASE';
+  const isSataTarget = selectedComponentForPlacement?.category === 'STORAGE';
+  const sataStorage =
+    assembly.storageInstalled && assembly.storageInstalled.storageType !== 'NVMe_M2' ? assembly.storageInstalled : null;
 
   return (
     <div className="relative w-full rounded-3xl bg-slate-900 border-2 border-slate-800 p-6 shadow-2xl overflow-hidden">
@@ -159,8 +177,85 @@ export const WorkbenchMat: React.FC = () => {
         <MotherboardSvg />
       </div>
 
-      {/* Área Inferior do Gabinete: Compartimento da Fonte (PSU) e Fixações */}
+      {/* Área Inferior do Gabinete: Gabinete, Baia SATA, Compartimento da Fonte (PSU) e Fixações */}
       <div className="relative z-10 mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Gabinete */}
+        <div
+          onClick={handleCaseAreaClick}
+          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+            assembly.caseInstalled
+              ? 'bg-slate-950/90 border-emerald-500/50 text-emerald-300 shadow-md'
+              : isCaseTarget
+              ? 'bg-cyan-950 border-cyan-400 animate-pulse text-cyan-200 ring-4 ring-cyan-400/30'
+              : 'bg-slate-950/40 border-slate-800 border-dashed text-slate-400 hover:border-slate-700'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-2xl">
+              🗄️
+            </div>
+            <div>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gabinete</div>
+              <div className="text-sm font-bold text-white">
+                {assembly.caseInstalled
+                  ? assembly.caseInstalled.name
+                  : isCaseTarget
+                  ? '👉 CLIQUE AQUI PARA PREPARAR O GABINETE!'
+                  : 'Escolha um gabinete na aba Gabinete do inventário'}
+              </div>
+            </div>
+          </div>
+          {assembly.caseInstalled && (
+            <div className="text-xs font-mono font-bold bg-emerald-950 px-2.5 py-1 rounded-md text-emerald-400 border border-emerald-800 text-right">
+              GPU até {assembly.caseInstalled.maxGpuLengthMm}mm
+            </div>
+          )}
+        </div>
+
+        {/* Baia SATA (SSD 2,5" / HD 3,5") */}
+        <div
+          onClick={handleSataBayClick}
+          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${
+            sataStorage
+              ? 'bg-slate-950/90 border-emerald-500/50 text-emerald-300 shadow-md'
+              : isSataTarget
+              ? 'bg-cyan-950 border-cyan-400 animate-pulse text-cyan-200 ring-4 ring-cyan-400/30'
+              : 'bg-slate-950/40 border-slate-800 border-dashed text-slate-400 hover:border-slate-700'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-2xl">
+              💽
+            </div>
+            <div>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Baia SATA (SSD 2,5&quot; / HD 3,5&quot;)</div>
+              <div className="text-sm font-bold text-white">
+                {sataStorage
+                  ? sataStorage.name
+                  : isSataTarget
+                  ? '👉 CLIQUE AQUI PARA FIXAR O DISCO NA BAIA!'
+                  : 'SSDs SATA e HDs ficam aqui, ligados por cabo'}
+              </div>
+            </div>
+          </div>
+          {sataStorage && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                connectCable('SATA');
+              }}
+              disabled={assembly.cableSataConnected}
+              className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                assembly.cableSataConnected
+                  ? 'bg-slate-800 text-emerald-400 border border-emerald-800/60'
+                  : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-md'
+              }`}
+            >
+              {assembly.cableSataConnected ? 'Cabos SATA [OK]' : 'Ligar Cabos SATA'}
+            </button>
+          )}
+        </div>
+
         {/* Slot da Fonte de Alimentação */}
         <div
           onClick={handlePsuAreaClick}

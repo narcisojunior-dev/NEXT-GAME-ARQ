@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useAssemblyStore, GameMode } from '@/store/useAssemblyStore';
+import { useAssemblyStore, GameMode, selectCurrentPhase } from '@/store/useAssemblyStore';
 import { AssemblyPhase } from '@/engine/types';
+import { calculateTotalSpent } from '@/engine/compatibility';
 import {
   GraduationCap,
   Briefcase,
@@ -29,16 +30,17 @@ export const TopHUD: React.FC = () => {
   const {
     gameMode,
     setGameMode,
-    currentPhase,
-    setCurrentPhase,
     elapsedSeconds,
     tickTimer,
     activeMission,
     assembly,
+    selectedMotherboard,
     penaltiesCount,
     openVirtualRoomModal,
     openTeacherDashboard,
   } = useAssemblyStore();
+  const currentPhase = useAssemblyStore(selectCurrentPhase);
+  const currentPhaseNumber = PHASES.find((p) => p.id === currentPhase)?.number ?? 1;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -53,16 +55,7 @@ export const TopHUD: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Cálculo de Custo Gasto
-  let totalSpent = 0;
-  if (assembly.cpuInstalled) totalSpent += assembly.cpuInstalled.price;
-  if (assembly.coolerInstalled) totalSpent += assembly.coolerInstalled.price;
-  if (assembly.ramInstalledSlot2) totalSpent += assembly.ramInstalledSlot2.price;
-  if (assembly.ramInstalledSlot4) totalSpent += assembly.ramInstalledSlot4.price;
-  if (assembly.storageInstalled) totalSpent += assembly.storageInstalled.price;
-  if (assembly.gpuInstalled) totalSpent += assembly.gpuInstalled.price;
-  if (assembly.psuInstalled) totalSpent += assembly.psuInstalled.price;
-
+  const totalSpent = calculateTotalSpent(assembly, selectedMotherboard);
   const budgetRemaining = activeMission ? activeMission.budgetMax - totalSpent : null;
 
   return (
@@ -192,18 +185,21 @@ export const TopHUD: React.FC = () => {
       <div className="max-w-7xl mx-auto mt-3 pt-3 border-t border-slate-800/60 flex items-center justify-between gap-1 overflow-x-auto pb-1">
         {PHASES.map((p) => {
           const isActive = currentPhase === p.id;
+          const isDone = p.number < currentPhaseNumber;
           return (
-            <button
+            <div
               key={p.id}
-              onClick={() => setCurrentPhase(p.id)}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
+              aria-current={isActive ? 'step' : undefined}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
                 isActive
                   ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
-                  : 'text-slate-500 hover:text-slate-300'
+                  : isDone
+                  ? 'text-emerald-400'
+                  : 'text-slate-500'
               }`}
             >
-              <span>{p.label}</span>
-            </button>
+              <span>{isDone ? `✓ ${p.label}` : p.label}</span>
+            </div>
           );
         })}
       </div>

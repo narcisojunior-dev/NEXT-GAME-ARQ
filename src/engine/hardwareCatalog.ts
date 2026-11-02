@@ -325,6 +325,20 @@ export const COOLERS: CoolerComponent[] = [
     analogy: 'A Piscina Térmica Circulante: um líquido especial passa pelo bloco da CPU e resfria no radiador.',
     trivia: 'Exige que o gabinete tenha suporte no teto ou na frente para parafusar o radiador de 240mm!',
   },
+  {
+    id: 'cooler-intel-laminar',
+    name: 'Cooler Box Intel Laminar RM1 (LGA1700)',
+    category: 'COOLER',
+    supportedSockets: ['LGA1700'],
+    maxTdpWatts: 65,
+    coolerType: 'Air',
+    fanRpmMax: 3150,
+    price: 50,
+    tdpWatts: 3,
+    description: 'Cooler original que acompanha processadores Intel de 12ª e 13ª geração sem sufixo K.',
+    analogy: 'O Uniforme Sob Medida: veste perfeitamente o soquete Intel, mas não serve em nenhum outro.',
+    trivia: 'Os furos de fixação do LGA1700 são mais afastados que os do AM4/AM5. Por isso este cooler não encaixa em placas AMD!',
+  },
 ];
 
 export const THERMAL_PASTES: ThermalPasteComponent[] = [
@@ -435,7 +449,7 @@ export const STORAGES: StorageComponent[] = [
     id: 'hdd-seagate-2tb',
     name: 'HD Seagate BarraCuda 2TB 7200RPM SATA',
     category: 'STORAGE',
-    storageType: 'SATA_SSD',
+    storageType: 'SATA_HDD',
     capacityGb: 2000,
     readSpeedMbps: 140,
     price: 260,

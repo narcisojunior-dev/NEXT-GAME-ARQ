@@ -11,6 +11,7 @@ import {
   GPUS,
   STORAGES,
   PSUS,
+  CASES,
 } from '@/engine/hardwareCatalog';
 import { ComponentCard } from './ComponentCard';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
@@ -23,6 +24,7 @@ import {
   Zap,
   Box,
   CircuitBoard,
+  Server,
 } from 'lucide-react';
 
 const ALL_COMPONENTS: HardwareComponent[] = [
@@ -34,6 +36,7 @@ const ALL_COMPONENTS: HardwareComponent[] = [
   ...GPUS,
   ...STORAGES,
   ...PSUS,
+  ...CASES,
 ];
 
 type FilterCategory = 'ALL' | ComponentCategory;
@@ -51,6 +54,7 @@ export const InventoryDrawer: React.FC = () => {
     { id: 'GPU', label: 'Placa de Vídeo', icon: <Tv className="w-3.5 h-3.5" /> },
     { id: 'STORAGE', label: 'Armazenamento', icon: <HardDrive className="w-3.5 h-3.5" /> },
     { id: 'PSU', label: 'Fonte (PSU)', icon: <Zap className="w-3.5 h-3.5" /> },
+    { id: 'CASE', label: 'Gabinete', icon: <Server className="w-3.5 h-3.5" /> },
   ];
 
   const filtered = ALL_COMPONENTS.filter((comp) => {

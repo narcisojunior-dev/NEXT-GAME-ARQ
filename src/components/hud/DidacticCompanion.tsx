@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useAssemblyStore, selectCurrentPhase } from '@/store/useAssemblyStore';
 import { Bot, Lightbulb, Sparkles } from 'lucide-react';
 
 export const DidacticCompanion: React.FC = () => {
-  const { currentPhase, activeAlert, dismissAlert } = useAssemblyStore();
+  const { activeAlert, dismissAlert } = useAssemblyStore();
+  const currentPhase = useAssemblyStore(selectCurrentPhase);
 
   const getPhaseAdvice = () => {
     switch (currentPhase) {
@@ -21,8 +22,8 @@ export const DidacticCompanion: React.FC = () => {
         };
       case 'PHASE_3_CASE_PREPARATION':
         return {
-          title: 'Passo 3: Espelho Traseiro & Espaçadores',
-          text: 'Cuidado Crítico: NUNCA parafuse a placa-mãe direto no metal do gabinete sem os espaçadores de latão (standoffs)! Se os pontos de solda encostarem na chapa de ferro, o computador sofrerá curto-circuito ao ligar.',
+          title: 'Passo 3: Gabinete, Espelho Traseiro & Espaçadores',
+          text: 'Antes de comprar o gabinete, confira se ele aceita o formato da sua placa-mãe (ATX, Micro-ATX) e o comprimento da placa de vídeo. Cuidado Crítico: NUNCA parafuse a placa-mãe direto no metal do gabinete sem os espaçadores de latão (standoffs)! Se os pontos de solda encostarem na chapa de ferro, o computador sofrerá curto-circuito ao ligar.',
         };
       case 'PHASE_4_MOTHERBOARD_INSTALL':
         return {

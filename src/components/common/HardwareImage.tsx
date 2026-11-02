@@ -179,7 +179,23 @@ export const HardwareImage: React.FC<HardwareImageProps> = ({
       );
 
     case 'STORAGE':
-      const isSata = name.toLowerCase().includes('sata') || name.toLowerCase().includes('a400') || name.toLowerCase().includes('hdd');
+      const isHdd = name.toLowerCase().includes('rpm') || name.toLowerCase().includes('hdd');
+      const isSata = name.toLowerCase().includes('sata') || name.toLowerCase().includes('a400');
+      if (isHdd) {
+        return (
+          <svg viewBox="0 0 160 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Disco rígido mecânico 3.5 polegadas */}
+            <rect x="20" y="6" width="120" height="88" rx="6" fill="#334155" stroke="#64748B" strokeWidth="2" />
+            {/* Prato magnético e eixo */}
+            <circle cx="72" cy="50" r="34" fill="#94A3B8" stroke="#CBD5E1" strokeWidth="1.5" />
+            <circle cx="72" cy="50" r="8" fill="#475569" />
+            {/* Braço do cabeçote de leitura */}
+            <path d="M 122 22 L 92 58" stroke="#F59E0B" strokeWidth="4" strokeLinecap="round" />
+            <circle cx="122" cy="22" r="6" fill="#1E293B" stroke="#F59E0B" strokeWidth="1.5" />
+            <text x="118" y="88" fill="#E2E8F0" fontSize="8" fontWeight="bold" textAnchor="middle">HD 3.5&quot;</text>
+          </svg>
+        );
+      }
       if (isSata) {
         return (
           <svg viewBox="0 0 160 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">

@@ -21,6 +21,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
     toggleSocketLever,
     applyThermalPaste,
     installCooler,
+    removeCooler,
     connectCoolerFan,
     installRam,
     installStorage,
@@ -49,7 +50,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
 
   const handleM2SlotClick = () => {
     if (selectedComponentForPlacement?.category === 'STORAGE') {
-      installStorage(selectedComponentForPlacement as never);
+      installStorage(selectedComponentForPlacement, 'M2');
     }
   };
 
@@ -259,6 +260,16 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             {assembly.coolerFanConnected ? 'FAN [OK]' : 'CPU_FAN'}
           </text>
         </g>
+
+        {/* Remover Cooler (necessário para reaplicar pasta térmica) */}
+        {assembly.coolerInstalled && (
+          <g className="cursor-pointer transition-transform hover:scale-105" onClick={removeCooler}>
+            <rect x="240" y="45" width="110" height="20" rx="3" fill="#1E293B" stroke="#F59E0B" strokeWidth="1.5" />
+            <text x="295" y="59" fill="#FBBF24" fontSize="9" fontWeight="bold" textAnchor="middle">
+              REMOVER COOLER
+            </text>
+          </g>
+        )}
 
         {/* 2. SOQUETE DA CPU (LGA1700 / AM5) */}
         <g

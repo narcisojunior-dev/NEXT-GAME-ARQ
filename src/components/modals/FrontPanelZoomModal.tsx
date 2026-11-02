@@ -48,7 +48,8 @@ export const FrontPanelZoomModal: React.FC = () => {
 
     if (res.success) {
       // Avança automaticamente para o próximo conector não plugado
-      const remaining = FPANEL_CONNECTORS.find((c) => !fPanelConnections[c.id]);
+      // fPanelConnections ainda reflete o estado anterior a este encaixe, então o conector atual é ignorado explicitamente
+      const remaining = FPANEL_CONNECTORS.find((c) => c.id !== selectedConnectorId && !fPanelConnections[c.id]);
       if (remaining) {
         setSelectedConnectorId(remaining.id);
         setIsInvertedPolarity(false);
@@ -208,9 +209,9 @@ export const FrontPanelZoomModal: React.FC = () => {
             <div className="relative p-8 rounded-2xl bg-[#0b1329] border border-cyan-900 shadow-inner w-full max-w-lg">
               {/* Serigrafia Branca da Placa */}
               <div className="flex justify-between text-[11px] font-mono text-slate-400 font-bold mb-4 px-2">
-                <span className="text-emerald-400">+P_LED-</span>
-                <span className="text-red-400">POWER_SW</span>
-                <span className="text-slate-600">[KEY]</span>
+                <span className="text-orange-400">+HDD_LED-</span>
+                <span className="text-blue-400">RESET_SW</span>
+                <span className="text-slate-600">[NC]</span>
               </div>
 
               {/* Matriz 2x5 dos 10 Pinos */}
@@ -222,12 +223,12 @@ export const FrontPanelZoomModal: React.FC = () => {
                     return (
                       <div key={pinId} className="flex flex-col items-center gap-2">
                         {pin.isKeyOrNc ? (
-                          // Pino ausente (KEY)
+                          // Pino reservado, não conectar (NC)
                           <div
-                            className="w-8 h-8 rounded-full border border-dashed border-slate-700 flex items-center justify-center text-[9px] font-mono text-slate-600"
-                            title="Pino Ausente (Chave Guia)"
+                            className="w-8 h-8 rounded-full border border-dashed border-slate-800 flex items-center justify-center text-[9px] font-mono text-slate-700"
+                            title={pin.name}
                           >
-                            X
+                            NC
                           </div>
                         ) : (
                           // Pino dourado saliente
@@ -253,11 +254,12 @@ export const FrontPanelZoomModal: React.FC = () => {
                     return (
                       <div key={pinId} className="flex flex-col items-center gap-2">
                         {pin.isKeyOrNc ? (
+                          // Pino ausente (KEY)
                           <div
-                            className="w-8 h-8 rounded-full border border-dashed border-slate-800 flex items-center justify-center text-[9px] font-mono text-slate-700"
-                            title="Sem Conexão"
+                            className="w-8 h-8 rounded-full border border-dashed border-slate-700 flex items-center justify-center text-[9px] font-mono text-slate-600"
+                            title={pin.name}
                           >
-                            NC
+                            X
                           </div>
                         ) : (
                           <div
@@ -278,9 +280,9 @@ export const FrontPanelZoomModal: React.FC = () => {
 
               {/* Serigrafia Inferior */}
               <div className="flex justify-between text-[11px] font-mono text-slate-400 font-bold mt-4 px-2">
-                <span className="text-orange-400">+HDD_LED-</span>
-                <span className="text-blue-400">RESET_SW</span>
-                <span className="text-slate-600">[NC]</span>
+                <span className="text-emerald-400">+P_LED-</span>
+                <span className="text-red-400">POWER_SW</span>
+                <span className="text-slate-600">[KEY]</span>
               </div>
             </div>
 
@@ -293,27 +295,27 @@ export const FrontPanelZoomModal: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => handlePinPairClick(1, 3)}
-                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500 hover:bg-slate-800 text-xs font-mono font-bold text-slate-300 transition-all cursor-pointer"
+                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-orange-500 hover:bg-slate-800 text-xs font-mono font-bold text-slate-300 transition-all cursor-pointer"
                 >
-                  Pinos [1, 3] (+P_LED-)
+                  Pinos [1, 3] (+HDD_LED-)
                 </button>
                 <button
                   onClick={() => handlePinPairClick(5, 7)}
-                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-red-500 hover:bg-slate-800 text-xs font-mono font-bold text-slate-300 transition-all cursor-pointer"
+                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500 hover:bg-slate-800 text-xs font-mono font-bold text-slate-300 transition-all cursor-pointer"
                 >
-                  Pinos [5, 7] (POWER_SW)
+                  Pinos [5, 7] (RESET_SW)
                 </button>
                 <button
                   onClick={() => handlePinPairClick(2, 4)}
-                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-orange-500 hover:bg-slate-800 text-xs font-mono font-bold text-slate-300 transition-all cursor-pointer"
+                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-emerald-500 hover:bg-slate-800 text-xs font-mono font-bold text-slate-300 transition-all cursor-pointer"
                 >
-                  Pinos [2, 4] (+HDD_LED-)
+                  Pinos [2, 4] (+P_LED-)
                 </button>
                 <button
                   onClick={() => handlePinPairClick(6, 8)}
-                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-blue-500 hover:bg-slate-800 text-xs font-mono font-bold text-slate-300 transition-all cursor-pointer"
+                  className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-red-500 hover:bg-slate-800 text-xs font-mono font-bold text-slate-300 transition-all cursor-pointer"
                 >
-                  Pinos [6, 8] (RESET_SW)
+                  Pinos [6, 8] (POWER_SW)
                 </button>
               </div>
             </div>

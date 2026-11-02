@@ -13,6 +13,8 @@ export type ComponentCategory =
 export type CpuSocket = 'LGA1700' | 'AM5' | 'AM4';
 export type RamType = 'DDR4' | 'DDR5';
 export type FormFactor = 'ATX' | 'Micro-ATX' | 'Mini-ITX';
+export type StorageType = 'NVMe_M2' | 'SATA_SSD' | 'SATA_HDD';
+export type StorageSlot = 'M2' | 'SATA';
 
 export interface BaseComponent {
   id: string;
@@ -81,7 +83,7 @@ export interface GpuComponent extends BaseComponent {
 
 export interface StorageComponent extends BaseComponent {
   category: 'STORAGE';
-  storageType: 'NVMe_M2' | 'SATA_SSD';
+  storageType: StorageType;
   capacityGb: number;
   readSpeedMbps: number;
 }
@@ -138,7 +140,9 @@ export interface AssemblyState {
   coolerFanConnected: boolean;
   ramInstalledSlot2: RamComponent | null;
   ramInstalledSlot4: RamComponent | null;
-  storageInstalled: StorageComponent | null; // M.2
+  storageInstalled: StorageComponent | null; // M.2 (NVMe) ou baia SATA
+  cableSataConnected: boolean; // Cabos de dados + energia SATA
+  caseInstalled: CaseComponent | null;
   ioShieldInstalled: boolean;
   standoffsInstalled: boolean;
   psuInstalled: PsuComponent | null;

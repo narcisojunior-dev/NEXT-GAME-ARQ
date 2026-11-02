@@ -2,7 +2,11 @@ import {
   CpuComponent,
   MotherboardComponent,
   RamComponent,
-  PsuComponent,
+  CoolerComponent,
+  StorageComponent,
+  StorageSlot,
+  GpuComponent,
+  CaseComponent,
   AssemblyState,
   ValidationIssue,
 } from './types';
@@ -48,6 +52,106 @@ export function validateRamType(ram: RamComponent, mb: MotherboardComponent): Va
   return null;
 }
 
+export function validateStorageSlot(storage: StorageComponent, slot: StorageSlot): ValidationIssue | null {
+  const isNvme = storage.storageType === 'NVMe_M2';
+  if (slot === 'M2' && !isNvme) {
+    return {
+      type: 'ERROR',
+      title: 'Este Disco Não Encaixa no Slot M.2!',
+      message: `${storage.name} é um disco SATA em formato de caixa. O slot M.2 aceita apenas SSDs NVMe em formato de bastão.`,
+      suggestedAction: 'Instale este disco na baia SATA do gabinete e conecte os cabos de dados e energia SATA.',
+    };
+  }
+  if (slot === 'SATA' && isNvme) {
+    return {
+      type: 'ERROR',
+      title: 'SSD NVMe Não Vai na Baia SATA!',
+      message: `${storage.name} é um SSD M.2 NVMe: ele encaixa direto na placa-mãe, sem cabos, e não tem conector SATA.`,
+      suggestedAction: 'Encaixe o SSD no slot M.2 da placa-mãe, abaixo do soquete da CPU.',
+    };
+  }
+  return null;
+}
+
+export function validateCoolerSocket(cooler: CoolerComponent, cpu: CpuComponent): ValidationIssue | null {
+  if (!cooler.supportedSockets.includes(cpu.socket)) {
+    return {
+      type: 'ERROR',
+      title: 'Cooler Incompatível com o Soquete!',
+      message: `${cooler.name} só tem suporte de fixação para ${cooler.supportedSockets.join(', ')}, mas o processador usa soquete ${cpu.socket}. Os furos da placa-mãe não se alinham com o suporte do cooler.`,
+      suggestedAction: `Escolha um cooler compatível com ${cpu.socket}.`,
+    };
+  }
+  return null;
+}
+
+export function validateCoolerCapacity(cooler: CoolerComponent, cpu: CpuComponent): ValidationIssue | null {
+  if (cpu.tdpWatts > cooler.maxTdpWatts) {
+    return {
+      type: 'WARNING',
+      title: 'Cooler Subdimensionado para a CPU',
+      message: `O processador gera até ${cpu.tdpWatts}W de calor, mas o cooler dissipa no máximo ${cooler.maxTdpWatts}W. A CPU vai esquentar e reduzir a velocidade (thermal throttling) em jogos e tarefas pesadas.`,
+      suggestedAction: `Use um cooler com capacidade de pelo menos ${cpu.tdpWatts}W (ex: air cooler em torre ou water cooler).`,
+    };
+  }
+  return null;
+}
+
+export function validateThermalPasteApplication(state: AssemblyState): ValidationIssue | null {
+  if (!state.cpuInstalled) {
+    return {
+      type: 'ERROR',
+      title: 'Onde aplicar?',
+      message: 'Instale o processador no soquete antes de aplicar a pasta térmica!',
+    };
+  }
+  if (state.coolerInstalled) {
+    return {
+      type: 'ERROR',
+      title: 'O Cooler Está no Caminho!',
+      message: 'A pasta térmica fica ENTRE o processador e a base do cooler. Com o cooler parafusado por cima, não há como aplicá-la.',
+      suggestedAction: 'Remova o cooler, aplique a pasta sobre a CPU e reinstale o cooler.',
+    };
+  }
+  return null;
+}
+
+export function validateEsdDischarged(state: AssemblyState): ValidationIssue | null {
+  if (!state.esdDischarged) {
+    return {
+      type: 'ERROR',
+      title: 'Risco de Descarga Eletrostática (ESD)!',
+      message: 'Você ia tocar em um componente sem descarregar a eletricidade estática do corpo. Um choque invisível pode queimar os circuitos da peça.',
+      suggestedAction: 'Toque no ponto de aterramento (botão ESD) antes de manusear as peças.',
+    };
+  }
+  return null;
+}
+
+export function validateCaseFormFactor(pcCase: CaseComponent, mb: MotherboardComponent): ValidationIssue | null {
+  if (!pcCase.supportedFormFactors.includes(mb.formFactor)) {
+    return {
+      type: 'ERROR',
+      title: 'Placa-Mãe Não Cabe no Gabinete!',
+      message: `A placa-mãe é ${mb.formFactor}, mas o gabinete ${pcCase.name} só tem furação para ${pcCase.supportedFormFactors.join(', ')}.`,
+      suggestedAction: 'Escolha um gabinete maior (Mid-Tower) ou uma placa-mãe de formato menor.',
+    };
+  }
+  return null;
+}
+
+export function validateGpuLength(gpu: GpuComponent, pcCase: CaseComponent): ValidationIssue | null {
+  if (gpu.lengthMm > pcCase.maxGpuLengthMm) {
+    return {
+      type: 'ERROR',
+      title: 'Placa de Vídeo Grande Demais!',
+      message: `${gpu.name} tem ${gpu.lengthMm}mm de comprimento, mas o gabinete ${pcCase.name} só comporta placas de até ${pcCase.maxGpuLengthMm}mm. Ela vai bater na frente do gabinete.`,
+      suggestedAction: 'Escolha um gabinete com mais espaço interno ou uma placa de vídeo mais curta.',
+    };
+  }
+  return null;
+}
+
 /**
  * Calcula o consumo total estimado de energia em Watts
  */
@@ -63,6 +167,24 @@ export function calculateTotalTdp(state: AssemblyState, mb: MotherboardComponent
 }
 
 /**
+ * Soma o preço de todas as peças instaladas (inclusive placa-mãe e gabinete)
+ */
+export function calculateTotalSpent(state: AssemblyState, mb: MotherboardComponent | null): number {
+  const parts = [
+    mb,
+    state.cpuInstalled,
+    state.coolerInstalled,
+    state.ramInstalledSlot2,
+    state.ramInstalledSlot4,
+    state.storageInstalled,
+    state.gpuInstalled,
+    state.psuInstalled,
+    state.caseInstalled,
+  ];
+  return parts.reduce((total, part) => total + (part ? part.price : 0), 0);
+}
+
+/**
  * Avalia o teste do POST (Power-On Self Test) quando o botão de ligar é acionado
  */
 export function evaluatePostTest(
@@ -73,7 +195,7 @@ export function evaluatePostTest(
 
   const debugLed = {
     cpu: 'OFF' as 'OFF' | 'RED' | 'GREEN',
-    dram: 'OFF' as 'RED' | 'RED' | 'GREEN',
+    dram: 'OFF' as 'OFF' | 'RED' | 'GREEN',
     vga: 'OFF' as 'OFF' | 'RED' | 'GREEN',
     boot: 'OFF' as 'OFF' | 'RED' | 'GREEN',
   };
@@ -132,6 +254,18 @@ export function evaluatePostTest(
       suggestedAction: 'Remova a placa, instale os espaçadores dourados e reinstale a placa-mãe.',
     });
     return { canPowerOn: true, bootSuccess: false, debugLed, totalTdpWatts: totalTdp, psuWatts: psuCapacity, issues };
+  }
+
+  // 3b. Verificação de Encaixe no Gabinete (sem gabinete = teste em bancada, permitido)
+  if (state.caseInstalled) {
+    const caseIssues = [
+      validateCaseFormFactor(state.caseInstalled, mb),
+      state.gpuInstalled ? validateGpuLength(state.gpuInstalled, state.caseInstalled) : null,
+    ].filter((i): i is ValidationIssue => i !== null);
+    if (caseIssues.length > 0) {
+      issues.push(...caseIssues);
+      return { canPowerOn: false, bootSuccess: false, debugLed, totalTdpWatts: totalTdp, psuWatts: psuCapacity, issues };
+    }
   }
 
   // 4. Verificação de Cabo de Alimentação Principal (24 Pinos ATX)
@@ -194,6 +328,11 @@ export function evaluatePostTest(
     });
   }
 
+  if (state.coolerInstalled && state.cpuInstalled) {
+    const capacityIssue = validateCoolerCapacity(state.coolerInstalled, state.cpuInstalled);
+    if (capacityIssue) issues.push(capacityIssue);
+  }
+
   // 6. Teste da Memória RAM (Debug LED: DRAM)
   if (!state.ramInstalledSlot2 && !state.ramInstalledSlot4) {
     debugLed.dram = 'RED';
@@ -243,6 +382,14 @@ export function evaluatePostTest(
       title: 'Sem Disco de Armazenamento (SSD/HD)',
       message: 'Nenhum SSD foi instalado. O computador dá vídeo e entra direto na BIOS, mas não tem sistema operacional para carregar.',
     });
+  } else if (state.storageInstalled.storageType !== 'NVMe_M2' && !state.cableSataConnected) {
+    debugLed.boot = 'RED';
+    issues.push({
+      type: 'WARNING',
+      title: 'Cabos SATA do Disco Desconectados',
+      message: `${state.storageInstalled.name} está na baia, mas sem o cabo de dados SATA (até a placa-mãe) e o cabo de energia SATA (da fonte) ele não é detectado. O PC entra direto na BIOS.`,
+      suggestedAction: 'Conecte os cabos de dados e de energia SATA no disco.',
+    });
   } else {
     debugLed.boot = 'GREEN';
   }
@@ -255,6 +402,15 @@ export function evaluatePostTest(
       title: 'Fonte Subdimensionada (Sobrecarga)',
       message: `O consumo total das peças é de ${totalTdp}W, exigindo uma fonte de pelo menos ${Math.round(minRequiredWatts)}W. A fonte de ${psuCapacity}W vai desarmar e desligar o PC ao rodar jogos.`,
       suggestedAction: 'Troque por uma fonte de maior potência (ex: 500W ou 650W).',
+    });
+  }
+
+  if (state.gpuInstalled && psuCapacity < state.gpuInstalled.requiredPsuWatts) {
+    issues.push({
+      type: 'WARNING',
+      title: 'Fonte Abaixo do Recomendado pela GPU',
+      message: `O fabricante da ${state.gpuInstalled.name} recomenda uma fonte de pelo menos ${state.gpuInstalled.requiredPsuWatts}W, e a sua tem ${psuCapacity}W. Em picos de consumo nos jogos, o PC pode desligar sozinho.`,
+      suggestedAction: `Use uma fonte de ${state.gpuInstalled.requiredPsuWatts}W ou mais, de preferência com selo 80 Plus.`,
     });
   }
 

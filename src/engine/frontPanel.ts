@@ -15,18 +15,18 @@ export interface FPanelPin {
 
 export const FPANEL_PINS: FPanelPin[] = [
   // Linha Superior (Ímpares)
-  { id: 1, row: 'TOP', col: 1, label: '+P_LED', name: 'Power LED (+)', polarity: '+', isKeyOrNc: false },
-  { id: 3, row: 'TOP', col: 2, label: '-P_LED', name: 'Power LED (-)', polarity: '-', isKeyOrNc: false },
-  { id: 5, row: 'TOP', col: 3, label: 'PWR_SW', name: 'Power Switch (Pino A)', isKeyOrNc: false },
-  { id: 7, row: 'TOP', col: 4, label: 'PWR_SW', name: 'Power Switch (Pino B)', isKeyOrNc: false },
-  { id: 9, row: 'TOP', col: 5, label: 'KEY', name: 'Pino Ausente (Chave Guia)', isKeyOrNc: true },
+  { id: 1, row: 'TOP', col: 1, label: '+HDD_LED', name: 'HDD Activity LED (+)', polarity: '+', isKeyOrNc: false },
+  { id: 3, row: 'TOP', col: 2, label: '-HDD_LED', name: 'HDD Activity LED (-)', polarity: '-', isKeyOrNc: false },
+  { id: 5, row: 'TOP', col: 3, label: 'RESET_SW', name: 'Reset Switch (Terra)', isKeyOrNc: false },
+  { id: 7, row: 'TOP', col: 4, label: 'RESET_SW', name: 'Reset Switch (Sinal)', isKeyOrNc: false },
+  { id: 9, row: 'TOP', col: 5, label: 'NC', name: 'Reservado (+5V, Não Conectar)', isKeyOrNc: true },
 
   // Linha Inferior (Pares)
-  { id: 2, row: 'BOTTOM', col: 1, label: '+HDD_LED', name: 'HDD Activity LED (+)', polarity: '+', isKeyOrNc: false },
-  { id: 4, row: 'BOTTOM', col: 2, label: '-HDD_LED', name: 'HDD Activity LED (-)', polarity: '-', isKeyOrNc: false },
-  { id: 6, row: 'BOTTOM', col: 3, label: 'RESET_SW', name: 'Reset Switch (Pino A)', isKeyOrNc: false },
-  { id: 8, row: 'BOTTOM', col: 4, label: 'RESET_SW', name: 'Reset Switch (Pino B)', isKeyOrNc: false },
-  { id: 10, row: 'BOTTOM', col: 5, label: 'NC', name: 'Não Conectado', isKeyOrNc: true },
+  { id: 2, row: 'BOTTOM', col: 1, label: '+P_LED', name: 'Power LED (+)', polarity: '+', isKeyOrNc: false },
+  { id: 4, row: 'BOTTOM', col: 2, label: '-P_LED', name: 'Power LED (-)', polarity: '-', isKeyOrNc: false },
+  { id: 6, row: 'BOTTOM', col: 3, label: 'PWR_SW', name: 'Power Switch (Sinal)', isKeyOrNc: false },
+  { id: 8, row: 'BOTTOM', col: 4, label: 'PWR_SW', name: 'Power Switch (Terra)', isKeyOrNc: false },
+  { id: 10, row: 'BOTTOM', col: 5, label: 'KEY', name: 'Pino Ausente (Chave Guia)', isKeyOrNc: true },
 ];
 
 export type FPanelConnectorId = 'POWER_SW' | 'RESET_SW' | 'HDD_LED' | 'POWER_LED';
@@ -49,7 +49,7 @@ export const FPANEL_CONNECTORS: FPanelConnector[] = [
     wireColor: '#EF4444', // Vermelho e Preto
     pinsRequired: 2,
     isPolaritySensitive: false,
-    correctPinPair: [5, 7],
+    correctPinPair: [6, 8],
     description: 'Conector de 2 pinos do botão Liga/Desliga frontal.',
     didacticTip: 'Botões de pulso (Switches) NÃO têm polaridade! Não importa qual lado é positivo.',
   },
@@ -59,7 +59,7 @@ export const FPANEL_CONNECTORS: FPanelConnector[] = [
     wireColor: '#3B82F6', // Azul e Branco
     pinsRequired: 2,
     isPolaritySensitive: false,
-    correctPinPair: [6, 8],
+    correctPinPair: [5, 7],
     description: 'Conector de 2 pinos do botão de reiniciar.',
     didacticTip: 'Também é um botão de contato momentâneo sem polaridade.',
   },
@@ -69,9 +69,9 @@ export const FPANEL_CONNECTORS: FPanelConnector[] = [
     wireColor: '#F97316', // Laranja e Branco
     pinsRequired: 2,
     isPolaritySensitive: true,
-    correctPinPair: [2, 4],
+    correctPinPair: [1, 3],
     description: 'LED que pisca quando o SSD/HD está lendo ou gravando dados.',
-    didacticTip: 'Diodos emissores de luz (LED) POSSUEM polaridade! O fio colorido (+) deve ir no pino 2 (+HDD_LED).',
+    didacticTip: 'Diodos emissores de luz (LED) POSSUEM polaridade! O fio colorido (+) deve ir no pino 1 (+HDD_LED).',
   },
   {
     id: 'POWER_LED',
@@ -79,9 +79,9 @@ export const FPANEL_CONNECTORS: FPanelConnector[] = [
     wireColor: '#10B981', // Verde e Branco
     pinsRequired: 2,
     isPolaritySensitive: true,
-    correctPinPair: [1, 3],
+    correctPinPair: [2, 4],
     description: 'LED que indica se o computador está ligado ou em suspensão.',
-    didacticTip: 'O fio positivo (+) deve ir obrigatoriamente no pino 1 (+P_LED).',
+    didacticTip: 'O fio positivo (+) deve ir obrigatoriamente no pino 2 (+P_LED).',
   },
 ];
 

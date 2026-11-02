@@ -23,6 +23,8 @@ describe('Motor de Simulação de Benchmark e Telemetria (AcademyOS)', () => {
     ramInstalledSlot2: ddr5Ram,
     ramInstalledSlot4: ddr5Ram,
     storageInstalled: null,
+    cableSataConnected: true,
+    caseInstalled: null,
     ioShieldInstalled: true,
     standoffsInstalled: true,
     psuInstalled: psu,
