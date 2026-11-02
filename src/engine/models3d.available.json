@@ -1,1 +1,248 @@
-[]
+[
+  {
+    "id": "cpu-intel-lga1700",
+    "targets": [
+      "cpu-i5-13400f",
+      "cpu-i7-13700k"
+    ]
+  },
+  {
+    "id": "cpu-intel-simples",
+    "targets": [
+      "cpu-i3-12100"
+    ]
+  },
+  {
+    "id": "cpu-ryzen-am4",
+    "targets": [
+      "cpu-r5-5600"
+    ]
+  },
+  {
+    "id": "mb-z790-atx",
+    "targets": [
+      "mb-z790-max"
+    ]
+  },
+  {
+    "id": "mb-generica",
+    "targets": []
+  },
+  {
+    "id": "ram-ddr4-crucial",
+    "targets": [
+      "ram-8gb-d4-single",
+      "ram-16gb-d4-dual"
+    ]
+  },
+  {
+    "id": "ram-ddr4-rgb-corsair",
+    "targets": []
+  },
+  {
+    "id": "ram-generica",
+    "targets": []
+  },
+  {
+    "id": "cooler-torre",
+    "targets": [
+      "cooler-deepcool-ag400"
+    ]
+  },
+  {
+    "id": "cooler-noctua-nh-d15",
+    "targets": []
+  },
+  {
+    "id": "cooler-aio-240",
+    "targets": [
+      "cooler-water-240mm"
+    ]
+  },
+  {
+    "id": "fan-lian-li-sl120",
+    "targets": []
+  },
+  {
+    "id": "fan-corsair",
+    "targets": []
+  },
+  {
+    "id": "gpu-rx-6700xt",
+    "targets": [
+      "gpu-rx-6700xt"
+    ]
+  },
+  {
+    "id": "gpu-rx-570",
+    "targets": [
+      "gpu-rx-6600"
+    ]
+  },
+  {
+    "id": "gpu-rtx-3060ti",
+    "targets": [
+      "gpu-rtx-4060"
+    ]
+  },
+  {
+    "id": "gpu-rtx-3080-msi",
+    "targets": [
+      "gpu-rtx-4070-super"
+    ]
+  },
+  {
+    "id": "ssd-nvme-990pro",
+    "targets": [
+      "ssd-samsung-990pro",
+      "ssd-nvme-1tb"
+    ]
+  },
+  {
+    "id": "ssd-sata-25",
+    "targets": [
+      "ssd-sata-480gb"
+    ]
+  },
+  {
+    "id": "ssd-sata-samsung",
+    "targets": []
+  },
+  {
+    "id": "hdd-35",
+    "targets": [
+      "hdd-seagate-2tb"
+    ]
+  },
+  {
+    "id": "psu-modular",
+    "targets": [
+      "psu-750w-gold"
+    ]
+  },
+  {
+    "id": "psu-atx",
+    "targets": [
+      "psu-650w-bronze",
+      "psu-500w-white"
+    ]
+  },
+  {
+    "id": "case-corsair-4000d",
+    "targets": [
+      "case-gamer-mesh"
+    ]
+  },
+  {
+    "id": "case-compacto",
+    "targets": [
+      "case-office-compact"
+    ]
+  },
+  {
+    "id": "monitor-24-office",
+    "targets": [
+      "mon-24-75hz"
+    ]
+  },
+  {
+    "id": "monitor-27-gamer",
+    "targets": [
+      "mon-27-180hz"
+    ]
+  },
+  {
+    "id": "monitor-ultrawide",
+    "targets": [
+      "mon-34-ultrawide"
+    ]
+  },
+  {
+    "id": "monitor-curvo-gamer",
+    "targets": []
+  },
+  {
+    "id": "teclado-membrana",
+    "targets": [
+      "kb-membrane-office"
+    ]
+  },
+  {
+    "id": "teclado-mecanico",
+    "targets": [
+      "kb-mech-tkl-red"
+    ]
+  },
+  {
+    "id": "teclado-mecanico-custom",
+    "targets": [
+      "kb-mech-60-blue"
+    ]
+  },
+  {
+    "id": "combo-teclado-mouse-rgb",
+    "targets": []
+  },
+  {
+    "id": "mouse-gamer",
+    "targets": [
+      "mouse-gamer-65g"
+    ]
+  },
+  {
+    "id": "mousepad-gamer",
+    "targets": []
+  },
+  {
+    "id": "headphone-estudio",
+    "targets": [
+      "audio-headset-71"
+    ]
+  },
+  {
+    "id": "headphone-bluetooth",
+    "targets": []
+  },
+  {
+    "id": "caixas-madeira",
+    "targets": [
+      "audio-wood-speakers"
+    ]
+  },
+  {
+    "id": "caixas-pc",
+    "targets": []
+  },
+  {
+    "id": "gamepad-moderno",
+    "targets": [
+      "gamepad-hall-effect"
+    ]
+  },
+  {
+    "id": "gamepad-classico",
+    "targets": []
+  },
+  {
+    "id": "suporte-articulado",
+    "targets": [
+      "stand-gas-arm"
+    ]
+  },
+  {
+    "id": "webcam",
+    "targets": []
+  },
+  {
+    "id": "microfone-boom",
+    "targets": []
+  },
+  {
+    "id": "cadeira-escritorio",
+    "targets": []
+  },
+  {
+    "id": "mesa-gamer",
+    "targets": []
+  }
+]
