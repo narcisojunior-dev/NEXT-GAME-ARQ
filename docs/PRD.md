@@ -136,7 +136,7 @@ flowchart TD
 
 A revisão completa do jogo apontou regras que existiam no catálogo mas nunca eram verificadas, além de erros de conteúdo técnico. Todas as correções foram feitas com testes escritos antes da implementação (TDD). Decisões técnicas: [ADR-008](./adr/ADR-008-fases-derivadas-e-regras-de-montagem.md).
 
-### 5.1 Correções de conteúdo
+### 5.1 Correções de conteúdo (#19)
 * **Pinagem do F_PANEL no padrão Intel:** HDD LED nos pinos 1(+)/3(−), Power LED em 2(+)/4(−), Reset em 5/7, Power SW em 6/8, pino 9 reservado (NC) e pino 10 ausente (chave guia). A versão anterior ensinava a pinagem invertida.
 * **Armazenamento:** HD mecânico classificado como `SATA_HDD` (antes aparecia como "SSD"). SSD NVMe vai no slot M.2 da placa; SSD SATA e HD vão na baia SATA do gabinete, com cabos.
 * **Fonte genérica "Sem Selo"** deixou de aparecer como 80 Plus White.
@@ -154,20 +154,20 @@ A revisão completa do jogo apontou regras que existiam no catálogo mas nunca e
 
 **Política de penalidade:** só conta como erro a ação que forçaria ou danificaria uma peça (soquete errado, memória de outra geração, cooler incompatível, falta de ESD, encaixe perigoso de cabo). Erros de ordem (ex: pasta com o cooler instalado) são recusados com explicação, sem penalidade.
 
-### 5.3 Visual dos componentes
+### 5.3 Visual dos componentes (#20)
 Decisões técnicas: [ADR-009](./adr/ADR-009-ilustracoes-orientadas-por-dados.md).
 * **Ilustrações orientadas por dados:** cada desenho vem dos dados do catálogo (GPU em escala real com régua em mm, número de pentes do kit, selo 80 Plus na cor da certificação, ATX maior que Micro-ATX, cooler box/torre/AIO, RGB só em peças RGB).
 * **Selo de compatibilidade no card:** frase curta dizendo se a peça combina com a bancada atual ("Placa usa DDR5", "GPU de 295mm não cabe", "Folga de 210W") e faixa de preço (Entrada, Intermediário, Topo de linha).
 * **Peças instaladas desenhadas na placa** com a mesma ilustração do inventário.
 * Fontes Space Grotesk e JetBrains Mono embutidas no build (funcionam offline).
 
-### 5.4 Minigame F_PANEL com arrastar e soltar
+### 5.4 Minigame F_PANEL com arrastar e soltar (#21)
 * O aluno arrasta cada conector do gabinete até o cabeçalho de 9 pinos; perto de um par livre, o conector é atraído e aparece uma prévia.
 * Os LEDs começam em orientação aleatória: é preciso ler o "+" da serigrafia e girar o conector (botão ou tecla R).
 * Encaixe errado faz o conector tremer, voltar para a bandeja e explicar o motivo.
 * Alternativas: clicar no conector e depois no pino; navegação por teclado.
 
-### 5.5 Cabeamento completo da placa-mãe
+### 5.5 Cabeamento completo da placa-mãe (#22)
 Decisões técnicas: [ADR-010](./adr/ADR-010-cabeamento-e-arrastar-e-soltar.md).
 * **Placa detalhada:** I/O traseiro, bobinas das fases, bateria CMOS, chipset, chip de áudio e chip da BIOS.
 * **Conectores reais como alvos:** ATX_PWR (24 pinos), ATX12V (8 pinos da CPU), CPU_FAN, SYS_FAN, USB 3.0 (19 pinos), USB 2.0, HD_AUDIO, portas SATA, F_PANEL, entrada PCIe na própria GPU e entrada de energia do disco na baia SATA.
@@ -182,7 +182,7 @@ Decisões técnicas: [ADR-010](./adr/ADR-010-cabeamento-e-arrastar-e-soltar.md).
 ### 6.1 Objetivo
 Permitir que o aluno veja e manipule as peças em 3D (girar, aproximar, ver por baixo) para reconhecer os formatos reais, sem perder a leveza, o funcionamento offline e a acessibilidade da versão 2D. Decisão técnica: [ADR-011](./adr/ADR-011-visualizacao-3d-hibrida.md).
 
-### 6.2 Fontes de modelos
+### 6.2 Fontes de modelos (#35)
 Modelos da coleção do Sketchfab indicada para o projeto, filtrados por licença e peso (consulta à API pública em 02/11/2026):
 
 | Peça | Modelo | Licença | Faces | Uso |
@@ -201,9 +201,9 @@ Modelos da coleção do Sketchfab indicada para o projeto, filtrados por licenç
 **Não utilizáveis:** "Motherboard mATX" e "RTX 4070" (digitalrazor3d) e "Rebuild ASUS X299 SAGE" não podem ser baixados e não têm licença; o monitor Samsung tem licença Standard paga; as GeForce RTX 20xx são CC-BY-NC (não comercial) e pesadas (350 a 400 mil faces); a Strix B550-F tem 818 mil faces.
 
 ### 6.3 Fases
-1. **Fase 1 — Visualizador 3D das peças:** na ficha didática do card, o aluno gira e aproxima a peça. Carregado sob demanda; se o computador não suportar WebGL, a ilustração 2D continua aparecendo.
-2. **Fase 2 — Bancada 3D:** placa-mãe em 3D com câmera de cima para montar e cabear. Slots e conectores são marcados como pontos âncora no modelo e projetados na tela como os mesmos alvos usados hoje, reaproveitando regras, arrastar e soltar, clique e teclado.
-3. **Fase 3 — Polimento:** animação de encaixe em 3D, vista explodida e ventoinhas girando no teste de boot.
+1. **Fase 1 — Visualizador 3D das peças (#36):** na ficha didática do card, o aluno gira e aproxima a peça. Carregado sob demanda; se o computador não suportar WebGL, a ilustração 2D continua aparecendo.
+2. **Fase 2 — Bancada 3D (#37):** placa-mãe em 3D com câmera de cima para montar e cabear. Slots e conectores são marcados como pontos âncora no modelo e projetados na tela como os mesmos alvos usados hoje, reaproveitando regras, arrastar e soltar, clique e teclado.
+3. **Fase 3 — Polimento (#38):** animação de encaixe em 3D, vista explodida e ventoinhas girando no teste de boot.
 
 ### 6.4 Requisitos
 * Cena com no máximo ~200 mil faces no total; cada modelo otimizado com até ~2 MB (geometria comprimida e texturas de até 1024 px).
@@ -220,18 +220,18 @@ Modelos da coleção do Sketchfab indicada para o projeto, filtrados por licenç
 
 | Área | Item | Prioridade |
 | :--- | :--- | :--- |
-| PWA | O service worker usa cache-first para o HTML e serve versões antigas após cada deploy (causa erro de hidratação). Trocar por network-first na navegação. | Alta (bloqueia o 3D offline) |
-| Integração | A `main` recebeu a expansão do catálogo (+70 peças, #18); integrar com as ilustrações por dados, selos e cabeamento desta versão. | Alta |
-| Pontuação | Kit de 2 pentes de RAM é cobrado duas vezes ao ocupar os slots 2 e 4. | Alta |
-| Missões | Os requisitos do cliente (RAM, armazenamento, GPU, benchmark) aparecem, mas não são avaliados; falta a tela de entrega ao cliente. | Alta |
-| Acessibilidade | `maximumScale: 1` bloqueia o zoom; animações `bounce`/`pulse` ignoram movimento reduzido; não há botão de mudo; controles restantes sem `aria`. | Alta |
-| Pontuação | O score usa `GPU instalada ? 2000 : 800` em vez do motor de benchmark. | Média |
-| Professor | O código de validação é aleatório e o validador só confere o formato; o leaderboard some ao fechar o modal. | Média |
-| Progresso | Nada é salvo: um F5 apaga a montagem e as conquistas. | Média |
-| Desempenho | Vários componentes ainda leem o store inteiro e redesenham a cada segundo do relógio. | Média |
-| Diagnóstico | O checklist sempre visível entrega a resposta; falta etapa de hipótese, pontuação por tentativas e casos sorteados. | Média |
-| Qualidade | ESLint não configurado; faltam testes E2E dos fluxos de arrastar e soltar. | Média |
-| Professor | Relatório dos erros mais comuns da turma, exportação CSV e mapeamento BNCC. | Baixa |
+| PWA | O service worker usa cache-first para o HTML e serve versões antigas após cada deploy (causa erro de hidratação). Trocar por network-first na navegação. (#24) | Alta (bloqueia o 3D offline) |
+| Integração | A `main` recebeu a expansão do catálogo (+70 peças, #18); integrar com as ilustrações por dados, selos e cabeamento desta versão. (#23) | Alta |
+| Pontuação | Kit de 2 pentes de RAM é cobrado duas vezes ao ocupar os slots 2 e 4. (#25) | Alta |
+| Missões | Os requisitos do cliente (RAM, armazenamento, GPU, benchmark) aparecem, mas não são avaliados; falta a tela de entrega ao cliente. (#27) | Alta |
+| Acessibilidade | `maximumScale: 1` bloqueia o zoom; animações `bounce`/`pulse` ignoram movimento reduzido; não há botão de mudo; controles restantes sem `aria`. (#28) | Alta |
+| Pontuação | O score usa `GPU instalada ? 2000 : 800` em vez do motor de benchmark. (#26) | Média |
+| Professor | O código de validação é aleatório e o validador só confere o formato; o leaderboard some ao fechar o modal. (#29) | Média |
+| Progresso | Nada é salvo: um F5 apaga a montagem e as conquistas. (#30) | Média |
+| Desempenho | Vários componentes ainda leem o store inteiro e redesenham a cada segundo do relógio. (#31) | Média |
+| Diagnóstico | O checklist sempre visível entrega a resposta; falta etapa de hipótese, pontuação por tentativas e casos sorteados. (#32) | Média |
+| Qualidade | ESLint não configurado; faltam testes E2E dos fluxos de arrastar e soltar. (#33) | Média |
+| Professor | Relatório dos erros mais comuns da turma, exportação CSV e mapeamento BNCC. (#34) | Baixa |
 
 ---
 
