@@ -98,5 +98,59 @@ describe('Motor de Simulação de Benchmark e Telemetria (AcademyOS)', () => {
     expect(res.frametimeHistory.length).toBe(30);
     expect(res.frametimeHistory.every((val) => typeof val === 'number' && val > 0)).toBe(true);
   });
+
+  describe('Correção de cálculo de gargalo por resolução (Issue #42)', () => {
+    it('em resoluções maiores (1440p e 4K), a carga da GPU sobe e o gargalo de CPU diminui', () => {
+      const entryCpuWithHighGpu: AssemblyState = {
+        ...baseAssembly,
+        cpuInstalled: i3Cpu,
+        gpuInstalled: rtx4070,
+      };
+
+      const res1080p = calculateBenchmark(entryCpuWithHighGpu, mb, '1080p');
+      const res1440p = calculateBenchmark(entryCpuWithHighGpu, mb, '1440p');
+      const res4k = calculateBenchmark(entryCpuWithHighGpu, mb, '4K');
+
+      // Em 1080p a GPU empurra muitos quadros e sofre gargalo de CPU
+      expect(res1080p.bottleneckType).toBe('CPU_BOUND');
+      expect(res1080p.bottleneckPercent).toBeGreaterThanOrEqual(10);
+
+      // Em 1440p o gargalo de CPU é atenuado ou equilibrado
+      if (res1440p.bottleneckType === 'CPU_BOUND') {
+        expect(res1080p.bottleneckPercent).toBeGreaterThan(res1440p.bottleneckPercent);
+      } else {
+        expect(['BALANCED', 'GPU_BOUND']).toContain(res1440p.bottleneckType);
+      }
+
+      // Em 4K a exigência de pixels sobre a GPU é máxima, eliminando o gargalo de CPU e tornando-se GPU Bound
+      expect(res4k.bottleneckType).toBe('GPU_BOUND');
+    });
+
+    it('CPU topo de linha não aparece como gargalo de CPU com GPU intermediária em 4K', () => {
+      const topCpu = CPUS.find((c) => c.id === 'cpu-i7-13700k' || c.id === 'cpu-r9-7950x') || CPUS[0];
+      const midGpu = GPUS.find((g) => g.id === 'gpu-rtx-4060') || GPUS[0];
+
+      const state: AssemblyState = {
+        ...baseAssembly,
+        cpuInstalled: topCpu,
+        gpuInstalled: midGpu,
+      };
+
+      const res4k = calculateBenchmark(state, mb, '4K');
+      expect(res4k.bottleneckType).not.toBe('CPU_BOUND');
+      expect(res4k.bottleneckType).toBe('GPU_BOUND');
+    });
+
+    it('dica didática explica que aumentar a resolução alivia o gargalo da CPU', () => {
+      const entryCpuWithHighGpu: AssemblyState = {
+        ...baseAssembly,
+        cpuInstalled: i3Cpu,
+        gpuInstalled: rtx4070,
+      };
+
+      const res1080p = calculateBenchmark(entryCpuWithHighGpu, mb, '1080p');
+      expect(res1080p.didacticTip).toMatch(/resoluções mais altas.*gargalo diminui|aumentar a resolução reduz o gargalo/i);
+    });
+  });
 });
 

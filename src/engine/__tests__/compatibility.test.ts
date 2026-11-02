@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateSocket, validateRamType, evaluatePostTest, calculateTotalTdp } from '../compatibility';
+import { validateSocket, validateRamType, evaluatePostTest, calculateTotalTdp, calculateTotalSpent } from '../compatibility';
 import { CPUS, MOTHERBOARDS, RAMS, COOLERS, PSUS, STORAGES, GPUS } from '../hardwareCatalog';
 import { AssemblyState } from '../types';
 
@@ -147,5 +147,45 @@ describe('Teste de Diagnóstico do POST (Power-On Self-Test)', () => {
     const totalTdp = calculateTotalTdp(highEndState, highEndMb);
     expect(totalTdp).toBeGreaterThan(600); // 125W CPU + 450W GPU + 50W MB + fans/dram/storage
   });
-});
 
+  describe('Cálculo de Custo Total e Kit Dual Channel (Issue #25)', () => {
+    const ramDual = RAMS.find((r) => r.moduleCount === 2)!;
+
+    it('não deve cobrar em dobro quando um kit de 2 pentes ocupa os slots 2 e 4', () => {
+      const state: AssemblyState = {
+        esdDischarged: true,
+        cpuInstalled: null,
+        socketLeverLocked: false,
+        thermalPasteApplied: false,
+        coolerInstalled: null,
+        coolerFanConnected: false,
+        ramInstalledSlot2: ramDual,
+        ramInstalledSlot4: ramDual, // O mesmo kit nos dois slots
+        storageInstalled: null,
+        cableSataConnected: false,
+        caseInstalled: null,
+        ioShieldInstalled: false,
+        standoffsInstalled: false,
+        psuInstalled: null,
+        motherboardScrewed: false,
+        gpuInstalled: null,
+        gpuScrewed: false,
+        cableAtx24PinConnected: false,
+        cableCpu8PinConnected: false,
+        cableGpuPcieConnected: false,
+        frontPanelPowerSwConnected: false,
+        frontPanelResetSwConnected: false,
+        frontPanelLedsConnected: false,
+        caseFansConnected: false,
+        frontUsbConnected: false,
+        frontAudioConnected: false,
+        psuSwitchOn: false,
+      };
+
+      const total = calculateTotalSpent(state, null);
+      // O preço deve ser o valor de 1 kit, não duplicado
+      expect(total).toBe(ramDual.price);
+    });
+  });
+
+});

@@ -51,9 +51,9 @@ export function calculateBenchmark(
   }
 
   // 3. Fatores de Resolução
-  // 1080p: CPU tem mais peso
-  // 1440p: Equilíbrio
-  // 4K: GPU é o fator quase total
+  // 1080p: CPU tem mais peso; gargalos de CPU são mais visíveis
+  // 1440p: Equilíbrio entre CPU e GPU
+  // 4K: GPU é o fator quase total (ADR-007)
   const resFactors = {
     '1080p': { gpuScale: 1.0, cpuWeight: 0.35 },
     '1440p': { gpuScale: 0.68, cpuWeight: 0.2 },
@@ -61,35 +61,35 @@ export function calculateBenchmark(
   };
   const { gpuScale, cpuWeight } = resFactors[resolution];
 
-  // 4. Cálculo do Gargalo (Bottleneck Ratio)
+  // 4. Cálculo de Capacidade e Gargalo (Bottleneck Ratio)
+  // Em resoluções maiores, a GPU trabalha muito mais por quadro (milhões de pixels a mais).
+  // A taxa de quadros cai e a demanda de entrega de quadros sobre a CPU diminui, aliviando o gargalo de CPU.
+  const targetGpuFps = (gpuPower / 55) * gpuScale;
+  const cpuFpsCeiling = Math.round(cpuPower / 26);
+
   let bottleneckPercent = 0;
   let bottleneckType: 'CPU_BOUND' | 'GPU_BOUND' | 'BALANCED' = 'BALANCED';
 
-  const relativeGpuPower = (gpuPower / 5000) * (1 / gpuScale);
-  const relativeCpuPower = cpuPower / 4500;
-
-  if (relativeGpuPower > relativeCpuPower * 1.35) {
-    // GPU muito mais forte que a CPU -> Gargalo de CPU
+  if (targetGpuFps > cpuFpsCeiling * 1.15) {
+    // GPU produziria mais quadros do que a CPU consegue alimentar -> Gargalo de CPU
     bottleneckType = 'CPU_BOUND';
-    const delta = ((relativeGpuPower - relativeCpuPower) / relativeGpuPower) * 100;
+    const delta = ((targetGpuFps - cpuFpsCeiling) / targetGpuFps) * 100;
     bottleneckPercent = Math.min(50, Math.max(10, Math.round(delta)));
-  } else if (relativeCpuPower > relativeGpuPower * 1.8) {
-    // CPU muito mais forte que GPU
+  } else if (cpuFpsCeiling > targetGpuFps * 1.3) {
+    // CPU consegue preparar muito mais quadros do que a GPU consegue renderizar -> GPU a 100% (Ideal para jogos)
     bottleneckType = 'GPU_BOUND';
-    const delta = ((relativeCpuPower - relativeGpuPower) / relativeCpuPower) * 100;
+    const delta = ((cpuFpsCeiling - targetGpuFps) / cpuFpsCeiling) * 100;
     bottleneckPercent = Math.min(45, Math.max(10, Math.round(delta * 0.6)));
   } else {
+    // Componentes perfeitamente balanceados
     bottleneckType = 'BALANCED';
-    bottleneckPercent = Math.round(Math.abs(relativeGpuPower - relativeCpuPower) * 5);
-    if (bottleneckPercent > 8) bottleneckPercent = 8;
+    bottleneckPercent = Math.min(8, Math.round(Math.abs(targetGpuFps - cpuFpsCeiling) * 0.1));
   }
 
   // 5. Cálculo da Taxa de Quadros (FPS) Base
-  let baseFps = (gpuPower / 55) * gpuScale;
-
-  // Penalidade de Gargalo de CPU se aplicável
+  let baseFps = targetGpuFps;
   if (bottleneckType === 'CPU_BOUND') {
-    baseFps = baseFps * (1 - (bottleneckPercent / 100) * 0.7);
+    baseFps = Math.min(targetGpuFps, cpuFpsCeiling * 0.95);
   }
 
   // 6. Impacto de Memória RAM (Dual Channel vs Single Channel)

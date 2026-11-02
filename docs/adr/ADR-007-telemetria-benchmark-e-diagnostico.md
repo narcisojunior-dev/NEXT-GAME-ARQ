@@ -22,9 +22,15 @@ Onde os fatores de resolução são:
 * **4K (Ultra HD):** $0.38$ (Gargalo quase 100% na GPU).
 
 #### Cálculo de Gargalo (Bottleneck Ratio):
-$$\text{Índice de Força CPU} = (\text{Cores} \times \text{Boost Clock}) \times \text{Arquitetura IPC}$$
-Se a GPU tiver capacidade significativamente superior à CPU na resolução selecionada:
-$$\text{Gargalo de CPU (\%)} = \min\left(45\%,\, \max\left(0\%,\, \frac{\text{Poder GPU} - \text{Poder CPU}}{\text{Poder GPU}} \times 100\%\right)\right)$$
+A demanda de frames entregues pela GPU é escalada de acordo com a resolução (a carga gráfica por pixel aumenta em 1440p e 4K, reduzindo a taxa de quadros e aliviando a demanda de preparação de frames da CPU):
+$\text{FPS Alvo GPU} = \frac{\text{GPU Score}}{55} \times \text{gpuScale}$
+$\text{Teto de FPS da CPU} = \frac{\text{Poder CPU}}{26}$
+
+* **Gargalo de CPU (\texttt{CPU\_BOUND}):** Quando $\text{FPS Alvo GPU} > \text{Teto CPU} \times 1.15$, a GPU precisa aguardar a CPU processar os dados da cena:
+  $\text{Gargalo de CPU (\%)} = \min\left(50\%,\, \max\left(10\%,\, \frac{\text{FPS Alvo GPU} - \text{Teto CPU}}{\text{FPS Alvo GPU}} \times 100\%\right)\right)$
+  Nesse caso, $\text{FPS Base} = \min(\text{FPS Alvo GPU},\, \text{Teto CPU} \times 0.95)$. Em resoluções mais altas (1440p/4K), esse gargalo diminui naturalmente.
+* **Gargalo de GPU (\texttt{GPU\_BOUND}):** Quando $\text{Teto CPU} > \text{FPS Alvo GPU} \times 1.3$, a placa de vídeo opera a 99-100% de uso gráfico, que é o cenário ideal para jogos.
+* **Equilíbrio (\texttt{BALANCED}):** Componentes em perfeita harmonia (gargalo $\le 8\%$).
 
 * **Penalidade de Single Channel de RAM:** Se o computador tiver apenas 1 pente de memória, o 1% Low (estabilidade de FPS) sofre penalidade de $-22\%$, provocando micro-travamentos (*stuttering*) visíveis no gráfico de frametime.
 

@@ -174,10 +174,10 @@
     "semantic_hash": "50653a83e7c21f3d705287e1675bc080"
   },
   "package.json": {
-    "mtime": 1793631058.4589133,
-    "seen": 1793639610.3095307,
-    "ast_hash": "16282ae85f992de90120eab6ab48ea92",
-    "semantic_hash": "16282ae85f992de90120eab6ab48ea92"
+    "mtime": 1793642123.9655564,
+    "seen": 1793642996.6008186,
+    "ast_hash": "97f25989ba7c5559dfaea5817fb910de",
+    "semantic_hash": "97f25989ba7c5559dfaea5817fb910de"
   },
   "postcss.config.mjs": {
     "mtime": 1793590852.2700815,
@@ -271,16 +271,16 @@
     "semantic_hash": "4632df653c41032c2dadbcf9aa29551e"
   },
   "src/engine/compatibility.ts": {
-    "mtime": 1793626003.7466235,
-    "seen": 1793626326.7808547,
-    "ast_hash": "60ac8abe7bc59d3718e316a1adb4f7b3",
-    "semantic_hash": "60ac8abe7bc59d3718e316a1adb4f7b3"
+    "mtime": 1793642793.002088,
+    "seen": 1793642996.6176836,
+    "ast_hash": "21850a977e8abe6dfd2a160d24031019",
+    "semantic_hash": "21850a977e8abe6dfd2a160d24031019"
   },
   "src/engine/hardwareCatalog.ts": {
-    "mtime": 1793631095.6429963,
-    "seen": 1793639610.3351724,
-    "ast_hash": "af5c22c3aace93e51001c52a04233021",
-    "semantic_hash": "af5c22c3aace93e51001c52a04233021"
+    "mtime": 1793642277.30757,
+    "seen": 1793642996.6186795,
+    "ast_hash": "97570c5f4c4921b917bdcc1296cbfa8a",
+    "semantic_hash": "97570c5f4c4921b917bdcc1296cbfa8a"
   },
   "src/engine/types.ts": {
     "mtime": 1793626003.7496247,
@@ -289,10 +289,10 @@
     "semantic_hash": "329ef3c7a091f0ae68350b635ba2996f"
   },
   "src/store/useAssemblyStore.ts": {
-    "mtime": 1793626003.7512274,
-    "seen": 1793626326.7838573,
-    "ast_hash": "3c0abac60fe29ea323bb04c4f4916582",
-    "semantic_hash": "3c0abac60fe29ea323bb04c4f4916582"
+    "mtime": 1793642809.0853827,
+    "seen": 1793642996.6216815,
+    "ast_hash": "5292ce5c6a616f7d37284ea128463d3a",
+    "semantic_hash": "5292ce5c6a616f7d37284ea128463d3a"
   },
   "tsconfig.json": {
     "mtime": 1793590910.7074394,
@@ -313,10 +313,10 @@
     "semantic_hash": "46c7d5924eda6cfa070898da02cbc85e"
   },
   "src/engine/__tests__/compatibility.test.ts": {
-    "mtime": 1793631095.6429963,
-    "seen": 1793639610.329041,
-    "ast_hash": "0202c290b14f65959472d268e528b6d6",
-    "semantic_hash": "0202c290b14f65959472d268e528b6d6"
+    "mtime": 1793642667.3802338,
+    "seen": 1793642996.6146748,
+    "ast_hash": "e1bdb0b9303a918641ab1cc37b5d5cfc",
+    "semantic_hash": "e1bdb0b9303a918641ab1cc37b5d5cfc"
   },
   "src/components/diagnostic/DiagnosticBench.tsx": {
     "mtime": 1793631095.6403663,
@@ -361,16 +361,16 @@
     "semantic_hash": "8d09176c99fd82b93173a4be4676511b"
   },
   "src/engine/__tests__/benchmark.test.ts": {
-    "mtime": 1793631095.6429963,
-    "seen": 1793639610.3270419,
-    "ast_hash": "d9d97d58223b14158c352c1f5c41153e",
-    "semantic_hash": "d9d97d58223b14158c352c1f5c41153e"
+    "mtime": 1793642537.9148452,
+    "seen": 1793642996.6138542,
+    "ast_hash": "979ecd69454837b634a7db8111e499fd",
+    "semantic_hash": "979ecd69454837b634a7db8111e499fd"
   },
   "src/engine/benchmark.ts": {
-    "mtime": 1793631095.6429963,
-    "seen": 1793639610.3321707,
-    "ast_hash": "d20877e5a843a85792837ad9e91905fe",
-    "semantic_hash": "d20877e5a843a85792837ad9e91905fe"
+    "mtime": 1793642509.6476758,
+    "seen": 1793642996.6176836,
+    "ast_hash": "2d67e78f5504b4a63eea96dcc5123f6a",
+    "semantic_hash": "2d67e78f5504b4a63eea96dcc5123f6a"
   },
   "src/components/room/VirtualRoomModal.tsx": {
     "mtime": 1793631095.6414754,
@@ -518,10 +518,10 @@
     "semantic_hash": "0b55a76c1f62cba2734085967e0311c4"
   },
   "src/store/__tests__/useAssemblyStore.test.ts": {
-    "mtime": 1793626003.7512274,
-    "seen": 1793626326.7838573,
-    "ast_hash": "1dee42dd50a1ecdd884d5eac8850188c",
-    "semantic_hash": "1dee42dd50a1ecdd884d5eac8850188c"
+    "mtime": 1793642740.0791304,
+    "seen": 1793642996.6216815,
+    "ast_hash": "b4b9f5a7cd36811dd720227b9ad24031",
+    "semantic_hash": "b4b9f5a7cd36811dd720227b9ad24031"
   },
   "scripts/download-models.mjs": {
     "mtime": 1793639528.0775082,
@@ -573,8 +573,8 @@
     "ast_empty": true
   },
   "src/engine/models3d.data.json": {
-    "mtime": 1793639330.813848,
-    "seen": 1793639610.3351724,
+    "mtime": 1793639797.6884065,
+    "seen": 1793642996.6186795,
     "ast_hash": "98f2560670a104bb4cc2dac286a34a4c",
     "semantic_hash": "98f2560670a104bb4cc2dac286a34a4c",
     "ast_empty": true
@@ -590,5 +590,29 @@
     "seen": 1793639610.3351724,
     "ast_hash": "06eb953009c0c8ba8c4525f1c503f73c",
     "semantic_hash": "06eb953009c0c8ba8c4525f1c503f73c"
+  },
+  "e2e/modelViewer.spec.ts": {
+    "mtime": 1793642074.432361,
+    "seen": 1793642996.6008186,
+    "ast_hash": "c36b7b220a24a158b0e2c32bccf2c012",
+    "semantic_hash": "c36b7b220a24a158b0e2c32bccf2c012"
+  },
+  "playwright.config.ts": {
+    "mtime": 1793642074.5067222,
+    "seen": 1793642996.6008186,
+    "ast_hash": "fdbeb5767401dc9ccbafab517fceb504",
+    "semantic_hash": "fdbeb5767401dc9ccbafab517fceb504"
+  },
+  "src/engine/__tests__/catalog.test.ts": {
+    "mtime": 1793642883.9985583,
+    "seen": 1793642996.6146748,
+    "ast_hash": "4c7a6d1d71e5249695298d627f0ed776",
+    "semantic_hash": "4c7a6d1d71e5249695298d627f0ed776"
+  },
+  "vitest.config.ts": {
+    "mtime": 1793642916.4429076,
+    "seen": 1793642996.6226816,
+    "ast_hash": "e9b0330da53f50818ae5a537fea5a1ea",
+    "semantic_hash": "e9b0330da53f50818ae5a537fea5a1ea"
   }
 }
