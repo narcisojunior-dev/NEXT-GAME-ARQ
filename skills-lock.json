@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "skills": {
+    "audio-design": {
+      "source": "gamedev-skills/awesome-gamedev-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/disciplines/audio-design/SKILL.md",
+      "computedHash": "bd51a53299313b91245ad13ee4d36c9581ed7cda936ac9b46e21438c23e3752d"
+    },
+    "design-taste-frontend": {
+      "source": "leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "53590ee9325bee34d7888bf0d81bd3941a108b1e7850df46802d93104e3f2b90"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "b146008599c31057cef1c145774cea5d5afb30e8f43fa802e47a4b461419aaaf"
+    },
+    "frontend-a11y": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-a11y/SKILL.md",
+      "computedHash": "da9365797c4e5668a8384e271f0398e8241f66c9c18389af11f87890a49c630f"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "106acf230014cbb43ca34e6410371321b56ca742f9ee0442e8ec05bf02eb0384"
+    },
+    "game-feel": {
+      "source": "gamedev-skills/awesome-gamedev-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/disciplines/game-feel/SKILL.md",
+      "computedHash": "01752d01f59e08e583b79fa58a247d9b16774fde3d6716f9894f093d1072ee9b"
+    },
+    "game-ui-ux": {
+      "source": "gamedev-skills/awesome-gamedev-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/disciplines/game-ui-ux/SKILL.md",
+      "computedHash": "490f2da7505775f88c4bbd7c98bc2552ea60821210f5ae8c1e00414161be60f7"
+    },
+    "make-interfaces-feel-better": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/make-interfaces-feel-better/SKILL.md",
+      "computedHash": "bd14931fa4a2739cc81633027dfc829d10034c81a6d63ebd4baa39512df28cfb"
+    },
+    "motion-foundations": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/motion-foundations/SKILL.md",
+      "computedHash": "f76298f3fcc5f20001c8e78cfa36384469c5a583cb25e8ce60a76d3912608d99"
+    },
+    "motion-patterns": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/motion-patterns/SKILL.md",
+      "computedHash": "71d7279a0651e6cb95a0fe804c77cb7bfa88befba1cbd1c60c05d23feada4dcc"
+    },
+    "puzzle": {
+      "source": "gamedev-skills/awesome-gamedev-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/genres/puzzle/SKILL.md",
+      "computedHash": "1446dc8ad729be793a35ed15f18a57359585ece123715f53ee38ce51aee87975"
+    },
+    "save-systems": {
+      "source": "gamedev-skills/awesome-gamedev-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/disciplines/save-systems/SKILL.md",
+      "computedHash": "786d75e54bcb09d2fc0e03f67c7faefb98c9bd5144956e0d762370596d785036"
+    },
+    "tdd-workflow": {
+      "source": "affaan-m/ECC",
+      "sourceType": "github",
+      "skillPath": "skills/tdd-workflow/SKILL.md",
+      "computedHash": "4d9e47fbc0bdf548061d221de67af81eedeb78a206b8fc8ff0a48e69649d9e28"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/composition-patterns/SKILL.md",
+      "computedHash": "575757e3e25761c8c562d6e395d29f0b76c98b1273c0bd72d88e6ab1bc9c7d42"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-best-practices/SKILL.md",
+      "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
+    },
+    "vercel-react-view-transitions": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-view-transitions/SKILL.md",
+      "computedHash": "fb654c297f52c2771ce64b22a4a18509d0412ef07e020bc09625441df18a750d"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "f3bc47f890f42a44db1007ab390709ec368e4b8c089baee6b0007182236ac474"
+    }
+  }
+}
