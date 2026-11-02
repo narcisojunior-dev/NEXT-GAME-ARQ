@@ -1,184 +1,123 @@
-# PRD — Plataforma Educativa "PC Builder Academy" (Nome Provisório)
-### Jogo Educativo e Interativo de Montagem de Computadores para o Ensino Médio
+# PRD v2.0 — Plataforma Educativa "PC Builder Academy"
+### Jogo Educativo e Interativo de Montagem, Diagnóstico, Setup Completo e Sala Virtual
 
 ---
 
-## 1. Visão Geral do Produto
+## 1. Visão Geral do Produto (v2.0)
 
 ### 1.1 Objetivo
-O **PC Builder Academy** é uma aplicação web gamificada, interativa e pedagógica projetada especificamente para estudantes do **1º Ano do Ensino Médio** (faixa etária de 14 a 16 anos). O objetivo central é ensinar **todo o processo real de montagem de computadores**, a **ordem canônica e segura dos procedimentos**, as **funções e papéis técnicos de cada componente**, os **princípios de compatibilidade física e lógica**, e a **gestão de custos x desempenho**, preparando os alunos tanto para o uso consciente da tecnologia quanto para potenciais carreiras técnicas e de engenharia.
-
-### 1.2 Proposta de Valor Pedagógica
-Diferente de simuladores comerciais complexos que focam apenas no visual ou quizzes teóricos monótonos, o jogo equilibra:
-1. **Interatividade Tátil-Digital:** Mecânica de bancada de trabalho com arrastar e soltar (drag-and-drop), encaixe orientado com ranhuras/notches, trava de alavancas, aplicação de pasta térmica e conexões de cabos.
-2. **Causa e Efeito Realista:** Erros geram consequências pedagógicas imediatas (ex: ligar o PC sem cooler causa desligamento térmico; esquecer os espaçadores causa curto-circuito; fonte subdimensionada desarma no teste de estresse).
-3. **Engajamento Competitivo e Colaborativo:** Modos de disputa cronometrada entre grupos de alunos em sala de aula, estimulando trabalho em equipe, raciocínio lógico e tomada de decisão ágil.
-
----
-
-## 2. Personas e Cenários de Uso
-
-### Persona 1: O Estudante (Ex: Lucas, 15 anos, 1º Ano do E.M.)
-* **Perfil:** Curioso sobre jogos e informática, quer montar seu próprio PC gamer mas não tem recursos para errar na prática ou estragar peças caras. Tem pouca paciência para manuais de 40 páginas.
-* **Necessidade:** Quer entender "para que serve cada peça", sentir a emoção de montar peça por peça e ver o PC ligar com sucesso na tela da BIOS.
-* **Comportamento:** Engaja com metas claras, conquistas visuais, sons satisfatórios de encaixe ("cliques"), feedbacks humorados quando erra e ranking com os colegas de classe.
-
-### Persona 2: O Professor (Ex: Profa. Carla, Professora de Tecnologia / Informática Aplicada)
-* **Perfil:** Leciona para turmas de 30 a 40 alunos no laboratório de informática da escola ou com tablets/notebooks. Tem tempo de aula limitado (50 a 100 minutos).
-* **Necessidade:** Precisa de uma ferramenta que funcione **100% no navegador sem instalação**, que ofereça um modo tutorial autoguiado (Oficina) e permita rodar uma dinâmica em grupo competitiva ("Torneio da Bancada") no final da aula.
-* **Comportamento:** Precisa visualizar métricas de desempenho dos alunos (erros mais frequentes, tempo de montagem, orçamento respeitado).
+O **PC Builder Academy** evolui de um simulador de bancada de hardware para uma **plataforma completa de vivência do ecossistema de computadores**. Além de aprender a montagem canônica e as regras de compatibilidade física, os estudantes do **1º Ano do Ensino Médio**:
+1. Diagnosticam e consertam computadores com defeito (**Modo Detetive de Hardware**).
+2. Dominam a conexão minuciosa do painel frontal (**Minigame Zoom `F_PANEL`**).
+3. Experimentam o computador ligado após a BIOS instalando o **AcademyOS**, rodando testes de estresse, gráficos de telemetria e **benchmarks de jogos com medição real de gargalo (bottleneck)**.
+4. Escolhem o **Setup Completo de Periféricos** (Monitores com diferentes taxas de atualização, Teclados mecânicos de diferentes switches, Mouses gamers, Suportes articulados e Gamepads).
+5. Posicionam seu computador em uma **Sala Virtual Personalizada** (Quarto Gamer LED, Estúdio Clean Minimalista, Sala de Aula Tech) e exportam uma **foto em alta definição (PNG)** do seu setup dos sonhos para levar para casa ou compartilhar com a turma.
+6. Permitem ao professor emitir **Certificados Oficiais em PDF** e projetar um **Leaderboard da Turma** em tempo real.
 
 ---
 
-## 3. Modos de Jogo e Jornada do Usuário
-
-O jogo é estruturado em **3 Modos Progressivos**:
-
-```mermaid
-flowchart LR
-    A["Módulo 1: Oficina de Aprendizagem<br>(Passo a Passo Guiado)"] --> B["Módulo 2: Missões por Orçamento<br>(Clientes & Custo-Benefício)"]
-    B --> C["Módulo 3: Arena de Desafios<br>(Batalha de Grupos / Speedrun)"]
-```
-
-### 3.1 Modo 1: A Oficina Técnica (Passo a Passo Guiado)
-* **Objetivo:** Ensinar a anatomia das peças e a ordem canônica e segura de montagem.
-* **Mecânica:**
-  * O aluno tem uma bancada interativa dividida em: **Mesa de Montagem**, **Inventário de Peças** e **Guia Didático Interativo (com o mascote/assistente virtual de IA)**.
-  * Para cada peça selecionada, abre-se uma **Ficha Didática Visual**:
-    * O que é e para que serve (analogia simples: *ex: CPU = Cérebro; RAM = Mesa de trabalho; SSD = Armário de arquivos*).
-    * Onde se localiza e como se encaixa (atenção a detalhes físicos reais: chanfro do soquete, pinos, travas laterais).
-    * O que acontece se errar (aviso preventivo: quebra de pinos, superaquecimento).
-  * O sistema só avança para a próxima etapa se a anterior for concluída corretamente (com tolerância inteligente para caminhos alternativos válidos).
-
-### 3.2 Modo 2: Missões por Orçamento (Clientes Reais)
-* **Objetivo:** Tomada de decisão, compatibilidade cruzada e equilíbrio entre custo e desempenho.
-* **Mecânica:**
-  * O aluno assume uma assistência técnica e recebe solicitações de clientes fictícios:
-    * **Missão 1 (PC Home Office / Estudos):** R$ 2.200 — Foco em estabilidade, bom SSD e vídeo integrado suficiente para navegação e videochamadas.
-    * **Missão 2 (PC Gamer Competitivo):** R$ 4.500 — Foco em taxa de quadros (60+ FPS em 1080p), equilíbrio CPU + GPU sem gargalo (bottleneck) e fonte com selo 80 Plus.
-    * **Missão 3 (Workstation de Criação e Edição 4K):** R$ 8.000 — Foco em muita memória RAM (32GB+), CPU multi-core potente, resfriamento robusto e SSD NVMe de alta velocidade.
-  * O aluno gerencia uma carteira virtual. Se estourar o orçamento, o cliente recusa. Se escolher peças incompatíveis (ex: CPU AMD em placa Intel, ou fonte fraca para a GPU), o PC falha no teste de entrega.
-
-### 3.3 Modo 3: Arena de Desafios em Grupo (Multiplayer de Sala de Aula)
-* **Objetivo:** Gamificação competitiva em equipe para consolidar o aprendizado.
-* **Mecânica:**
-  * O professor projeta a tabela de liderança (Leaderboard) no telão da sala.
-  * Os alunos (em duplas ou trios) recebem o mesmo desafio simultâneo com contagem regressiva de tempo (Timer).
-  * Critérios de Pontuação:
-    * **Precisão da Ordem de Montagem (40%):** Não pular etapas críticas (como pasta térmica ou espaçadores).
-    * **Tempo de Execução (30%):** Bônus para agilidade sem erros.
-    * **Custo-Benefício & Compatibilidade (30%):** Otimização do orçamento e pontuação de desempenho teórico no teste de benchmark.
-  * Emissão de Certificado Digital / Badge para o grupo vencedor ("Técnico Mestre").
-
----
-
-## 4. O Fluxo Completo de Montagem (Ordem Canônica)
-
-O jogo modela rigorosamente as **7 Fases do Processo Real de Montagem de um Computador**:
+## 2. Jornada do Aluno e Modos de Jogo (v2.0)
 
 ```mermaid
 flowchart TD
-    Fase1["Fase 1: Preparação e Bancada<br>(Descarga Estática e Organização)"] --> Fase2["Fase 2: Montagem Pré-Gabinete<br>(CPU, Pasta Térmica, Cooler, RAM, M.2)"]
-    Fase2 --> Fase3["Fase 3: Preparação do Gabinete<br>(Espelho I/O, Espaçadores e Fonte)"]
-    Fase3 --> Fase4["Fase 4: Integração Placa-Gabinete<br>(Fixação da Placa-Mãe com Parafusos)"]
-    Fase4 --> Fase5["Fase 5: Placa de Vídeo e Expansão<br>(Abertura de Slots PCIe e Encaixe GPU)"]
-    Fase5 --> Fase6["Fase 6: Cabeamento e Conexões<br>(Painel Frontal, 24-Pin, 8-Pin CPU, PCIe)"]
-    Fase6 --> Fase7["Fase 7: O Momento da Verdade<br>(Teste de Boot POST & Diagnóstico de BIOS)"]
+    M1["1. Oficina de Montagem<br>(Bancada Guiada 7 Fases)"] --> M2["2. Minigame F_PANEL<br>(Zoom de Precisão 9 Pinos)"]
+    M2 --> M3["3. AcademyOS & Benchmark<br>(Gráficos FPS, Temperatura & Gargalo)"]
+    M3 --> M4["4. Setup de Periféricos & Sala Virtual<br>(Monitores, Teclados, Iluminação & Exportação PNG)"]
+    
+    subgraph ModosEspeciais["Desafios de Sala de Aula"]
+        M5["Modo Diagnóstico: O que está quebrado?<br>(Casos reais de assistência técnica)"]
+        M6["Arena de Desafios em Grupo<br>(Speedrun e eficiência orçamentária)"]
+        M7["Painel do Professor & Certificados PDF<br>(Avaliação escolar instantânea)"]
+    end
 ```
 
-### Detalhamento das Etapas e Interações Didáticas:
+---
 
-#### Fase 1: Preparação e Segurança
-* **Ação do Aluno:** Arrastar a pulseira antiestática para o pulso ou clicar no componente metálico aterrado para descarregar eletricidade estática.
-* **Lição Didática:** O que é ESD (Electrostatic Discharge) e como uma descarga invisível pode queimar circuitos integrados sensíveis (MOSFETs, controladoras).
+## 3. Detalhamento dos Novos Módulos
 
-#### Fase 2: Montagem Pré-Gabinete (Sobre a caixa da placa-mãe)
-1. **Instalação do Processador (CPU):**
-   * Abrir a alavanca do soquete (LGA para Intel / AM5 ou AM4 para AMD).
-   * Alinhar o triângulo dourado do processador com a marcação do soquete.
-   * Colocar sem forçar (sistema ZIF — Zero Insertion Force). Fechar a alavanca.
-   * *Feedback de erro:* Se tentar colocar invertido, aviso de risco de entortar pinos.
-2. **Aplicação da Pasta Térmica:**
-   * Aplicar a gota central (tamanho de uma ervilha) sobre o IHS (Integrated Heat Spreader).
-   * *Lição Didática:* A superfície do metal parece lisa ao olho humano, mas tem microfissuras cheias de ar (que é péssimo condutor térmico). A pasta preenche esse ar.
-3. **Instalação do Cooler da CPU:**
-   * Encaixar a base do cooler e apertar parafusos em padrão "X" para distribuir a pressão uniformemente.
-   * Conectar o cabo do ventilador no conector correto: `CPU_FAN` (e não `SYS_FAN`).
-4. **Instalação da Memória RAM:**
-   * Abrir as travas do slot DIMM.
-   * Identificar o chanfro/entalhe central (notch) que impede encaixar ao contrário ou colocar DDR4 em slot DDR5.
-   * Pressionar até ouvir o duplo "Click" das travas.
-   * *Lição Didática:* Ensinar **Dual Channel** (slots 2 e 4 em placas com 4 slots).
-5. **Instalação do SSD M.2 NVMe:**
-   * Inserir em ângulo de 30° no slot M.2, abaixar e prender com o parafuso de retenção ou trava plástica rápida.
+### Módulo 1: Modo Diagnóstico — "O que está quebrado?" (Detetive de Hardware)
+* **Objetivo:** Desenvolver o raciocínio investigativo de suporte técnico e manutenção preventiva.
+* **Mecânica:** O aluno assume uma bancada de manutenção com um computador que apresenta um sintoma de erro. Ele deve inspecionar a máquina, usar os Debug LEDs, observar a fonte e os cabos, e consertar o problema:
+  * **Caso 1 (Morte Aparente):** O PC não liga nada. *Causa:* Chave I/O traseira da fonte desligada ou conector `POWER SW` invertido no pino cego.
+  * **Caso 2 (Desarme Térmico):** Liga, ventoinha gira rápido e desliga em 4 segundos com LED de CPU vermelho. *Causa:* Cooler assentado sem pasta térmica ou com a película plástica de fábrica não removida.
+  * **Caso 3 (Sem Vídeo & 3 Bips):** PC liga, coolers giram, mas o monitor fica preto com LED de DRAM vermelho. *Causa:* Pente de memória mal assentado ou colocado em slot incorreto.
+  * **Caso 4 (O Clássico Erro de Monitor):** PC liga com sucesso, mas o monitor avisa "Sem Sinal". *Causa:* O cabo HDMI foi plugado na saída de vídeo da placa-mãe em vez de na placa de vídeo dedicada!
+  * **Caso 5 (Curto-Circuito Intermitente):** PC desarma assim que encosta no botão power. *Causa:* Falta de espaçadores de latão (standoffs) ou parafuso solto atrás da placa.
 
-#### Fase 3: Preparação do Gabinete
-1. **Instalação do Espelho Traseiro (I/O Shield):**
-   * Encaixar de dentro para fora no fundo do gabinete até estalar os cantos.
-   * *Aviso Didático Clássico:* Se esquecer agora, terá que desparafusar todo o computador mais tarde!
-2. **Instalação dos Espaçadores da Placa-Mãe (Standoffs):**
-   * Parafusar os pinos dourados de latão apenas nas posições que coincidem com os furos da placa-mãe (padrão ATX, Micro-ATX ou Mini-ITX).
-   * *Lição Crítica:* Um espaçador sobrando atrás da placa causará curto-circuito instantâneo ao ligar.
-3. **Instalação da Fonte de Alimentação (PSU):**
-   * Posicionar com a ventoinha voltada para a grelha de ventilação do gabinete (com filtro de poeira).
-   * Fixar com os 4 parafusos sextavados na traseira.
+### Módulo 2: Minigame de Zoom do Painel Frontal (`F_PANEL`)
+* **Objetivo:** Desmistificar a conexão mais temida e propensa a erros por técnicos iniciantes.
+* **Mecânica:**
+  * O jogo ativa uma visualização em zoom macro (300%) do cabeçalho de 9 pinos `F_PANEL` da placa-mãe.
+  * O aluno arrasta os conectores individuais:
+    * `POWER SW` (2 pinos, preto e vermelho, momentâneo — sem polaridade obrigatória).
+    * `RESET SW` (2 pinos, azul e branco — sem polaridade obrigatória).
+    * `HDD LED` (2 pinos, vermelho [+] e preto [-] — polaridade estrita!).
+    * `POWER LED` (2 pinos individuais separados ou bloco de 2 pinos, verde [+] e preto [-]).
+  * O minigame dá feedback imediato: se inverter o LED, ele avisa *"O LED é um diodo e só conduz eletricidade em um sentido; inverta a posição dos pinos +"*.
 
-#### Fase 4: Fixação no Gabinete
-* Baixar a placa-mãe montada alinhando as conexões traseiras no espelho e assentando sobre os espaçadores.
-* Parafusar com parafusos de rosca fina sem arrochar excessivamente para não rachar as camadas internas da placa (PCB multicamadas).
+### Módulo 3: AcademyOS, Telemetria & Benchmark de Jogos
+* **Objetivo:** Demonstrar a consequência direta das escolhas de hardware no software real.
+* **Mecânica:**
+  * Após o POST bem-sucedido na BIOS, o aluno clica em *"Carregar AcademyOS"*.
+  * O simulador abre um ambiente de desktop gráfico estilizado com 3 utilitários:
+    1. **Monitor de Telemetria:** Gráficos em tempo real com curva de temperatura da CPU (°C), frequência de clock (GHz), uso de VRAM da placa de vídeo e consumo elétrico total (Watts).
+    2. **CyberRacer 2026 (Benchmark de Jogo):** Simulação de um jogo 3D rodando em tempo real:
+       * Exibe média de FPS (ex: 144 FPS em 1080p, 90 FPS em 1440p, 45 FPS em 4K).
+       * Exibe o tempo de quadro (*frametime* em ms) e estabilidade de 1% low.
+    3. **Medidor de Gargalo (*Bottleneck Meter*):**
+       * Analisa se a CPU limita a GPU ou vice-versa (ex: *Ryzen 5 5600 + RTX 4070 Super em 1080p gera 28% de gargalo de CPU*).
+       * Explica didaticamente ao aluno: *"Seu processador não consegue preparar os quadros na mesma velocidade que a placa de vídeo desenha. Para resolver isso, aumente a resolução para 1440p ou faça upgrade de CPU."*
 
-#### Fase 5: Placa de Vídeo Dedicada (GPU)
-* Retirar as tampas metálicas dos slots traseiros PCIe.
-* Abrir a trava do slot PCIe x16 (slot superior, conectado direto à CPU).
-* Inserir a GPU até o "click" e parafusar a chapa no gabinete para evitar que a placa empene com o peso (GPU sag).
+### Módulo 4: Setup de Periféricos & Acessórios
+* **Objetivo:** Ensinar a ergonomia e compatibilidade dos periféricos com o computador montado.
+* **Componentes Selecionáveis:**
+  * **Monitores:**
+    * Monitor Office 24" 1080p 75Hz Painel IPS.
+    * Monitor Gamer 27" 1080p 165Hz 1ms FreeSync.
+    * Monitor Curvo 34" Ultrawide 1440p 144Hz.
+    * Monitor Profissional 27" 4K 144Hz HDR600.
+  * **Teclados:**
+    * Teclado Membrana ABNT2 Silencioso de Escritório.
+    * Teclado Mecânico TKL Switch Red (Linear e Silencioso).
+    * Teclado Mecânico 60% Switch Blue (Tátil com clique sonoro audível).
+  * **Mouses & Mousepads:**
+    * Mouse Ergonômico Vertical de Escritório.
+    * Mouse Gamer Ultraleve 65g com sensor óptico PixArt 3395.
+    * Mousepad Estendido Speed (900x400mm) com costura reforçada.
+  * **Áudio & Ergonomia:**
+    * Headset Gamer 7.1 com microfone antirruído.
+    * Caixas de Som Estéreo de Mesa em Madeira.
+    * Suporte Articulado a Gás para 1 ou 2 monitores (libera espaço na mesa).
+    * Gamepad sem fio com gatilhos magnéticos Hall Effect.
 
-#### Fase 6: O Cabeamento (Desmistificado)
-O aluno conecta os cabos essenciais arrastando os conectores para seus respectivos soquetes identificados:
-* **Cabo Principal 24 Pinos ATX:** Alimenta a placa-mãe e periféricos.
-* **Cabo EPS 12V 8 Pinos (4+4):** Alimenta exclusivamente a CPU.
-* **Cabo PCIe 8 Pinos (6+2):** Energia auxiliar para a placa de vídeo.
-* **Painel Frontal (Front Panel - F_PANEL):** O clássico pesadelo dos iniciantes simplificado em um minigame com zoom:
-  * `POWER SW` (botão de ligar - contato momentâneo, sem polaridade).
-  * `RESET SW` (botão de reiniciar).
-  * `HDD LED` (luz de atividade do disco - com polaridade + e -).
-  * `POWER LED` (luz do sistema ligado - com polaridade + e -).
-* **Áudio Frontal (HD Audio):** Identificado pelo pino cego (key pin).
-* **USB 3.0 / USB 2.0:** Pinos de alinhamento.
+### Módulo 5: A Sala Virtual do Aluno & Exportador de Imagem (PNG)
+* **Objetivo:** Sentimento de realização e posse do próprio projeto. O aluno vê o seu PC e periféricos integrados em um quarto real e pode exportar a foto.
+* **Ambientes Selecionáveis:**
+  1. **Quarto Gamer RGB:** Iluminação ambiente neon, prateleiras com colecionáveis, fita de LED atrás da mesa.
+  2. **Escritório Minimalista Clean:** Madeira clara, plantas, luz natural, estilo estúdio de arquitetura/design.
+  3. **Laboratório Escolar Tech:** Bancada de engenharia com ferramentas, osciloscópio e banners educativos.
+  4. **Quarto Retrô / Vaporwave:** Tons roxos e ciano com estética anos 90/2000.
+* **Exportação da Imagem do Setup:**
+  * Renderização instantânea no cliente via Canvas 2D em alta resolução (1920x1080).
+  * O print inclui:
+    * O computador montado no gabinete escolhido.
+    * A mesa com os periféricos selecionados.
+    * O ambiente de fundo escolhido.
+    * Um selo com o nome do aluno/equipe, especificações da máquina (ex: *Core i5 / RTX 4060 / 16GB DDR5*) e pontuação alcançada.
+  * Botão *"Baixar Imagem do Meu Setup (PNG)"* para salvar no computador da escola ou no celular.
 
-#### Fase 7: O Momento do Boot (POST - Power-On Self-Test)
-* Ligar o interruptor I/O da fonte.
-* Pressionar o botão Power do gabinete.
-* **Simulação dos Debug LEDs:**
-  * Luzes acendem em sequência: `CPU` -> `DRAM` -> `VGA` -> `BOOT`.
-  * Se houver falha, a luz correspondente fica acesa e o jogo dá a pista do problema.
-* **Sucesso:**
-  * Som clássico do *BEEP* curto do buzzer da BIOS.
-  * Tela de BIOS animada surge exibindo: modelo da CPU, quantidade e frequência de memória detectada em Dual Channel, temperatura e SSD reconhecido.
+### Módulo 6: Painel do Professor & Certificados Escolares em PDF
+* **Objetivo:** Facilitar a avaliação formal do professor de informática/tecnologia na escola.
+* **Funcionalidades:**
+  * **Projetor de Sala (Leaderboard):** O professor digita o código gerado pelo computador de cada equipe (ex: `PCA-X7K9P2`) e a tela atualiza o placar com tempo, custo e notas.
+  * **Emissor de Certificado em PDF:** Gera um documento padronizado pronto para impressão ou envio por e-mail com:
+    * Nome da Escola, Turma e Nomes dos Alunos.
+    * Habilidades Validadas: Segurança Eletrostática, Compatibilidade de Soquetes, Balanceamento de TDP e Diagnóstico de Falhas.
+    * Assinatura do Professor e código de autenticidade criptográfico.
 
 ---
 
-## 5. Requisitos Funcionais e Não Funcionais
+## 4. Requisitos Não Funcionais (v2.0)
 
-### 5.1 Requisitos Funcionais (RF)
-* **RF01 (Simulador de Bancada Interativa):** O sistema deve fornecer uma bancada de montagem com slots interativos que aceitam peças via drag-and-drop e clique.
-* **RF02 (Validação de Ordem Canônica):** O sistema deve validar se o usuário está respeitando a sequência de montagem ou alertar sobre desvios críticos.
-* **RF03 (Ficha Técnica e Didática):** Cada componente deve dispor de card explicativo em linguagem acessível ao Ensino Médio.
-* **RF04 (Motor de Compatibilidade de Hardware):** O sistema deve checar soquete (LGA1700, AM4, AM5), tipo de memória (DDR4 vs DDR5), potência da fonte (TDP total + folga de 20%), clearance físico e conexões de energia.
-* **RF05 (Simulador de POST/BIOS):** Animação e som simulando a rotina de boot do computador com diagnóstico visual de falhas.
-* **RF06 (Modo Missões de Orçamento):** Sistema de gestão de carteira virtual com desafios de clientes e cálculo de custo-benefício.
-* **RF07 (Modo Arena Competitiva / Timer):** Temporizador, contador de precisão e cálculo de pontuação para dinâmicas em sala de aula.
-* **RF08 (Áudio e Efeitos Interativos):** Efeitos sonoros mecânicos (clique de soquete, estalo de RAM, bips da placa-mãe, ventoinhas girando).
-
-### 5.2 Requisitos Não Funcionais (RNF)
-* **RNF01 (Acessibilidade e Desempenho em Escolas):** A aplicação deve rodar fluidamente a 60 FPS em computadores modestos de salas de informática escolares (gráficos integrados básicos e conexão de internet comum).
-* **RNF02 (Zero Instalação):** 100% web, compatível com Chrome, Edge, Firefox e navegadores móveis/tablets.
-* **RNF03 (Tempo de Carregamento):** Carregamento inicial em menos de 2 segundos, com assets vetoriais leves (SVG) e áudios sintetizados via Web Audio API.
-* **RNF04 (Design Responsivo e Intuitivo):** Interface adaptada para monitores de 1366x768 (muito comuns em escolas) até 1080p e tablets.
-
----
-
-## 6. Métricas de Sucesso do Projeto
-1. **Taxa de Conclusão da Oficina:** Mais de 85% dos alunos completando a montagem completa sem precisar de intervenção do professor.
-2. **Retenção de Conceitos:** Desempenho médio superior a 80% no quiz/diagnóstico pós-montagem.
-3. **Engajamento no Desafio de Grupos:** 100% de participação ativa nas rodadas competitivas em sala de aula.
-
+* **RNF05 (Processamento 100% Client-Side):** A geração de imagens PNG e simulação de benchmark não utiliza servidores de renderização caros; tudo é renderizado localmente no navegador via Canvas/SVG e Framer Motion.
+* **RNF06 (Suporte a PWA):** O jogo pode ser instalado como aplicativo de desktop na sala de informática, funcionando mesmo que a conexão de internet da escola caia.

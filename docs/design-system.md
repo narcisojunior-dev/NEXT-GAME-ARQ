@@ -140,3 +140,41 @@ O áudio é fundamental para transformar uma tarefa abstrata de clicar em tela e
 3. **Alternativa para Arrastar e Soltar:** Alunos com dificuldades motoras ou usando touchpad com defeito podem clicar para selecionar e clicar no slot de destino para encaixar (Click-to-Place), além do Drag-and-Drop nativo.
 4. **Modo Silencioso / Closed Captions:** Todos os bips e avisos sonoros possuem representação visual concomitante (ex: indicador de bip piscando na tela).
 
+
+
+---
+
+## 7. Design de Interface da Sala Virtual e Periféricos (v2.0)
+
+### 7.1 Paleta de Cores dos Ambientes Virtuais
+| Ambiente | Fundo Primário | Acento Luminoso | Estética |
+| :--- | :--- | :--- | :--- |
+| **Quarto Gamer RGB** | `#080B14` (Deep Indigo) | `#EC4899` (Neon Pink) / `#06B6D4` (Cyan) | Parede acústica escura com fitas LED neon e prateleiras |
+| **Escritório Minimalista** | `#1C1917` (Warm Stone) | `#F59E0B` (Amber Solar) / `#E2E8F0` (Off-white) | Painel ripado de madeira clara, plantas e luz natural |
+| **Laboratório Escolar Tech** | `#0F172A` (Slate Lab) | `#10B981` (Emerald) / `#38BDF8` (Sky) | Quadro de ferramentas, bancada antiestática e posters |
+| **Vaporwave Retrô** | `#2E1065` (Purple Sunset) | `#F43F5E` (Rose Sunset) / `#22D3EE` (Teal) | Pôr do sol digital, grelha vetorial anos 80 e tons degradê |
+
+### 7.2 Anatomia dos Periféricos
+* **Monitores:**
+  * Painel com moldura ultrafina de 2mm.
+  * Tela interativa exibindo o papel de parede ou o jogo do benchmark em execução.
+  * Suporte articulado a gás desenhado com braço mecânico de alumínio e mola integrada.
+* **Teclados Mecânicos:**
+  * Perfil TKL (sem numérico) ou 60% compacto.
+  * Teclas com iluminação per-key e switches coloridos visíveis na ficha de inspeção.
+* **Mouses:**
+  * Formato ergonômico com patins de teflon brancos na base e cabo paracord flexível.
+* **Gabinete com Visão Interna:**
+  * Painel frontal e lateral em vidro temperado com reflexos vetoriais semi-transparentes, permitindo visualizar a placa-mãe montada, a rotação dos coolers e os LEDs do circuito em pleno funcionamento.
+
+### 7.3 Selo de Certificação do Setup (Exportação PNG)
+No canto inferior direito da imagem Full HD (1920x1080) gerada para o aluno:
+```
++-------------------------------------------------------------+
+|  PC BUILDER ACADEMY — CERTIFIED HARDWARE RIG                |
+|  PILOTO / ALUNO: Lucas Mendes (1º Ano E.M. - Turma B)       |
+|  HARDWARE: Core i5-13400F • RTX 4060 • 16GB DDR5 DUAL       |
+|  RESOLUÇÃO ALVO: 1080p @ 144Hz • EFICIÊNCIA POST: 100%      |
+|  AUTENTICAÇÃO ESCOLAR: PCA-982X14 • DATA: 02/11/2026        |
++-------------------------------------------------------------+
+```
