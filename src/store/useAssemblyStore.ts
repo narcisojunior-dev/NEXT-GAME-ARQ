@@ -18,7 +18,7 @@ import {
 } from '../engine/types';
 import { MOTHERBOARDS, CLIENT_MISSIONS } from '../engine/hardwareCatalog';
 import { DiagnosticScenario, DIAGNOSTIC_SCENARIOS } from '../engine/diagnosticCases';
-import { FPanelConnectorId, validateConnectorPlacement } from '../engine/frontPanel';
+import { FPanelConnectorId, ValidationResult, validateConnectorPlacement, connectionsFromAssembly } from '../engine/frontPanel';
 import { StudentSetupConfig, DEFAULT_STUDENT_SETUP, PeripheralItem } from '../engine/peripheralsCatalog';
 import { RoomThemeId } from '../engine/roomThemes';
 import {
@@ -38,6 +38,35 @@ import {
 import { INITIAL_ASSEMBLY_STATE } from '../engine/assemblyState';
 import { derivePhase } from '../engine/phases';
 import { soundEngine } from '../engine/audio/soundEngine';
+import {
+  CableId,
+  CableTargetId,
+  CableResult,
+  CableConnections,
+  CABLES,
+  EMPTY_CABLE_CONNECTIONS,
+  cableById,
+  validateCableConnection,
+  isCableAvailable,
+  isTargetAvailable,
+  cableFlags,
+  cableConnectionsFromAssembly,
+  pruneCableConnections,
+} from '../engine/cabling';
+
+const PSU_CABLES: CableId[] = ['ATX_24PIN', 'EPS_8PIN', 'PCIE_8PIN', 'SATA_POWER'];
+const CASE_CABLES: CableId[] = ['CASE_FAN', 'FRONT_USB3', 'FRONT_AUDIO'];
+
+/**
+ * Aplica uma nova montagem mantendo cabos e flags coerentes: solta os cabos listados
+ * (peça trocada), solta os que perderam a peça de origem/destino e recalcula as flags
+ */
+const syncCables = (nextAssembly: AssemblyState, connections: CableConnections, release: CableId[] = []) => {
+  const next = { ...connections };
+  release.forEach((id) => (next[id] = null));
+  const cableConnections = pruneCableConnections(next, nextAssembly);
+  return { assembly: { ...nextAssembly, ...cableFlags(cableConnections) }, cableConnections };
+};
 
 export type GameMode = 'OFICINA' | 'MISSAO' | 'DESAFIO' | 'DIAGNOSTICO';
 
@@ -69,6 +98,7 @@ interface AssemblyStore {
   studentSetup: StudentSetupConfig;
   selectedRoomTheme: RoomThemeId;
   fPanelConnections: Record<FPanelConnectorId, [number, number] | null>;
+  cableConnections: CableConnections;
   activeAlert: { title: string; message: string; type: 'error' | 'success' | 'warning' } | null;
 
   // Ações
@@ -94,7 +124,7 @@ interface AssemblyStore {
   closeTeacherDashboard: () => void;
   setStudentPeripheral: (category: keyof StudentSetupConfig, item: PeripheralItem) => void;
   setSelectedRoomTheme: (themeId: RoomThemeId) => void;
-  connectFPanelJumper: (connectorId: FPanelConnectorId, pins: [number, number]) => { success: boolean; message: string };
+  connectFPanelJumper: (connectorId: FPanelConnectorId, pins: [number, number]) => ValidationResult;
   disconnectFPanelJumper: (connectorId: FPanelConnectorId) => void;
   tickTimer: () => void;
 
@@ -105,7 +135,6 @@ interface AssemblyStore {
   applyThermalPaste: () => void;
   installCooler: (cooler: CoolerComponent) => boolean;
   removeCooler: () => void;
-  connectCoolerFan: () => void;
   installRam: (slot: 2 | 4, ram: RamComponent) => boolean;
   installStorage: (storage: StorageComponent, slot: StorageSlot) => void;
   installCase: (pcCase: CaseComponent) => void;
@@ -115,7 +144,8 @@ interface AssemblyStore {
   screwMotherboard: () => void;
   installGpu: (gpu: GpuComponent) => void;
   screwGpu: () => void;
-  connectCable: (cableType: 'ATX24' | 'CPU8' | 'GPU_PCIE' | 'SATA' | 'POWER_SW' | 'RESET_SW' | 'LEDS') => void;
+  connectCableTo: (cableId: CableId, targetId: CableTargetId) => CableResult;
+  disconnectCable: (cableId: CableId) => void;
   togglePsuSwitch: () => void;
   triggerPostBoot: () => void;
   calculateFinalScore: () => GroupScore;
@@ -166,12 +196,8 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   isTeacherDashboardOpen: false,
   studentSetup: DEFAULT_STUDENT_SETUP,
   selectedRoomTheme: 'ROOM_GAMER',
-  fPanelConnections: {
-    POWER_SW: null,
-    RESET_SW: null,
-    HDD_LED: null,
-    POWER_LED: null,
-  },
+  fPanelConnections: connectionsFromAssembly(INITIAL_ASSEMBLY_STATE),
+  cableConnections: EMPTY_CABLE_CONNECTIONS,
   activeAlert: null,
 
   setGameMode: (mode) => {
@@ -198,6 +224,8 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
       activeDiagnosticScenario: scenario,
       selectedMotherboard: scenario.motherboard,
       assembly: { ...scenario.initialAssembly },
+      fPanelConnections: connectionsFromAssembly(scenario.initialAssembly),
+      cableConnections: cableConnectionsFromAssembly(scenario.initialAssembly),
       elapsedSeconds: 0,
       postResult: null,
       activeAlert: {
@@ -248,21 +276,24 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
       set((state) => ({
         selectedMotherboard: mb,
         selectedComponentForPlacement: null,
-        assembly: {
-          ...state.assembly,
-          cpuInstalled: null,
-          socketLeverLocked: false,
-          thermalPasteApplied: false,
-          coolerInstalled: null,
-          coolerFanConnected: false,
-          ramInstalledSlot2: null,
-          ramInstalledSlot4: null,
-          storageInstalled: null,
-          cableSataConnected: false,
-          gpuInstalled: null,
-          gpuScrewed: false,
-          motherboardScrewed: false,
-        },
+        // Trocar a placa solta todos os cabos que estavam plugados nela
+        ...syncCables(
+          {
+            ...state.assembly,
+            cpuInstalled: null,
+            socketLeverLocked: false,
+            thermalPasteApplied: false,
+            coolerInstalled: null,
+            ramInstalledSlot2: null,
+            ramInstalledSlot4: null,
+            storageInstalled: null,
+            gpuInstalled: null,
+            gpuScrewed: false,
+            motherboardScrewed: false,
+          },
+          state.cableConnections,
+          CABLES.map((c) => c.id)
+        ),
         activeAlert: {
           type: 'warning',
           title: 'Placa-Mãe Trocada!',
@@ -482,7 +513,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
 
     soundEngine.playScrewSound();
     set((state) => ({
-      assembly: { ...state.assembly, coolerInstalled: cooler },
+      ...syncCables({ ...state.assembly, coolerInstalled: cooler }, state.cableConnections, ['CPU_FAN_CABLE']),
       selectedComponentForPlacement: null,
       activeAlert: capacityIssue
         ? { type: 'warning', title: capacityIssue.title, message: capacityIssue.message }
@@ -500,36 +531,20 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
     if (!get().assembly.coolerInstalled) return;
     soundEngine.playScrewSound();
     set((state) => ({
-      assembly: {
-        ...state.assembly,
-        coolerInstalled: null,
-        coolerFanConnected: false,
-        // Ao remover o cooler, a camada de pasta se rompe e precisa ser limpa e reaplicada
-        thermalPasteApplied: false,
-      },
+      ...syncCables(
+        {
+          ...state.assembly,
+          coolerInstalled: null,
+          // Ao remover o cooler, a camada de pasta se rompe e precisa ser limpa e reaplicada
+          thermalPasteApplied: false,
+        },
+        state.cableConnections
+      ),
       activeAlert: {
         type: 'warning',
         title: 'Cooler Removido',
         message: 'A camada de pasta térmica antiga se rompeu ao separar o cooler. Limpe com álcool isopropílico e aplique uma nova gota antes de reinstalar.',
       },
-    }));
-  },
-
-  connectCoolerFan: () => {
-    if (!get().assembly.coolerInstalled) {
-      soundEngine.playErrorBuzz();
-      set({
-        activeAlert: {
-          type: 'error',
-          title: 'Nenhum Cooler Instalado',
-          message: 'Fixe o cooler sobre o processador antes de ligar o cabo da ventoinha no conector CPU_FAN.',
-        },
-      });
-      return;
-    }
-    soundEngine.playSlotClick();
-    set((state) => ({
-      assembly: { ...state.assembly, coolerFanConnected: true },
     }));
   },
 
@@ -593,7 +608,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
     soundEngine.playScrewSound();
     set((state) => ({
       // Um disco novo chega sem cabos: os cabos SATA do disco anterior não valem mais
-      assembly: { ...state.assembly, storageInstalled: storage, cableSataConnected: false },
+      ...syncCables({ ...state.assembly, storageInstalled: storage }, state.cableConnections, ['SATA_DATA', 'SATA_POWER']),
       selectedComponentForPlacement: null,
       activeAlert:
         slot === 'M2'
@@ -622,7 +637,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
 
     soundEngine.playScrewSound();
     set((state) => ({
-      assembly: { ...state.assembly, caseInstalled: pcCase },
+      ...syncCables({ ...state.assembly, caseInstalled: pcCase }, state.cableConnections, CASE_CABLES),
       selectedComponentForPlacement: null,
       activeAlert: {
         type: 'success',
@@ -655,7 +670,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   installPsu: (psu) => {
     soundEngine.playScrewSound();
     set((state) => ({
-      assembly: { ...state.assembly, psuInstalled: psu },
+      ...syncCables({ ...state.assembly, psuInstalled: psu }, state.cableConnections, PSU_CABLES),
       selectedComponentForPlacement: null,
       activeAlert: {
         type: 'success',
@@ -696,7 +711,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
 
     soundEngine.playSlotClick();
     set((state) => ({
-      assembly: { ...state.assembly, gpuInstalled: gpu },
+      ...syncCables({ ...state.assembly, gpuInstalled: gpu }, state.cableConnections, ['PCIE_8PIN']),
       selectedComponentForPlacement: null,
       activeAlert: {
         type: 'success',
@@ -715,33 +730,41 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
     get().checkDiagnosticResolution();
   },
 
-  connectCable: (cableType) => {
-    const storage = get().assembly.storageInstalled;
-    if (cableType === 'SATA' && (!storage || storage.storageType === 'NVMe_M2')) {
-      soundEngine.playErrorBuzz();
-      set({
-        activeAlert: {
-          type: 'error',
-          title: 'Nenhum Disco SATA Instalado',
-          message: 'Os cabos SATA servem para SSDs de 2,5" e HDs. Instale um disco na baia SATA primeiro.',
-        },
-      });
-      return;
+  connectCableTo: (cableId, targetId) => {
+    const { assembly, selectedMotherboard } = get();
+    const cable = cableById(cableId);
+
+    if (!isCableAvailable(cableId, assembly) || !isTargetAvailable(targetId, assembly, selectedMotherboard)) {
+      const result: CableResult = {
+        success: false,
+        message: !isCableAvailable(cableId, assembly)
+          ? `O cabo ${cable.name} ainda não está na bancada: instale a peça de onde ele sai.`
+          : 'Esse conector ainda não existe na montagem: instale a peça dele primeiro.',
+      };
+      rejectAction({ type: 'ERROR', title: 'Não Dá Para Ligar Ainda', message: result.message }, false);
+      return result;
+    }
+
+    const result = validateCableConnection(cableId, targetId);
+    if (!result.success) {
+      // Só o encaixe forçado que pode queimar peças (EPS x PCIe) conta como erro de montagem
+      rejectAction({ type: 'ERROR', title: result.dangerous ? 'Encaixe Perigoso!' : 'Não Encaixa Aqui', message: result.message }, Boolean(result.dangerous));
+      return result;
     }
 
     soundEngine.playSlotClick();
-    set((state) => {
-      const updated = { ...state.assembly };
-      if (cableType === 'ATX24') updated.cableAtx24PinConnected = true;
-      if (cableType === 'CPU8') updated.cableCpu8PinConnected = true;
-      if (cableType === 'GPU_PCIE') updated.cableGpuPcieConnected = true;
-      if (cableType === 'SATA') updated.cableSataConnected = true;
-      if (cableType === 'POWER_SW') updated.frontPanelPowerSwConnected = true;
-      if (cableType === 'RESET_SW') updated.frontPanelResetSwConnected = true;
-      if (cableType === 'LEDS') updated.frontPanelLedsConnected = true;
-      return { assembly: updated };
-    });
+    set((state) => ({
+      ...syncCables(state.assembly, { ...state.cableConnections, [cableId]: targetId }),
+      activeAlert: { type: 'success', title: `${cable.name} Conectado!`, message: result.message },
+    }));
     get().checkDiagnosticResolution();
+    return result;
+  },
+
+  disconnectCable: (cableId) => {
+    if (!get().cableConnections[cableId]) return;
+    soundEngine.playSlotClick();
+    set((state) => syncCables(state.assembly, state.cableConnections, [cableId]));
   },
 
   togglePsuSwitch: () => {
@@ -834,6 +857,8 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
     set({
       selectedMotherboard: null,
       assembly: { ...INITIAL_ASSEMBLY_STATE },
+      fPanelConnections: connectionsFromAssembly(INITIAL_ASSEMBLY_STATE),
+      cableConnections: EMPTY_CABLE_CONNECTIONS,
       elapsedSeconds: 0,
       isTimerRunning: true,
       penaltiesCount: 0,

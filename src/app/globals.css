@@ -36,3 +36,33 @@ body {
   background: #06b6d4;
 }
 
+/* Game feel do minigame F_PANEL: tremor ao forçar um encaixe errado e "clique" ao assentar */
+@keyframes plug-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+
+@keyframes plug-seat {
+  0% { transform: scale(1.14); }
+  60% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+.animate-plug-shake {
+  animation: plug-shake 0.42s ease-in-out;
+}
+
+.animate-plug-seat {
+  animation: plug-seat 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-plug-shake,
+  .animate-plug-seat {
+    animation: none;
+  }
+}
+

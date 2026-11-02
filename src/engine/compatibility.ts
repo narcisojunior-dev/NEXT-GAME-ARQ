@@ -414,6 +414,31 @@ export function evaluatePostTest(
     });
   }
 
+  if (state.caseInstalled) {
+    if (state.caseInstalled.fansIncluded > 0 && !state.caseFansConnected) {
+      issues.push({
+        type: 'WARNING',
+        title: 'Ventoinhas do Gabinete Desligadas',
+        message: `As ${state.caseInstalled.fansIncluded} ventoinhas do gabinete estão paradas porque o cabo não foi ligado no SYS_FAN. Sem fluxo de ar, o calor fica preso e as temperaturas sobem em jogos.`,
+        suggestedAction: 'Ligue o cabo das ventoinhas no conector SYS_FAN (ou CHA_FAN) da placa-mãe.',
+      });
+    }
+    if (!state.frontUsbConnected) {
+      issues.push({
+        type: 'TIP',
+        title: 'Portas USB Frontais Sem Função',
+        message: 'O cabo USB 3.0 do gabinete não foi ligado no cabeçalho de 19 pinos: o pendrive na frente do gabinete não será reconhecido.',
+      });
+    }
+    if (!state.frontAudioConnected) {
+      issues.push({
+        type: 'TIP',
+        title: 'Áudio Frontal Sem Função',
+        message: 'O cabo HD Audio do gabinete não foi ligado no HD_AUDIO: o fone na frente do gabinete ficará mudo.',
+      });
+    }
+  }
+
   // 10. Avisos menores / Recomendações
   if (!state.ioShieldInstalled && !mb.hasIntegratedIoShield) {
     issues.push({

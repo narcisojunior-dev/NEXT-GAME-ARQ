@@ -155,6 +155,9 @@ export interface AssemblyState {
   frontPanelPowerSwConnected: boolean;
   frontPanelResetSwConnected: boolean;
   frontPanelLedsConnected: boolean;
+  caseFansConnected: boolean; // Ventoinhas do gabinete no SYS_FAN
+  frontUsbConnected: boolean; // USB 3.0 frontal no cabeçalho de 19 pinos
+  frontAudioConnected: boolean; // Áudio frontal no HD_AUDIO
   psuSwitchOn: boolean;
 }
 

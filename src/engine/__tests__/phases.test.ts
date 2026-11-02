@@ -84,8 +84,15 @@ describe('Fases canônicas derivadas do estado da montagem', () => {
       cableGpuPcieConnected: true,
       cableSataConnected: true,
       frontPanelPowerSwConnected: true,
+      caseFansConnected: true,
+      frontUsbConnected: true,
+      frontAudioConnected: true,
     };
     expect(derivePhase(cabled, mb)).toBe('PHASE_7_BOOT_POST');
+    // Cabos do gabinete também fazem parte do cabeamento
+    expect(derivePhase({ ...cabled, caseFansConnected: false }, mb)).toBe('PHASE_6_CABLING');
+    expect(derivePhase({ ...cabled, frontUsbConnected: false }, mb)).toBe('PHASE_6_CABLING');
+    expect(derivePhase({ ...cabled, frontAudioConnected: false }, mb)).toBe('PHASE_6_CABLING');
     expect(derivePhase({ ...cabled, cableSataConnected: false }, mb)).toBe('PHASE_6_CABLING');
     expect(derivePhase({ ...cabled, cableGpuPcieConnected: false }, mb)).toBe('PHASE_6_CABLING');
     expect(derivePhase({ ...cabled, cableAtx24PinConnected: false }, mb)).toBe('PHASE_6_CABLING');

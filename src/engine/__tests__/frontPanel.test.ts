@@ -2,8 +2,83 @@ import { describe, it, expect } from 'vitest';
 import {
   FPANEL_PINS,
   FPANEL_CONNECTORS,
+  FPANEL_PIN_PAIRS,
   validateConnectorPlacement,
+  orientPinPair,
+  pairForPin,
+  findNearestPinPair,
+  getOccupiedPins,
+  connectionsFromAssembly,
 } from '../frontPanel';
+
+describe('F_PANEL: pares de pinos onde um conector de 2 vias pode encaixar', () => {
+  it('oferece apenas pares horizontais vizinhos, sem o pino NC nem a chave guia', () => {
+    expect(FPANEL_PIN_PAIRS).toEqual([
+      [1, 3],
+      [3, 5],
+      [5, 7],
+      [2, 4],
+      [4, 6],
+      [6, 8],
+    ]);
+  });
+
+  it('orienta o par conforme o lado do fio colorido (+) do conector', () => {
+    expect(orientPinPair([1, 3], false)).toEqual([1, 3]);
+    expect(orientPinPair([1, 3], true)).toEqual([3, 1]);
+  });
+
+  it('clicar em um pino escolhe o par que começa nele, ou o par que termina nele no fim da fileira', () => {
+    expect(pairForPin(1)).toEqual([1, 3]);
+    expect(pairForPin(3)).toEqual([3, 5]);
+    expect(pairForPin(7)).toEqual([5, 7]);
+    expect(pairForPin(8)).toEqual([6, 8]);
+    expect(pairForPin(9)).toBeNull();
+    expect(pairForPin(10)).toBeNull();
+  });
+
+  it('lista os pinos ocupados pelos conectores já encaixados, ignorando o que está sendo movido', () => {
+    const connections = { POWER_SW: [6, 8] as [number, number], RESET_SW: null, HDD_LED: [1, 3] as [number, number], POWER_LED: null };
+    expect([...getOccupiedPins(connections)].sort()).toEqual([1, 3, 6, 8]);
+    expect([...getOccupiedPins(connections, 'HDD_LED')].sort()).toEqual([6, 8]);
+  });
+
+  it('reconstrói os conectores encaixados a partir do estado da montagem', () => {
+    const none = connectionsFromAssembly({
+      frontPanelPowerSwConnected: false,
+      frontPanelResetSwConnected: false,
+      frontPanelLedsConnected: false,
+    });
+    expect(Object.values(none).every((pins) => pins === null)).toBe(true);
+
+    const all = connectionsFromAssembly({
+      frontPanelPowerSwConnected: true,
+      frontPanelResetSwConnected: true,
+      frontPanelLedsConnected: true,
+    });
+    expect(all).toEqual({ POWER_SW: [6, 8], RESET_SW: [5, 7], HDD_LED: [1, 3], POWER_LED: [2, 4] });
+  });
+
+  describe('atração magnética ao arrastar', () => {
+    // Pinos a cada 50px; linha de cima em y=0, linha de baixo em y=50
+    const centers = Object.fromEntries(
+      FPANEL_PINS.map((p) => [p.id, { x: (p.col - 1) * 50, y: p.row === 'TOP' ? 0 : 50 }])
+    ) as Record<number, { x: number; y: number }>;
+
+    it('escolhe o par cujo ponto médio está mais perto do ponteiro', () => {
+      expect(findNearestPinPair({ x: 27, y: 4 }, centers, new Set(), 40)).toEqual([1, 3]);
+      expect(findNearestPinPair({ x: 124, y: 48 }, centers, new Set(), 40)).toEqual([6, 8]);
+    });
+
+    it('não atrai quando o ponteiro está longe dos pinos', () => {
+      expect(findNearestPinPair({ x: 25, y: 200 }, centers, new Set(), 40)).toBeNull();
+    });
+
+    it('pula pares com pinos já ocupados por outro conector', () => {
+      expect(findNearestPinPair({ x: 40, y: 4 }, centers, new Set([1]), 40)).toEqual([3, 5]);
+    });
+  });
+});
 
 describe('Minigame do Painel Frontal (F_PANEL)', () => {
   it('deve conter a matriz canônica de 10 pinos padrão Intel (pino 10 ausente como KEY)', () => {

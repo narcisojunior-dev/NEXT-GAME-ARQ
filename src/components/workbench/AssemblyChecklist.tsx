@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { getRequiredCables, cableById } from '@/engine/cabling';
 import {
   CheckCircle2,
   Circle,
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export const AssemblyChecklist: React.FC = () => {
-  const { assembly, selectedMotherboard, selectedComponentForPlacement } = useAssemblyStore();
+  const { assembly, selectedMotherboard, selectedComponentForPlacement, cableConnections } = useAssemblyStore();
   const [isOpen, setIsOpen] = useState(true);
 
   // Lista de etapas de montagem e seus status
@@ -85,12 +86,11 @@ export const AssemblyChecklist: React.FC = () => {
     },
     {
       id: 'psu',
-      title: '10. Instalar Fonte & Conectar Cabos',
-      desc: 'Fixe a fonte e plugue os cabos ATX 24P, CPU 8P e Power SW.',
+      title: '10. Instalar Fonte & Ligar Todos os Cabos',
+      desc: 'Arraste cada cabo da fonte, do gabinete e das peças até o conector certo, e ligue o painel frontal.',
       isDone:
         assembly.psuInstalled !== null &&
-        assembly.cableAtx24PinConnected &&
-        assembly.cableCpu8PinConnected &&
+        getRequiredCables(assembly).every((id) => cableConnections[id] === cableById(id).target) &&
         assembly.frontPanelPowerSwConnected,
     },
     {

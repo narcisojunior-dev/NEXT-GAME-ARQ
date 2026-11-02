@@ -52,6 +52,9 @@ const baseWorkingAssembly: AssemblyState = {
   frontPanelPowerSwConnected: true,
   frontPanelResetSwConnected: true,
   frontPanelLedsConnected: true,
+  caseFansConnected: true,
+  frontUsbConnected: true,
+  frontAudioConnected: true,
   psuSwitchOn: true,
 };
 

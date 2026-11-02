@@ -37,7 +37,10 @@ export function derivePhase(state: AssemblyState, mb: MotherboardComponent | nul
     state.cableCpu8PinConnected &&
     (!gpuNeedsPower || state.cableGpuPcieConnected) &&
     (!storageIsSata || state.cableSataConnected) &&
-    state.frontPanelPowerSwConnected;
+    state.frontPanelPowerSwConnected &&
+    // Cabos do gabinete: ventoinhas, USB e áudio frontais
+    (!state.caseInstalled ||
+      ((state.caseInstalled.fansIncluded === 0 || state.caseFansConnected) && state.frontUsbConnected && state.frontAudioConnected));
   if (!cablingDone) return 'PHASE_6_CABLING';
 
   return 'PHASE_7_BOOT_POST';

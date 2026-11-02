@@ -27,5 +27,8 @@ export const INITIAL_ASSEMBLY_STATE: AssemblyState = {
   frontPanelPowerSwConnected: false,
   frontPanelResetSwConnected: false,
   frontPanelLedsConnected: false,
+  caseFansConnected: false,
+  frontUsbConnected: false,
+  frontAudioConnected: false,
   psuSwitchOn: false,
 };

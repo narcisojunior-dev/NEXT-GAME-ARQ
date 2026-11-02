@@ -165,8 +165,19 @@ describe('POST: novas verificações', () => {
     cableCpu8PinConnected: true,
     cableGpuPcieConnected: true,
     frontPanelPowerSwConnected: true,
+    caseFansConnected: true,
+    frontUsbConnected: true,
+    frontAudioConnected: true,
     psuSwitchOn: true,
   };
+
+  it('ventoinhas do gabinete desligadas geram alerta; USB e áudio frontais geram dica', () => {
+    const result = evaluatePostTest({ ...base, caseFansConnected: false, frontUsbConnected: false, frontAudioConnected: false }, mb);
+    expect(result.bootSuccess).toBe(true);
+    expect(result.issues.some((i) => i.type === 'WARNING' && i.title.includes('Ventoinhas'))).toBe(true);
+    expect(result.issues.some((i) => i.type === 'TIP' && i.title.includes('USB'))).toBe(true);
+    expect(result.issues.some((i) => i.type === 'TIP' && i.title.includes('Áudio'))).toBe(true);
+  });
 
   it('a montagem base deve dar boot sem alertas', () => {
     const result = evaluatePostTest(base, mb);

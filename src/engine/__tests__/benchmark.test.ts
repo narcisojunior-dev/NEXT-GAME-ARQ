@@ -37,6 +37,9 @@ describe('Motor de Simulação de Benchmark e Telemetria (AcademyOS)', () => {
     frontPanelPowerSwConnected: true,
     frontPanelResetSwConnected: true,
     frontPanelLedsConnected: true,
+    caseFansConnected: true,
+    frontUsbConnected: true,
+    frontAudioConnected: true,
     psuSwitchOn: true,
   };
 

@@ -67,6 +67,9 @@ describe('Teste de Diagnóstico do POST (Power-On Self-Test)', () => {
     frontPanelPowerSwConnected: true,
     frontPanelResetSwConnected: true,
     frontPanelLedsConnected: true,
+    caseFansConnected: true,
+    frontUsbConnected: true,
+    frontAudioConnected: true,
     psuSwitchOn: true,
   };
 

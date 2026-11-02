@@ -3,6 +3,8 @@
 import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { MotherboardSvg } from './MotherboardSvg';
+import { CableTray } from './CableTray';
+import { CableTargetBox } from './CableTargets';
 import {
   ShieldAlert,
   ShieldCheck,
@@ -36,7 +38,7 @@ export const WorkbenchMat: React.FC = () => {
     installPsu,
     installCase,
     installStorage,
-    connectCable,
+    cableConnections,
     screwMotherboard,
     togglePsuSwitch,
     triggerPostBoot,
@@ -144,7 +146,7 @@ export const WorkbenchMat: React.FC = () => {
             }`}
           >
             <Maximize2 className="w-4 h-4" />
-            <span>{assembly.frontPanelPowerSwConnected ? 'Painel Frontal F_PANEL [OK]' : 'Pinos F_PANEL (Zoom 300%)'}</span>
+            <span>{assembly.frontPanelPowerSwConnected ? 'Painel Frontal F_PANEL [OK]' : 'Ligar Painel Frontal (F_PANEL)'}</span>
           </button>
         </div>
 
@@ -184,9 +186,12 @@ export const WorkbenchMat: React.FC = () => {
         </div>
       </div>
 
-      {/* Área Central da Bancada com a Placa-Mãe */}
-      <div className="relative z-10">
+      {/* Área Central da Bancada: placa-mãe e, ao lado, a bandeja de cabos (fixa ao rolar a página) */}
+      <div className="relative z-10 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start">
         <MotherboardSvg />
+        <div className="xl:sticky xl:top-32 xl:max-h-[calc(100vh-9rem)] xl:overflow-y-auto">
+          <CableTray />
+        </div>
       </div>
 
       {/* Área Inferior do Gabinete: Gabinete, Baia SATA, Compartimento da Fonte (PSU) e Fixações */}
@@ -247,20 +252,13 @@ export const WorkbenchMat: React.FC = () => {
             </div>
           </div>
           {sataStorage && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                connectCable('SATA');
-              }}
-              disabled={assembly.cableSataConnected}
-              className={`shrink-0 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                assembly.cableSataConnected
-                  ? 'bg-slate-800 text-emerald-400 border border-emerald-800/60'
-                  : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-md'
-              }`}
-            >
-              {assembly.cableSataConnected ? 'Cabos SATA [OK]' : 'Ligar Cabos SATA'}
-            </button>
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+              {/* Entrada de energia do disco: recebe o cabo SATA de 15 pinos da fonte */}
+              <CableTargetBox targetId="DRIVE_POWER" title="Energia" hint="arraste o cabo da fonte" />
+              <span className={`text-[11px] font-semibold ${cableConnections.SATA_DATA ? 'text-emerald-300' : 'text-slate-400'}`}>
+                Dados: {cableConnections.SATA_DATA ? 'ligado na placa ✓' : 'porta SATA6G da placa'}
+              </span>
+            </div>
           )}
         </div>
 
