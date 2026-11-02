@@ -323,3 +323,4 @@ export const FrontPanelZoomModal: React.FC = () => {
     </div>
   );
 };
+

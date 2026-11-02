@@ -63,3 +63,4 @@ export const ROOM_THEMES: RoomTheme[] = [
     ambientDetails: ['Pôr do Sol Virtual Retrô', 'Grade Perspectiva Wireframe', 'Luminária de Neon Roxa'],
   },
 ];
+

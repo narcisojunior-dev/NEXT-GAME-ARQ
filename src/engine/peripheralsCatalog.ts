@@ -209,3 +209,4 @@ export const DEFAULT_STUDENT_SETUP: StudentSetupConfig = {
   gamepad: GAMEPADS[1], // Gamepad Hall Effect
   caseTheme: CASE_THEMES[1], // Aquário RGB
 };
+

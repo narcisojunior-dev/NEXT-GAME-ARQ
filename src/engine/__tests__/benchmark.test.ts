@@ -94,3 +94,4 @@ describe('Motor de Simulação de Benchmark e Telemetria (AcademyOS)', () => {
     expect(res.frametimeHistory.every((val) => typeof val === 'number' && val > 0)).toBe(true);
   });
 });
+

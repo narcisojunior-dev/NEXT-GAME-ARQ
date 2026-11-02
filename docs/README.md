@@ -26,13 +26,15 @@ Bem-vindo à documentação oficial do **PC Builder Academy**, a plataforma educ
 
 ---
 
-## 🚀 Fases de Implementação (Roadmap v2.0)
+## 🚀 Fases de Implementação (Roadmap v2.0 - 100% Concluído ✅)
 
-1. **Fase 1 (Concluída - MVP):** Bancada interativa com placa-mãe SVG, catálogo básico, áudio procedural, missões e BIOS.
-2. **Fase 2:** Modo Diagnóstico ("O que está quebrado? / Detetive de Hardware").
-3. **Fase 3:** Minigame com zoom nos 9 pinos do Painel Frontal (`F_PANEL`).
-4. **Fase 4:** AcademyOS pós-boot com telemetria, gráficos e benchmark de jogos com cálculo de gargalo.
-5. **Fase 5:** Customizador de Setup com periféricos (Monitores, Teclados, Mouses, Suportes).
-6. **Fase 6:** Sala Virtual do Aluno e exportação de foto em alta definição (PNG).
-7. **Fase 7:** Painel do Professor & Emissor de Certificados em PDF.
-8. **Fase 8:** Deploy na Vercel e suporte a PWA instalável offline.
+1. **Fase 1 (Concluída - MVP):** Bancada interativa com seleção de placa-mãe, catálogo de componentes, áudio procedural, missões e BIOS.
+2. **Fase 2 (Concluída):** Modo Diagnóstico ("O que está quebrado? / Detetive de Hardware" com 6 cenários reais de assistência técnica).
+3. **Fase 3 (Concluída):** Minigame com zoom 300% nos 9 pinos do Painel Frontal (`F_PANEL`) com regras estritas de polaridade.
+4. **Fase 4 (Concluída):** AcademyOS pós-boot com telemetria de sensores, CyberRacer 3D benchmark e cálculo de gargalo (*bottleneck*).
+5. **Fase 5 (Concluída):** Customizador de Setup com periféricos (Gabinete, Monitores, Teclados mecânicos, Mouses, Gamepad, Suportes).
+6. **Fase 6 (Concluída):** Sala Virtual do Aluno com 4 ambientes e exportação de foto Full HD 1080p (PNG) com selo holográfico criptográfico.
+7. **Fase 7 (Concluída):** Painel do Professor, Leaderboard projetável para HDMI e Emissor de Certificados A4 em PDF com validador de hash.
+8. **Fase 8 (Concluída):** Suporte a PWA instalável offline via Service Worker (`sw.js`) e configuração Vercel (`vercel.json`).
+
+Consulte o [README principal do projeto](../README.md) para detalhes completos de execução e arquitetura.

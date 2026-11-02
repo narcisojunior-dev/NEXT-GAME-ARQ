@@ -77,3 +77,4 @@ describe('Motor de Casos de Diagnóstico e Assistência Técnica', () => {
     expect(scenario.isResolved(fixedState, scenario.motherboard)).toBe(true);
   });
 });
+

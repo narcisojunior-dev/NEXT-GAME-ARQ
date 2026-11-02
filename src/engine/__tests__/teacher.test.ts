@@ -35,3 +35,4 @@ describe('Painel do Professor e Sistema de Certificados Escolares', () => {
     expect(INITIAL_LEADERBOARD_ENTRIES.every((e) => e.classRoom.includes('Ano'))).toBe(true);
   });
 });
+

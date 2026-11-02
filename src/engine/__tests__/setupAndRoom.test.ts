@@ -52,3 +52,4 @@ describe('Customizador de Setup de Periféricos e Sala Virtual do Aluno', () => 
     expect(totalPeripheralsPrice).toBeGreaterThan(1500);
   });
 });
+

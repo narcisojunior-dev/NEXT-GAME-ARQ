@@ -84,3 +84,4 @@ export function verifyCertificateHash(hash: string): boolean {
 export function sortLeaderboard(entries: StudentLeaderboardEntry[]): StudentLeaderboardEntry[] {
   return [...entries].sort((a, b) => b.totalScore - a.totalScore);
 }
+

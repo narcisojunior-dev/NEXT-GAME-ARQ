@@ -61,3 +61,4 @@ describe('Minigame do Painel Frontal (F_PANEL)', () => {
     expect(resWrong.success).toBe(false);
   });
 });
+

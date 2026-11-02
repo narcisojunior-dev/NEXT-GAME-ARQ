@@ -706,3 +706,4 @@ export const VirtualRoomModal: React.FC = () => {
     </div>
   );
 };
+

@@ -134,3 +134,4 @@ export function validateConnectorPlacement(
     message: `Pinos incorretos para ${connector.name}. Consulte a serigrafia da placa-mãe.`,
   };
 }
+

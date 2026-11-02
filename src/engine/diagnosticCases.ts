@@ -195,3 +195,4 @@ export const DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
     rewardPoints: 1800,
   },
 ];
+
