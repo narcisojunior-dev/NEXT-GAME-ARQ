@@ -193,10 +193,10 @@
     "ast_empty": true
   },
   "src/app/layout.tsx": {
-    "mtime": 1793590852.5844567,
-    "seen": 1793591874.1685486,
-    "ast_hash": "63a432e6492500548df9e90d2ee1060b",
-    "semantic_hash": "63a432e6492500548df9e90d2ee1060b"
+    "mtime": 1793595275.9003663,
+    "seen": 1793595340.9018767,
+    "ast_hash": "b182f7592d86a28371cf060ee2b6cd41",
+    "semantic_hash": "b182f7592d86a28371cf060ee2b6cd41"
   },
   "src/app/page.tsx": {
     "mtime": 1793595145.7145638,
@@ -413,5 +413,23 @@
     "seen": 1793595206.920899,
     "ast_hash": "ced8437b1f91b6b48d4defd15116e566",
     "semantic_hash": "ced8437b1f91b6b48d4defd15116e566"
+  },
+  "public/manifest.json": {
+    "mtime": 1793595232.660283,
+    "seen": 1793595340.9018767,
+    "ast_hash": "1dfd4f8d12063ad94c4139ce15370cc5",
+    "semantic_hash": "1dfd4f8d12063ad94c4139ce15370cc5"
+  },
+  "public/sw.js": {
+    "mtime": 1793595258.9668252,
+    "seen": 1793595340.9018767,
+    "ast_hash": "3eb24c146aba500eeff85b32b7d5d642",
+    "semantic_hash": "3eb24c146aba500eeff85b32b7d5d642"
+  },
+  "vercel.json": {
+    "mtime": 1793595294.6003618,
+    "seen": 1793595340.9128942,
+    "ast_hash": "ecea53c8b2fbc416e19832754635e485",
+    "semantic_hash": "ecea53c8b2fbc416e19832754635e485"
   }
 }
