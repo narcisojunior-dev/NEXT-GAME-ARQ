@@ -91,7 +91,7 @@ export interface StorageComponent extends BaseComponent {
 export interface PsuComponent extends BaseComponent {
   category: 'PSU';
   wattage: number;
-  efficiencyRating: '80 Plus White' | '80 Plus Bronze' | '80 Plus Gold';
+  efficiencyRating: 'Sem Selo' | '80 Plus White' | '80 Plus Bronze' | '80 Plus Gold';
   isModular: boolean;
 }
 

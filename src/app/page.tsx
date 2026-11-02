@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { LazyMotion, MotionConfig, domAnimation } from 'framer-motion';
 import { TopHUD } from '@/components/hud/TopHUD';
 import { DidacticCompanion } from '@/components/hud/DidacticCompanion';
 import { MissionHeader } from '@/components/missions/MissionHeader';
@@ -18,6 +19,8 @@ import { TeacherDashboardModal } from '@/components/teacher/TeacherDashboardModa
 
 export default function Home() {
   return (
+    <LazyMotion features={domAnimation} strict>
+    <MotionConfig reducedMotion="user">
     <main className="min-h-screen flex flex-col bg-slate-950 text-slate-100 pb-16 selection:bg-cyan-500 selection:text-slate-950">
       {/* Top HUD com Modos, Timer, Orçamento e Fases */}
       <TopHUD />
@@ -53,5 +56,7 @@ export default function Home() {
       <VirtualRoomModal />
       <TeacherDashboardModal />
     </main>
+    </MotionConfig>
+    </LazyMotion>
   );
 }

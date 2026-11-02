@@ -1,141 +1,146 @@
 'use client';
 
 import React from 'react';
+import { m } from 'framer-motion';
+import { useShallow } from 'zustand/react/shallow';
 import { HardwareComponent } from '@/engine/types';
+import { getCompatibilityHint, getPriceTier, HintStatus, PriceTier } from '@/engine/cardInsights';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { HardwareImage } from '@/components/common/HardwareImage';
-import { Info, Check, Plus, Zap } from 'lucide-react';
+import { CATEGORY_LABELS, TIER_LABELS, getSpecLine } from './componentLabels';
+import { Info, Hand, Plus, Zap, CheckCircle2, CheckCheck, AlertTriangle, Ban, MapPin } from 'lucide-react';
 
 interface ComponentCardProps {
   component: HardwareComponent;
 }
 
+const TIER_STYLES: Record<PriceTier, string> = {
+  ENTRADA: 'bg-slate-800 text-slate-300',
+  INTERMEDIARIO: 'bg-cyan-950 text-cyan-300',
+  TOPO: 'bg-violet-950 text-violet-300',
+};
+
+const HINT_STYLES: Record<HintStatus, { className: string; icon: React.ReactNode }> = {
+  INSTALLED: { className: 'bg-emerald-950/70 text-emerald-300', icon: <CheckCheck className="w-3.5 h-3.5 shrink-0" /> },
+  OK: { className: 'bg-emerald-950/50 text-emerald-300', icon: <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> },
+  INFO: { className: 'bg-sky-950/60 text-sky-300', icon: <MapPin className="w-3.5 h-3.5 shrink-0" /> },
+  WARNING: { className: 'bg-amber-950/60 text-amber-300', icon: <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> },
+  DANGER: { className: 'bg-rose-950/70 text-rose-300', icon: <Ban className="w-3.5 h-3.5 shrink-0" /> },
+};
+
 export const ComponentCard: React.FC<ComponentCardProps> = ({ component }) => {
-  const {
-    selectedComponentForPlacement,
-    setSelectedComponentForPlacement,
-    setInspectedComponent,
-  } = useAssemblyStore();
+  // Seletor raso: o card só re-renderiza quando a montagem ou a peça em mãos mudam (não a cada tique do relógio)
+  const { assembly, selectedMotherboard, isSelected, setSelectedComponentForPlacement, setInspectedComponent } =
+    useAssemblyStore(
+      useShallow((s) => ({
+        assembly: s.assembly,
+        selectedMotherboard: s.selectedMotherboard,
+        isSelected: s.selectedComponentForPlacement?.id === component.id,
+        setSelectedComponentForPlacement: s.setSelectedComponentForPlacement,
+        setInspectedComponent: s.setInspectedComponent,
+      }))
+    );
 
-  const isSelected = selectedComponentForPlacement?.id === component.id;
+  const hint = getCompatibilityHint(component, assembly, selectedMotherboard);
+  const tier = getPriceTier(component);
+  const spec = getSpecLine(component);
 
-  const handleSelect = () => {
-    if (isSelected) {
-      setSelectedComponentForPlacement(null);
-    } else {
-      setSelectedComponentForPlacement(component);
-    }
-  };
+  const borderClass = isSelected
+    ? 'border-cyan-400 ring-2 ring-cyan-400/40 shadow-xl shadow-cyan-500/15'
+    : hint?.status === 'DANGER'
+    ? 'border-rose-500/40 hover:border-rose-400/60'
+    : hint?.status === 'WARNING'
+    ? 'border-amber-500/30 hover:border-amber-400/50'
+    : 'border-slate-800 hover:border-slate-600';
 
   return (
-    <div
-      className={`group relative flex flex-col justify-between p-3 rounded-2xl border transition-all duration-200 select-none ${
-        isSelected
-          ? 'bg-cyan-950/90 border-cyan-400 ring-2 ring-cyan-400/40 shadow-xl shadow-cyan-500/20 scale-102'
-          : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
-      }`}
+    <m.article
+      animate={{ y: isSelected ? -4 : 0 }}
+      whileHover={{ y: isSelected ? -4 : -2 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+      className={`group relative flex flex-col gap-2 p-3 rounded-2xl border bg-slate-900/90 transition-colors select-none ${borderClass}`}
     >
-      {/* Topo do Card com Badge e Botão de Info */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex flex-wrap items-center gap-1">
-          <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-slate-800 text-cyan-300 font-mono">
-            {component.category}
+      {/* Categoria, faixa de preço e ficha didática */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 truncate">
+            {CATEGORY_LABELS[component.category]}
           </span>
-          {component.category === 'MOTHERBOARD' && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800/60 font-mono">
-              {(component as any).socket} | {(component as any).supportedRam}
-            </span>
-          )}
-          {component.category === 'CPU' && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800/60 font-mono">
-              {(component as any).socket}
-            </span>
-          )}
-          {component.category === 'STORAGE' && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-800/60 font-mono">
-              {component.storageType === 'NVMe_M2' ? 'M.2 NVMe' : component.storageType === 'SATA_SSD' ? 'SATA SSD' : 'SATA HD'}
-            </span>
-          )}
-          {component.category === 'COOLER' && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800/60 font-mono">
-              {component.supportedSockets.join('/')} | {component.maxTdpWatts}W
-            </span>
-          )}
-          {component.category === 'CASE' && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700 font-mono">
-              {component.supportedFormFactors.join('/')} | GPU {component.maxGpuLengthMm}mm
-            </span>
-          )}
-          {component.category === 'GPU' && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800/60 font-mono">
-              {component.lengthMm}mm | Fonte {component.requiredPsuWatts}W
-            </span>
-          )}
-          {component.category === 'RAM' && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800/60 font-mono">
-              {(component as any).ramType}
-            </span>
-          )}
+          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap ${TIER_STYLES[tier]}`}>
+            {TIER_LABELS[tier]}
+          </span>
         </div>
         <button
           onClick={() => setInspectedComponent(component)}
-          title="Ver para que serve e curiosidades"
-          className="p-1 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors"
+          aria-label={`Ver ficha didática de ${component.name}`}
+          title="Para que serve e curiosidades"
+          className="-m-1 p-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-slate-800 focus-visible:outline-2 focus-visible:outline-cyan-400 transition-colors cursor-pointer"
         >
           <Info className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Ilustração Visual do Componente de Hardware */}
-      <div className="w-full h-24 flex items-center justify-center p-1 bg-slate-950/60 rounded-xl border border-slate-800/80 mb-2 overflow-hidden group-hover:border-slate-700 transition-colors">
-        <HardwareImage category={component.category} name={component.name} className="w-full h-full object-contain drop-shadow-md" />
+      {/* Ilustração sobre um pedaço do tapete antiestático */}
+      <div
+        className="relative w-full h-28 flex items-center justify-center p-2 rounded-xl border border-slate-800/80 bg-slate-950 overflow-hidden"
+        style={{ backgroundImage: 'radial-gradient(rgba(56, 189, 248, 0.10) 1px, transparent 1px)', backgroundSize: '12px 12px' }}
+      >
+        <HardwareImage
+          component={component}
+          className="w-full h-full drop-shadow-[0_6px_10px_rgba(0,0,0,0.45)] transition-transform duration-300 group-hover:scale-[1.04]"
+        />
       </div>
 
-      {/* Nome e Descrição Rápida */}
-      <div className="mb-2">
-        <div className="text-xs font-bold text-white line-clamp-1 group-hover:text-cyan-300 transition-colors" title={component.name}>
+      {/* Nome e especificações */}
+      <div>
+        <h3 className="text-[13px] font-semibold leading-snug text-white line-clamp-2 min-h-[2.4em]" title={component.name}>
           {component.name}
-        </div>
-        <div className="text-[10px] text-slate-400 line-clamp-2 mt-0.5 h-7 leading-snug">
-          {component.description}
-        </div>
+        </h3>
+        <p className="mt-0.5 text-[11px] font-mono text-slate-400 truncate" title={spec}>
+          {spec}
+        </p>
       </div>
 
-      {/* Rodapé: Preço, Watts e Botão de Ação */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 mt-auto">
+      {/* Selo de compatibilidade com a montagem atual */}
+      <div className="min-h-[26px]">
+        {hint && (
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-semibold ${HINT_STYLES[hint.status].className}`}>
+            {HINT_STYLES[hint.status].icon}
+            <span className="truncate" title={hint.label}>
+              {hint.label}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Preço, consumo e ação */}
+      <div className="flex items-end justify-between pt-2 mt-auto border-t border-slate-800/80">
         <div className="flex flex-col">
-          <span className="text-xs font-mono font-bold text-emerald-400">
-            R$ {component.price.toLocaleString('pt-BR')}
+          <span className="text-base font-mono font-bold text-emerald-300 leading-none">
+            <span className="text-[11px] text-emerald-500/80 mr-0.5">R$</span>
+            {component.price.toLocaleString('pt-BR')}
           </span>
           {component.tdpWatts > 0 && (
-            <span className="text-[9px] font-mono text-slate-500 flex items-center gap-0.5">
-              <Zap className="w-2.5 h-2.5 text-amber-500" />
+            <span className="mt-1 text-[11px] font-mono text-slate-500 flex items-center gap-0.5">
+              <Zap className="w-3 h-3 text-amber-500" />
               {component.tdpWatts}W
             </span>
           )}
         </div>
 
         <button
-          onClick={handleSelect}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+          onClick={() => setSelectedComponentForPlacement(isSelected ? null : component)}
+          aria-pressed={isSelected}
+          className={`flex items-center gap-1.5 min-h-9 px-3 rounded-xl text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-400 cursor-pointer ${
             isSelected
-              ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
-              : 'bg-slate-800 hover:bg-slate-700 text-slate-200'
+              ? 'bg-cyan-400 text-slate-950 shadow-md shadow-cyan-500/25'
+              : 'bg-slate-800 hover:bg-slate-700 text-slate-100'
           }`}
         >
-          {isSelected ? (
-            <>
-              <Check className="w-3.5 h-3.5" />
-              <span>Pronto</span>
-            </>
-          ) : (
-            <>
-              <Plus className="w-3.5 h-3.5" />
-              <span>Usar</span>
-            </>
-          )}
+          {isSelected ? <Hand className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+          <span>{isSelected ? 'Na mão' : 'Usar'}</span>
         </button>
       </div>
-    </div>
+    </m.article>
   );
 };

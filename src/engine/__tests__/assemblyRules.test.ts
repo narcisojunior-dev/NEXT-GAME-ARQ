@@ -24,6 +24,10 @@ describe('Catálogo: classificação correta das peças', () => {
     expect(byId(STORAGES, 'hdd-seagate-2tb').storageType).toBe('SATA_HDD');
   });
 
+  it('a fonte genérica "Sem Selo" não pode ter certificação 80 Plus', () => {
+    expect(byId(PSUS, 'psu-generic-200w').efficiencyRating).toBe('Sem Selo');
+  });
+
   it('deve existir ao menos um cooler que não suporta todos os soquetes', () => {
     expect(COOLERS.some((c) => c.supportedSockets.length < 3)).toBe(true);
   });

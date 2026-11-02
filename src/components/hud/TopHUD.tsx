@@ -14,6 +14,7 @@ import {
   Stethoscope,
   Camera,
   School,
+  Cpu,
 } from 'lucide-react';
 
 const PHASES: { id: AssemblyPhase; label: string; number: number }[] = [
@@ -65,7 +66,7 @@ export const TopHUD: React.FC = () => {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-lg">
-              ⚡
+              <Cpu className="w-5 h-5" aria-hidden="true" />
             </div>
             <div>
               <h1 className="text-sm font-extrabold text-white tracking-wider uppercase font-mono">

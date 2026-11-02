@@ -505,7 +505,7 @@ export const PSUS: PsuComponent[] = [
     name: 'Fonte Genérica "200W Real" Sem Selo',
     category: 'PSU',
     wattage: 200,
-    efficiencyRating: '80 Plus White',
+    efficiencyRating: 'Sem Selo',
     isModular: false,
     price: 75,
     tdpWatts: 0,

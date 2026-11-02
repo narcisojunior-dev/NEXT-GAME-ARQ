@@ -4,6 +4,7 @@ import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { MotherboardComponent } from '@/engine/types';
 import { Cpu, Zap, HardDrive, Fan, AlertTriangle, CheckCircle2, ArrowDown, CircuitBoard, RefreshCw } from 'lucide-react';
+import { HardwareImage } from '@/components/common/HardwareImage';
 
 interface MotherboardSvgProps {
   onSlotClick?: (slotId: string) => void;
@@ -61,6 +62,8 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
   };
 
   const isPowerOn = postResult?.canPowerOn;
+  // Discos SATA ficam na baia do gabinete; só o NVMe aparece no slot M.2 da placa
+  const m2Storage = assembly.storageInstalled?.storageType === 'NVMe_M2' ? assembly.storageInstalled : null;
 
   // Indicadores de onde clicar com base na peça selecionada
   const isCpuTarget = selectedComponentForPlacement?.category === 'CPU';
@@ -95,7 +98,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
               Placa pronta para assentamento
             </span>
             <h3 className="text-xl font-black text-white">
-              👉 CLIQUE AQUI PARA POSICIONAR {selectedComponentForPlacement.name.toUpperCase()} NA BANCADA!
+              CLIQUE AQUI PARA POSICIONAR {selectedComponentForPlacement.name.toUpperCase()} NA BANCADA!
             </h3>
             <p className="text-xs text-cyan-200/80 max-w-md mx-auto">
               Soquete: {(selectedComponentForPlacement as MotherboardComponent).socket} • Memória: {(selectedComponentForPlacement as MotherboardComponent).supportedRam} • Formato: {(selectedComponentForPlacement as MotherboardComponent).formFactor}
@@ -308,15 +311,8 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             </g>
           ) : (
             <g>
-              {/* Chapa Metálica IHS da CPU Instalada */}
-              <rect x="258" y="123" width="164" height="164" rx="8" fill="#94A3B8" stroke="#CBD5E1" strokeWidth="2.5" />
-              <polygon points="262,127 274,127 262,139" fill="#F59E0B" />
-              <text x="340" y="175" fill="#0F172A" fontSize="11" fontWeight="bold" textAnchor="middle">
-                {assembly.cpuInstalled.name}
-              </text>
-              <text x="340" y="195" fill="#334155" fontSize="10" textAnchor="middle">
-                {assembly.cpuInstalled.cores} Cores / TDP {assembly.cpuInstalled.tdpWatts}W
-              </text>
+              {/* CPU instalada desenhada com a mesma ilustração do inventário */}
+              <HardwareImage component={assembly.cpuInstalled} svgProps={{ x: 252, y: 117, width: 176, height: 176 }} />
 
               {/* Camada de Pasta Térmica */}
               {assembly.thermalPasteApplied && !assembly.coolerInstalled && (
@@ -347,7 +343,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
               rx="4"
               fill={assembly.socketLeverLocked ? "#10B981" : "#F59E0B"}
             />
-            <text x="475" y="200" fill="#E2E8F0" fontSize="10" fontWeight="bold">
+            <text x="440" y="317" fill="#E2E8F0" fontSize="10" fontWeight="bold" textAnchor="end">
               {assembly.socketLeverLocked ? 'ALAVANCA: TRAVADA [OK]' : 'CLIQUE: TRAVAR ALAVANCA'}
             </text>
           </g>
@@ -393,10 +389,18 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
                 width="28"
                 height="215"
                 rx="4"
-                fill={slot.installed ? '#0284C7' : '#0F172A'}
+                fill={slot.installed ? 'url(#hw-alu-dark)' : '#0F172A'}
                 stroke={slot.isDual ? (isRamTarget ? '#22C55E' : '#06B6D4') : '#334155'}
                 strokeWidth={slot.isDual ? (isRamTarget ? 3 : 2) : 1}
               />
+
+              {/* Pente instalado: dissipador escuro, faixa da geração e LEDs só se o kit for RGB */}
+              {slot.installed && (
+                <>
+                  <rect x={slot.x + 21} y="100" width="3" height="205" rx="1.5" fill={slot.installed.ramType === 'DDR5' ? '#22D3EE' : '#F59E0B'} />
+                  {/rgb/i.test(slot.installed.name) && <rect x={slot.x + 3} y="100" width="4" height="205" rx="2" fill="url(#hw-rgb)" />}
+                </>
+              )}
 
               <rect x={slot.x} y="200" width="28" height="6" fill="#1E293B" />
               <rect x={slot.x + 4} y="90" width="20" height="8" rx="2" fill={slot.installed ? '#10B981' : '#64748B'} />
@@ -412,7 +416,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
                   textAnchor="middle"
                   transform={`rotate(-90 ${slot.x + 14} 240)`}
                 >
-                  {slot.installed.capacityGb}GB {slot.installed.ramType} [OK]
+                  {slot.installed.capacityGb / slot.installed.moduleCount}GB {slot.installed.ramType}
                 </text>
               ) : (
                 <text
@@ -471,13 +475,17 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             width="220"
             height="46"
             rx="6"
-            fill={assembly.storageInstalled ? '#0F766E' : '#1E293B'}
-            stroke={isStorageTarget ? '#06B6D4' : assembly.storageInstalled ? '#14B8A6' : '#475569'}
+            fill="#1E293B"
+            stroke={isStorageTarget ? '#06B6D4' : m2Storage ? '#14B8A6' : '#475569'}
             strokeWidth={isStorageTarget ? 3 : 2}
           />
-          <text x="350" y="358" fill="#F8FAFC" fontSize="11" fontWeight="bold" textAnchor="middle">
-            {assembly.storageInstalled ? `M.2 NVMe: ${assembly.storageInstalled.name}` : isStorageTarget ? '👉 CLIQUE P/ ENCAIXAR SSD M.2' : 'SLOT M.2 NVMe (PCIe 4.0 x4)'}
-          </text>
+          {m2Storage ? (
+            <HardwareImage component={m2Storage} svgProps={{ x: 246, y: 330, width: 192, height: 46 }} />
+          ) : (
+            <text x="350" y="358" fill="#F8FAFC" fontSize="11" fontWeight="bold" textAnchor="middle">
+              {isStorageTarget ? 'CLIQUE P/ ENCAIXAR SSD M.2' : 'SLOT M.2 NVMe (PCIe 4.0 x4)'}
+            </text>
+          )}
           <circle cx="445" cy="353" r="6" fill="#94A3B8" stroke="#334155" strokeWidth="1.5" />
         </g>
 
@@ -493,15 +501,24 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             width="580"
             height="34"
             rx="4"
-            fill={assembly.gpuInstalled ? '#0284C7' : '#0F172A'}
+            fill="#0F172A"
             stroke={isGpuTarget ? '#06B6D4' : assembly.gpuInstalled ? '#38BDF8' : '#64748B'}
             strokeWidth={isGpuTarget ? 3 : 2}
           />
           <line x1="160" y1="410" x2="160" y2="444" stroke="#334155" strokeWidth="2" />
-          <text x="370" y="432" fill="#F8FAFC" fontSize="12" fontWeight="bold" textAnchor="middle">
-            {assembly.gpuInstalled ? `GPU: ${assembly.gpuInstalled.name} [OK]` : isGpuTarget ? '👉 CLIQUE P/ ENCAIXAR PLACA DE VÍDEO' : 'SLOT PCIe 4.0 x16 (PLACA DE VÍDEO)'}
-          </text>
+          {!assembly.gpuInstalled && (
+            <text x="370" y="432" fill="#F8FAFC" fontSize="12" fontWeight="bold" textAnchor="middle">
+              {isGpuTarget ? 'CLIQUE P/ ENCAIXAR PLACA DE VÍDEO' : 'SLOT PCIe 4.0 x16 (PLACA DE VÍDEO)'}
+            </text>
+          )}
           <rect x="662" y="414" width="16" height="26" rx="3" fill={assembly.gpuInstalled ? '#10B981' : '#F59E0B'} />
+          {/* GPU instalada em escala real (1,6 px por mm): placas longas cobrem mais da placa-mãe */}
+          {assembly.gpuInstalled && (
+            <HardwareImage
+              component={assembly.gpuInstalled}
+              svgProps={{ x: 56, y: 384, width: 544, height: 208, preserveAspectRatio: 'xMinYMin meet', className: 'drop-shadow-2xl' }}
+            />
+          )}
         </g>
 
         {/* Cabo PCIe da GPU (se instalada) */}
@@ -510,8 +527,8 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             className="cursor-pointer transition-transform hover:scale-105"
             onClick={() => connectCable('GPU_PCIE')}
           >
-            <rect x="520" y="455" width="140" height="28" rx="4" fill="#0F172A" stroke={assembly.cableGpuPcieConnected ? '#10B981' : '#EAB308'} strokeWidth="2" />
-            <text x="590" y="473" fill="#E2E8F0" fontSize="10" fontWeight="bold" textAnchor="middle">
+            <rect x="612" y="455" width="150" height="28" rx="4" fill="#0F172A" stroke={assembly.cableGpuPcieConnected ? '#10B981' : '#EAB308'} strokeWidth="2" />
+            <text x="687" y="473" fill="#E2E8F0" fontSize="10" fontWeight="bold" textAnchor="middle">
               {assembly.cableGpuPcieConnected ? 'CABO PCIe 8P [OK]' : 'CLIQUE: LIGAR CABO PCIe (8P)'}
             </text>
           </g>
@@ -570,7 +587,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           >
             {assembly.frontPanelPowerSwConnected
               ? 'POWER SW CONECTADO [OK]'
-              : '🔍 CLIQUE P/ ZOOM 300% (9 PINOS)'}
+              : 'CLIQUE P/ ZOOM 300% (9 PINOS)'}
           </text>
         </g>
       </svg>

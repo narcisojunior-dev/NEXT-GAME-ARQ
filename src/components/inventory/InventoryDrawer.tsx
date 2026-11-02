@@ -25,6 +25,7 @@ import {
   Box,
   CircuitBoard,
   Server,
+  Package,
 } from 'lucide-react';
 
 const ALL_COMPONENTS: HardwareComponent[] = [
@@ -70,7 +71,8 @@ export const InventoryDrawer: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
         <div>
           <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <span>📦 Inventário de Hardware</span>
+            <Package className="w-4 h-4 text-cyan-400" />
+            <span>Inventário de Hardware</span>
           </h2>
           <p className="text-xs text-slate-400">
             Selecione uma peça e clique no slot da bancada para instalar.

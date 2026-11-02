@@ -13,7 +13,19 @@ import {
   CheckCircle2,
   ArrowDown,
   Maximize2,
+  Server,
+  HardDrive,
+  Zap,
 } from 'lucide-react';
+import { HardwareComponent } from '@/engine/types';
+import { HardwareImage } from '@/components/common/HardwareImage';
+
+/** Miniatura do compartimento: mostra a peça instalada ou o ícone do encaixe vazio */
+const SlotThumb: React.FC<{ component: HardwareComponent | null; icon: React.ReactNode }> = ({ component, icon }) => (
+  <div className="w-14 h-14 shrink-0 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center p-1 text-slate-500">
+    {component ? <HardwareImage component={component} className="w-full h-full" /> : icon}
+  </div>
+);
 
 export const WorkbenchMat: React.FC = () => {
   const {
@@ -89,7 +101,7 @@ export const WorkbenchMat: React.FC = () => {
             ) : (
               <>
                 <ShieldAlert className="w-4 h-4" />
-                <span>👉 1. Toque para Descarregar Estática (ESD)</span>
+                <span>1. Toque para Descarregar Estática (ESD)</span>
               </>
             )}
           </button>
@@ -191,16 +203,14 @@ export const WorkbenchMat: React.FC = () => {
           }`}
         >
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-2xl">
-              🗄️
-            </div>
+            <SlotThumb component={assembly.caseInstalled} icon={<Server className="w-6 h-6" />} />
             <div>
               <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gabinete</div>
               <div className="text-sm font-bold text-white">
                 {assembly.caseInstalled
                   ? assembly.caseInstalled.name
                   : isCaseTarget
-                  ? '👉 CLIQUE AQUI PARA PREPARAR O GABINETE!'
+                  ? 'CLIQUE AQUI PARA PREPARAR O GABINETE!'
                   : 'Escolha um gabinete na aba Gabinete do inventário'}
               </div>
             </div>
@@ -224,16 +234,14 @@ export const WorkbenchMat: React.FC = () => {
           }`}
         >
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-2xl">
-              💽
-            </div>
+            <SlotThumb component={sataStorage} icon={<HardDrive className="w-6 h-6" />} />
             <div>
               <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Baia SATA (SSD 2,5&quot; / HD 3,5&quot;)</div>
               <div className="text-sm font-bold text-white">
                 {sataStorage
                   ? sataStorage.name
                   : isSataTarget
-                  ? '👉 CLIQUE AQUI PARA FIXAR O DISCO NA BAIA!'
+                  ? 'CLIQUE AQUI PARA FIXAR O DISCO NA BAIA!'
                   : 'SSDs SATA e HDs ficam aqui, ligados por cabo'}
               </div>
             </div>
@@ -268,9 +276,7 @@ export const WorkbenchMat: React.FC = () => {
           }`}
         >
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-2xl">
-              ⚡
-            </div>
+            <SlotThumb component={assembly.psuInstalled} icon={<Zap className="w-6 h-6" />} />
             <div>
               <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 Compartimento da Fonte (PSU)
@@ -279,7 +285,7 @@ export const WorkbenchMat: React.FC = () => {
                 {assembly.psuInstalled
                   ? assembly.psuInstalled.name
                   : isPsuTarget
-                  ? '👉 CLIQUE AQUI PARA ENCAIXAR A FONTE!'
+                  ? 'CLIQUE AQUI PARA ENCAIXAR A FONTE!'
                   : 'Clique para instalar Fonte de Alimentação'}
               </div>
             </div>
