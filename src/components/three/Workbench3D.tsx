@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -8,6 +8,8 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useCableDragStore } from '@/components/workbench/cableDragStore';
 import { CABLES, CableSpec, CableTargetId, cableTargetById } from '@/engine/cabling';
+import { resolveWorkbenchModelId, workbenchModelRotation, workbenchModelUrl } from '@/engine/workbenchModels';
+import type { HardwareComponent } from '@/engine/types';
 import {
   Cpu,
   Layers,
@@ -89,23 +91,40 @@ const AutoNormalizedMotherboard: React.FC<{ modelUrl: string }> = ({ modelUrl })
     const scaleFactor = targetWidth / Math.max(0.001, size.x);
     clone.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
-    // Ajusta materiais para aspecto limpo e sem estouro de brilho
+    // Ajusta materiais para aspecto limpo e sem estouro de brilho.
+    // clone(true) compartilha materiais com o cache do useGLTF: clona antes de alterar,
+    // senão a rugosidade vaza para a Vitrine 3D e para as próximas montagens.
+    const ownedMaterials = new Map<THREE.Material, THREE.Material>();
     clone.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        if (mesh.material) {
-          const mat = mesh.material as THREE.MeshStandardMaterial;
-          mat.roughness = Math.max(0.3, mat.roughness ?? 0.5);
-        }
+        const tune = (source: THREE.Material) => {
+          let owned = ownedMaterials.get(source);
+          if (!owned) {
+            owned = source.clone();
+            const standard = owned as THREE.MeshStandardMaterial;
+            if (standard.isMeshStandardMaterial) standard.roughness = Math.max(0.3, standard.roughness ?? 0.5);
+            ownedMaterials.set(source, owned);
+          }
+          return owned;
+        };
+        if (Array.isArray(mesh.material)) mesh.material = mesh.material.map(tune);
+        else if (mesh.material) mesh.material = tune(mesh.material);
       }
     });
 
-    return clone;
+    return { clone, materials: [...ownedMaterials.values()] };
   }, [scene]);
 
-  return <primitive object={normalizedScene} />;
+  // Geometrias e texturas pertencem ao cache do useGLTF; só os materiais clonados aqui são nossos
+  useEffect(
+    () => () => normalizedScene.materials.forEach((material) => material.dispose()),
+    [normalizedScene]
+  );
+
+  return <primitive object={normalizedScene.clone} />;
 };
 
 /* ====================================================================================
@@ -129,12 +148,15 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
 }) => {
   const { scene } = useGLTF(modelUrl);
   const fanGroupRef = useRef<THREE.Group>(null);
+  // Depende dos ângulos (primitivos), não da referência do array: um literal novo a cada
+  // render faria o clone + Box3 da cena inteira rodar de novo em toda atualização da store
+  const [rotX, rotY, rotZ] = rotation;
 
   const preparedScene = useMemo(() => {
     const clone = scene.clone(true);
 
     // 1. Aplica a rotação pretendida internamente no clone ANTES de medir a caixa delimitadora
-    clone.rotation.set(rotation[0], rotation[1], rotation[2]);
+    clone.rotation.set(rotX, rotY, rotZ);
     clone.updateMatrixWorld(true);
 
     // 2. Calcula o bounding box real do objeto já devidamente rotacionado
@@ -160,7 +182,7 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
     });
 
     return clone;
-  }, [scene, targetSize, rotation]);
+  }, [scene, targetSize, rotX, rotY, rotZ]);
 
   useFrame((_, delta) => {
     if (isSpinning && fanGroupRef.current) {
@@ -209,7 +231,10 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
   badgeContent,
   secondaryAction,
 }) => {
+  // Aberto por hover OU por foco em qualquer elemento do pino (inclusive os botões do próprio
+  // tooltip), para que Tab alcance "Remover Cooler" e as demais ações secundárias
   const [isHovered, setIsHovered] = useState(false);
+  const detailId = useId();
 
   const isTargeted = status === 'targeted';
   const isInstalled = status === 'installed';
@@ -221,17 +246,25 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
           data-cable-target={dataCableTarget}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
+          onFocus={() => setIsHovered(true)}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setIsHovered(false);
+          }}
+          onKeyDown={(e) => {
+            // WCAG 1.4.13: conteúdo exibido no foco/hover pode ser dispensado sem mover o foco
+            if (e.key === 'Escape') setIsHovered(false);
+          }}
           className="relative flex items-center justify-center select-none"
         >
           {/* Botão circular tátil compacto (32x32px com hit-area de 44x44px) */}
           <button
+            type="button"
             onClick={onAction}
-            onFocus={() => setIsHovered(true)}
-            onBlur={() => setIsHovered(false)}
-            aria-label={`${label}: ${detailText}`}
-            className={`relative flex items-center justify-center w-8 h-8 rounded-full border shadow-xl backdrop-blur-md transition-all duration-200 cursor-pointer ${
+            aria-label={label}
+            aria-describedby={detailId}
+            className={`relative flex items-center justify-center w-8 h-8 rounded-full border shadow-xl backdrop-blur-md transition-all duration-200 cursor-pointer outline-none focus-visible:ring-4 focus-visible:ring-cyan-300/80 ${
               isTargeted
-                ? 'bg-amber-950/95 border-amber-400 text-amber-200 ring-4 ring-amber-400/50 animate-bounce scale-110 shadow-amber-500/50'
+                ? 'bg-amber-950/95 border-amber-400 text-amber-200 ring-4 ring-amber-400/50 animate-bounce motion-reduce:animate-none scale-110 shadow-amber-500/50'
                 : isInstalled
                 ? 'bg-emerald-950/90 border-emerald-500/80 text-emerald-300 hover:border-emerald-400 hover:scale-105 shadow-emerald-900/40'
                 : isHovered
@@ -245,7 +278,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
             <span
               className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-950 ${
                 isTargeted
-                  ? 'bg-amber-400 animate-ping'
+                  ? 'bg-amber-400 animate-ping motion-reduce:animate-none'
                   : isInstalled
                   ? 'bg-emerald-400'
                   : 'bg-slate-600'
@@ -253,11 +286,21 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
             />
           </button>
 
-          {/* Tooltip técnico que expande suavemente apenas no hover / foco */}
+          {/* Descrição sempre presente para leitores de tela (o tooltip visual só existe no hover/foco) */}
+          <span id={detailId} className="sr-only">
+            {isInstalled ? 'Instalado. ' : isTargeted ? 'Pronto para encaixe. ' : ''}
+            {detailText}
+          </span>
+
+          {/* Tooltip técnico que expande suavemente apenas no hover / foco.
+              pb-2 (e não mb-2) mantém a área de hover contínua entre o pino e o cartão:
+              com margem, o mouse "caía" no vão e o tooltip sumia antes do clique. */}
           {isHovered && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 z-50 pb-2 pointer-events-auto">
             <div
-              role="tooltip"
-              className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 min-w-[190px] max-w-[240px] p-2.5 rounded-xl bg-slate-950/95 border border-cyan-500/50 shadow-2xl backdrop-blur-lg text-left pointer-events-auto animate-in fade-in duration-150"
+              role="group"
+              aria-label={`Ações: ${label}`}
+              className="min-w-[190px] max-w-[240px] p-2.5 rounded-xl bg-slate-950/95 border border-cyan-500/50 shadow-2xl backdrop-blur-lg text-left animate-in fade-in duration-150"
             >
               <div className="flex items-center justify-between gap-1 pb-1 mb-1.5 border-b border-slate-800 font-mono text-[11px] font-bold text-cyan-300">
                 <span className="truncate">{label}</span>
@@ -269,7 +312,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
                 )}
               </div>
 
-              <p className="text-[10px] font-mono text-slate-300 leading-tight mb-2">
+              <p aria-hidden="true" className="text-[10px] font-mono text-slate-300 leading-tight mb-2">
                 {detailText}
               </p>
 
@@ -307,6 +350,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
                   </button>
                 )}
               </div>
+            </div>
             </div>
           )}
         </div>
@@ -464,15 +508,34 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
     installStorage,
     installGpu,
     openFrontPanelModal,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    // Seleção rasa: sem ela o cronômetro (1 Hz) re-renderizava a cena e todos os pinos <Html>
+    useShallow((s) => ({
+      selectedMotherboard: s.selectedMotherboard,
+      assembly: s.assembly,
+      postResult: s.postResult,
+      selectedComponentForPlacement: s.selectedComponentForPlacement,
+      installCpu: s.installCpu,
+      toggleSocketLever: s.toggleSocketLever,
+      applyThermalPaste: s.applyThermalPaste,
+      installCooler: s.installCooler,
+      removeCooler: s.removeCooler,
+      installRam: s.installRam,
+      installStorage: s.installStorage,
+      installGpu: s.installGpu,
+      openFrontPanelModal: s.openFrontPanelModal,
+    }))
+  );
 
-  // Seleciona o modelo 3D compatível da placa
-  const mbModelUrl =
-    selectedMotherboard?.formFactor === 'Micro-ATX'
-      ? '/models/mb-b550m.glb'
-      : selectedMotherboard?.formFactor === 'ATX'
-      ? '/models/mb-z790-atx.glb'
-      : '/models/mb-generica.glb';
+  // Modelo 3D da mesma família física da peça (soquete, geração de memória, refrigeração)
+  // e a rotação calibrada para os eixos daquele GLB
+  const partModel = (component: HardwareComponent, fallbackId: string) => {
+    const modelId = resolveWorkbenchModelId(component) ?? fallbackId;
+    return { modelUrl: workbenchModelUrl(modelId), rotation: workbenchModelRotation(modelId) };
+  };
+  const mbModelUrl = workbenchModelUrl(
+    (selectedMotherboard && resolveWorkbenchModelId(selectedMotherboard)) ?? 'mb-generica'
+  );
 
   // Aciona preset de câmera
   const applyViewPreset = (view: 'iso' | 'top' | 'front') => {
@@ -512,26 +575,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
     } else if (isPasteTarget) {
       applyThermalPaste();
     } else if (isCoolerTarget) {
-      if (!assembly.cpuInstalled) {
-        useAssemblyStore.setState({
-          activeAlert: {
-            type: 'error',
-            title: 'Soquete Vazio!',
-            message: 'Instale o processador no soquete antes de fixar o cooler.',
-          },
-        });
-        return;
-      }
-      if (!assembly.thermalPasteApplied) {
-        useAssemblyStore.setState({
-          activeAlert: {
-            type: 'error',
-            title: 'Pasta Térmica Obrigatória!',
-            message: 'Você não pode instalar o cooler sem antes aplicar a pasta térmica sobre o processador! Selecione a pasta térmica no catálogo.',
-          },
-        });
-        return;
-      }
+      // CPU e pasta térmica são validadas no motor (validateCoolerPrerequisites), igual ao modo 2D
       installCooler(selectedComponentForPlacement as never);
     }
   };
@@ -557,7 +601,9 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
           {/* Presets de Câmera */}
           <div className="bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700/80 p-1 flex items-center gap-1 shadow-lg">
             <button
+              type="button"
               onClick={() => applyViewPreset('iso')}
+              aria-pressed={activePreset === 'iso'}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
                 activePreset === 'iso'
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow'
@@ -570,7 +616,9 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             </button>
 
             <button
+              type="button"
               onClick={() => applyViewPreset('top')}
+              aria-pressed={activePreset === 'top'}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
                 activePreset === 'top'
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow'
@@ -583,7 +631,9 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             </button>
 
             <button
+              type="button"
               onClick={() => applyViewPreset('front')}
+              aria-pressed={activePreset === 'front'}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
                 activePreset === 'front'
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow'
@@ -643,6 +693,8 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
         <Canvas
           camera={{ position: [6.2, 8.2, 7.2], fov: 42 }}
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+          // Telas Retina/4K em PCs escolares: limita a 1.5x para manter 60 FPS com sombras ativas
+          dpr={[1, 1.5]}
           shadows
         >
           <color attach="background" args={['#070b14']} />
@@ -702,11 +754,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             {/* CPU Instalada no Soquete */}
             {assembly.cpuInstalled && (
               <AutoNormalizedPart
-                modelUrl={
-                  assembly.cpuInstalled.socket === 'AM4'
-                    ? '/models/cpu-ryzen-am4.glb'
-                    : '/models/cpu-intel-lga1700.glb'
-                }
+                {...partModel(assembly.cpuInstalled, 'cpu-intel-lga1700')}
                 targetSize={1.15}
                 position={POSITIONS.CPU_SOCKET}
               />
@@ -738,11 +786,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             {/* Cooler Instalado Assentado sobre a CPU e Pasta Térmica */}
             {assembly.coolerInstalled && (
               <AutoNormalizedPart
-                modelUrl={
-                  assembly.coolerInstalled.coolerType === 'Water'
-                    ? '/models/cooler-aio-240.glb'
-                    : '/models/cooler-torre.glb'
-                }
+                {...partModel(assembly.coolerInstalled, 'cooler-torre')}
                 targetSize={2.4}
                 position={[POSITIONS.CPU_SOCKET[0], 0.31, POSITIONS.CPU_SOCKET[2]]}
                 isSpinning={Boolean(postResult?.bootSuccess)}
@@ -752,38 +796,34 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             {/* Pentes de Memória RAM na VERTICAL */}
             {assembly.ramInstalledSlot2 && (
               <AutoNormalizedPart
-                modelUrl="/models/ram-ddr4-crucial.glb"
+                {...partModel(assembly.ramInstalledSlot2, 'ram-ddr4-crucial')}
                 targetSize={1.9}
                 position={POSITIONS.RAM_SLOT_2}
-                rotation={[-Math.PI / 2, 0, Math.PI / 2]}
               />
             )}
             {assembly.ramInstalledSlot4 && (
               <AutoNormalizedPart
-                modelUrl="/models/ram-ddr4-crucial.glb"
+                {...partModel(assembly.ramInstalledSlot4, 'ram-ddr4-crucial')}
                 targetSize={1.9}
                 position={POSITIONS.RAM_SLOT_4}
-                rotation={[-Math.PI / 2, 0, Math.PI / 2]}
               />
             )}
 
             {/* Armazenamento SSD M.2 */}
             {assembly.storageInstalled && assembly.storageInstalled.storageType.includes('M2') && (
               <AutoNormalizedPart
-                modelUrl="/models/ssd-nvme-990pro.glb"
+                {...partModel(assembly.storageInstalled, 'ssd-nvme-990pro')}
                 targetSize={1.3}
                 position={POSITIONS.M2_SLOT}
-                rotation={[0, Math.PI / 2, 0]}
               />
             )}
 
             {/* Placa de Vídeo (GPU) */}
             {assembly.gpuInstalled && (
               <AutoNormalizedPart
-                modelUrl="/models/gpu-rx-6700xt.glb"
+                {...partModel(assembly.gpuInstalled, 'gpu-rx-6700xt')}
                 targetSize={4.2}
                 position={POSITIONS.PCIE_SLOT}
-                rotation={[0, 0, 0]}
                 isSpinning={Boolean(postResult?.bootSuccess)}
               />
             )}

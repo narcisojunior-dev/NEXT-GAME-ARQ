@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Visualizador 3D e Vitrine (Fase 1)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
-    await expect(page.locator('body')).toBeVisible();
+    // networkidle nunca estabiliza enquanto a bancada 3D baixa os GLBs: espera a hidratação
+    await page.waitForFunction(() => typeof (window as any).useAssemblyStore !== 'undefined', { timeout: 15000 });
   });
 
   test('botão Vitrine 3D está visível no HUD e abre a galeria', async ({ page }) => {

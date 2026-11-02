@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import { calculateBenchmark, BenchmarkResult } from '@/engine/benchmark';
 import { soundEngine } from '@/engine/audio/soundEngine';
 import {
@@ -29,7 +30,14 @@ export const AcademyOSDesktop: React.FC = () => {
     closeAcademyOS,
     assembly,
     selectedMotherboard,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      isAcademyOSOpen: s.isAcademyOSOpen,
+      closeAcademyOS: s.closeAcademyOS,
+      assembly: s.assembly,
+      selectedMotherboard: s.selectedMotherboard,
+    }))
+  );
 
   const [activeTab, setActiveTab] = useState<'BENCHMARK' | 'SENSORS' | 'SPECS'>('BENCHMARK');
   const [resolution, setResolution] = useState<'1080p' | '1440p' | '4K'>('1080p');

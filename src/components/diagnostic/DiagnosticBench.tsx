@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import { DIAGNOSTIC_SCENARIOS, DiagnosticScenario } from '@/engine/diagnosticCases';
 import {
   Stethoscope,
@@ -21,7 +22,14 @@ export const DiagnosticBench: React.FC = () => {
     activeDiagnosticScenario,
     selectDiagnosticScenario,
     resolvedScenarioIds,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      gameMode: s.gameMode,
+      activeDiagnosticScenario: s.activeDiagnosticScenario,
+      selectDiagnosticScenario: s.selectDiagnosticScenario,
+      resolvedScenarioIds: s.resolvedScenarioIds,
+    }))
+  );
 
   const [showHint, setShowHint] = useState(false);
 

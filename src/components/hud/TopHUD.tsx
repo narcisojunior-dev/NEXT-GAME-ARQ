@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useAssemblyStore, GameMode, selectCurrentPhase } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import { AssemblyPhase } from '@/engine/types';
 import { calculateTotalSpent } from '@/engine/compatibility';
 import {
@@ -44,7 +45,20 @@ export const TopHUD: React.FC = () => {
     penaltiesCount,
     openVirtualRoomModal,
     openTeacherDashboard,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      gameMode: s.gameMode,
+      setGameMode: s.setGameMode,
+      elapsedSeconds: s.elapsedSeconds,
+      tickTimer: s.tickTimer,
+      activeMission: s.activeMission,
+      assembly: s.assembly,
+      selectedMotherboard: s.selectedMotherboard,
+      penaltiesCount: s.penaltiesCount,
+      openVirtualRoomModal: s.openVirtualRoomModal,
+      openTeacherDashboard: s.openTeacherDashboard,
+    }))
+  );
   const currentPhase = useAssemblyStore(selectCurrentPhase);
   const openGallery = useModel3DStore((s) => s.openGallery);
   const currentPhaseNumber = PHASES.find((p) => p.id === currentPhase)?.number ?? 1;

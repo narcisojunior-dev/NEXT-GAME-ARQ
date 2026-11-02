@@ -2,10 +2,12 @@
 
 import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import { MotherboardComponent } from '@/engine/types';
 import { Cpu, Zap, HardDrive, Fan, AlertTriangle, CheckCircle2, ArrowDown, CircuitBoard, RefreshCw } from 'lucide-react';
 import { HardwareImage } from '@/components/common/HardwareImage';
 import { BoardHeader } from './CableTargets';
+import { pressableProps, SVG_FOCUS_RING, FOCUS_RING } from '@/components/common/pressable';
 
 // Escala da GPU desenhada sobre a placa (viewBox da ilustração 340x130 → 544x208 na placa)
 const GPU_ART = { x: 56, y: 384, scale: 1.6 };
@@ -32,7 +34,26 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
     installGpu,
     openFrontPanelModal,
     fPanelConnections,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      selectedMotherboard: s.selectedMotherboard,
+      installMotherboard: s.installMotherboard,
+      selectMotherboard: s.selectMotherboard,
+      assembly: s.assembly,
+      postResult: s.postResult,
+      selectedComponentForPlacement: s.selectedComponentForPlacement,
+      installCpu: s.installCpu,
+      toggleSocketLever: s.toggleSocketLever,
+      applyThermalPaste: s.applyThermalPaste,
+      installCooler: s.installCooler,
+      removeCooler: s.removeCooler,
+      installRam: s.installRam,
+      installStorage: s.installStorage,
+      installGpu: s.installGpu,
+      openFrontPanelModal: s.openFrontPanelModal,
+      fPanelConnections: s.fPanelConnections,
+    }))
+  );
 
   const handleCpuAreaClick = () => {
     if (selectedComponentForPlacement?.category === 'CPU') {
@@ -46,8 +67,9 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
     }
   };
 
-  const handleRamSlotClick = (slot: 2 | 4) => {
-    if (selectedComponentForPlacement?.category === 'RAM') {
+  const handleRamSlotClick = (slot: number) => {
+    // Só os slots 2 e 4 (A2/B2) recebem pentes; antes, clicar no 1 ou no 3 instalava no slot 4
+    if ((slot === 2 || slot === 4) && selectedComponentForPlacement?.category === 'RAM') {
       installRam(slot, selectedComponentForPlacement as never);
     }
   };
@@ -78,14 +100,21 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
 
   if (!selectedMotherboard) {
     const isMbInHand = selectedComponentForPlacement?.category === 'MOTHERBOARD';
+    const placeMotherboard = () => {
+      if (isMbInHand) {
+        installMotherboard(selectedComponentForPlacement as MotherboardComponent);
+      }
+    };
     return (
       <div
-        onClick={() => {
-          if (isMbInHand) {
-            installMotherboard(selectedComponentForPlacement as MotherboardComponent);
-          }
-        }}
-        className={`relative w-full aspect-4/3 max-w-4xl mx-auto rounded-3xl border-2 transition-all duration-300 flex flex-col items-center justify-center p-8 text-center cursor-pointer select-none overflow-hidden ${
+        data-testid="workbench-2d"
+        onClick={placeMotherboard}
+        {...pressableProps(
+          `Assentar ${selectedComponentForPlacement?.name ?? 'placa-mãe'} na bancada`,
+          placeMotherboard,
+          isMbInHand
+        )}
+        className={`relative w-full aspect-4/3 max-w-4xl mx-auto rounded-3xl border-2 transition-all duration-300 flex flex-col items-center justify-center p-8 text-center cursor-pointer select-none overflow-hidden ${FOCUS_RING} ${
           isMbInHand
             ? 'bg-cyan-950/40 border-cyan-400 ring-4 ring-cyan-400/20 shadow-2xl shadow-cyan-500/20 animate-pulse'
             : 'bg-slate-950/60 border-dashed border-slate-700 hover:border-slate-500'
@@ -163,6 +192,9 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
 
       <svg
         viewBox="0 0 900 680"
+        data-testid="workbench-2d"
+        role="group"
+        aria-label={`Bancada 2D: placa-mãe ${selectedMotherboard.name}`}
         className="w-full h-full drop-shadow-2xl"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -276,7 +308,11 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
 
         {/* Remover Cooler (necessário para reaplicar pasta térmica) */}
         {assembly.coolerInstalled && (
-          <g className="cursor-pointer transition-transform hover:scale-105" onClick={removeCooler}>
+          <g
+            className={`cursor-pointer transition-transform hover:scale-105 ${SVG_FOCUS_RING}`}
+            onClick={removeCooler}
+            {...pressableProps(`Remover cooler ${assembly.coolerInstalled.name}`, removeCooler)}
+          >
             <rect x="240" y="45" width="110" height="20" rx="3" fill="#1E293B" stroke="#F59E0B" strokeWidth="1.5" />
             <text x="295" y="59" fill="#FBBF24" fontSize="9" fontWeight="bold" textAnchor="middle">
               REMOVER COOLER
@@ -286,8 +322,21 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
 
         {/* 2. SOQUETE DA CPU (LGA1700 / AM5) */}
         <g
-          className="cursor-pointer transition-all"
+          className={`cursor-pointer transition-all ${SVG_FOCUS_RING}`}
           onClick={handleCpuAreaClick}
+          {...pressableProps(
+            isCpuTarget
+              ? 'Soquete da CPU: encaixar processador'
+              : isPasteTarget
+              ? 'Soquete da CPU: aplicar pasta térmica'
+              : isCoolerTarget
+              ? 'Soquete da CPU: instalar cooler'
+              : assembly.cpuInstalled
+              ? `Soquete da CPU: ${assembly.cpuInstalled.name}, alavanca ${assembly.socketLeverLocked ? 'travada' : 'destravada'}`
+              : 'Soquete da CPU vazio',
+            handleCpuAreaClick,
+            isCpuTarget || isPasteTarget || isCoolerTarget || Boolean(assembly.cpuInstalled && !assembly.coolerInstalled)
+          )}
           filter={isCpuTarget || isPasteTarget || isCoolerTarget ? 'url(#targetPulse)' : undefined}
         >
           {/* Base do Soquete */}
@@ -335,7 +384,14 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           )}
 
           {/* Alavanca de Retenção Metálica (Socket Lever) */}
-          <g onClick={(e) => { e.stopPropagation(); toggleSocketLever(); }}>
+          <g
+            className={SVG_FOCUS_RING}
+            onClick={(e) => { e.stopPropagation(); toggleSocketLever(); }}
+            {...pressableProps(
+              `Alavanca do soquete: ${assembly.socketLeverLocked ? 'travada, pressione para destravar' : 'destravada, pressione para travar'}`,
+              toggleSocketLever
+            )}
+          >
             <line
               x1="445"
               y1={assembly.socketLeverLocked ? "290" : "110"}
@@ -390,8 +446,13 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           ].map((slot) => (
             <g
               key={slot.id}
-              className="cursor-pointer transition-transform hover:scale-102"
-              onClick={() => handleRamSlotClick(slot.id as 2 | 4)}
+              className={`cursor-pointer transition-transform hover:scale-102 ${SVG_FOCUS_RING}`}
+              onClick={() => handleRamSlotClick(slot.id)}
+              {...pressableProps(
+                `Slot de memória ${slot.id}: ${slot.installed ? slot.installed.name : isRamTarget ? 'vazio, pressione para encaixar o pente' : 'vazio'}`,
+                () => handleRamSlotClick(slot.id),
+                slot.isDual
+              )}
             >
               <rect
                 x={slot.x}
@@ -472,8 +533,12 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
 
         {/* 4. SLOT M.2 NVMe (Abaixo do Soquete) */}
         <g
-          className="cursor-pointer transition-transform hover:scale-102"
+          className={`cursor-pointer transition-transform hover:scale-102 ${SVG_FOCUS_RING}`}
           onClick={handleM2SlotClick}
+          {...pressableProps(
+            `Slot M.2 NVMe: ${m2Storage ? m2Storage.name : isStorageTarget ? 'vazio, pressione para fixar o SSD' : 'vazio'}`,
+            handleM2SlotClick
+          )}
           filter={isStorageTarget ? 'url(#targetPulse)' : undefined}
         >
           <rect
@@ -498,8 +563,12 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
 
         {/* 5. SLOTS PCIe x16 (Placa de Vídeo) */}
         <g
-          className="cursor-pointer transition-transform hover:scale-102"
+          className={`cursor-pointer transition-transform hover:scale-102 ${SVG_FOCUS_RING}`}
           onClick={handlePcieSlotClick}
+          {...pressableProps(
+            `Slot PCIe x16: ${assembly.gpuInstalled ? assembly.gpuInstalled.name : isGpuTarget ? 'vazio, pressione para encaixar a placa de vídeo' : 'vazio'}`,
+            handlePcieSlotClick
+          )}
           filter={isGpuTarget ? 'url(#targetPulse)' : undefined}
         >
           <rect

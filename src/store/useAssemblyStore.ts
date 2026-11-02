@@ -29,6 +29,7 @@ import {
   validateEsdDischarged,
   validateCoolerSocket,
   validateCoolerCapacity,
+  validateCoolerPrerequisites,
   validateThermalPasteApplication,
   validateStorageSlot,
   validateCaseFormFactor,
@@ -170,6 +171,13 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
         message: issue.suggestedAction ? `${issue.message} ${issue.suggestedAction}` : issue.message,
       },
     }));
+  };
+
+  /** POST em andamento (giro das ventoinhas antes do bip); evita boots duplicados e resultados obsoletos */
+  let pendingPostBoot: ReturnType<typeof setTimeout> | null = null;
+  const cancelPendingPostBoot = () => {
+    if (pendingPostBoot) clearTimeout(pendingPostBoot);
+    pendingPostBoot = null;
   };
 
   return {
@@ -489,22 +497,23 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   },
 
   installCooler: (cooler) => {
-    const cpu = get().assembly.cpuInstalled;
+    const { assembly } = get();
+    const cpu = assembly.cpuInstalled;
     if (!cpu) {
-      soundEngine.playErrorBuzz();
-      set({
-        activeAlert: {
-          type: 'error',
-          title: 'Soquete Vazio',
-          message: 'Instale a CPU e aplique a pasta térmica antes de fixar o cooler.',
-        },
-      });
+      rejectAction(validateCoolerPrerequisites(assembly)!, false);
       return false;
     }
 
     const socketIssue = validateCoolerSocket(cooler, cpu);
     if (socketIssue) {
       rejectAction(socketIssue, true);
+      return false;
+    }
+
+    // Sem pasta, o ar isola o IHS da base do cooler: recusa sem penalizar (nada foi danificado)
+    const prerequisiteIssue = validateCoolerPrerequisites(assembly);
+    if (prerequisiteIssue) {
+      rejectAction(prerequisiteIssue, false);
       return false;
     }
 
@@ -786,6 +795,9 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   },
 
   triggerPostBoot: () => {
+    // Cliques repetidos durante o giro das ventoinhas não agendam um segundo POST
+    if (pendingPostBoot) return;
+
     const { assembly, selectedMotherboard } = get();
     if (!selectedMotherboard) {
       soundEngine.playErrorBuzz();
@@ -803,7 +815,20 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
 
     if (result.canPowerOn) {
       soundEngine.playFanSpinUp();
-      setTimeout(() => {
+      pendingPostBoot = setTimeout(() => {
+        pendingPostBoot = null;
+        // A bancada mudou durante o POST (fonte desligada, peça removida...): o resultado avaliado ficou obsoleto
+        const current = get();
+        if (current.assembly !== assembly || current.selectedMotherboard !== selectedMotherboard) {
+          set({
+            activeAlert: {
+              type: 'warning',
+              title: 'Boot Interrompido',
+              message: 'A montagem foi alterada durante o teste de energia. Ligue o PC novamente.',
+            },
+          });
+          return;
+        }
         soundEngine.playBiosBeep(result.bootSuccess);
         set({
           postResult: result,
@@ -864,6 +889,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   },
 
   resetAssembly: () => {
+    cancelPendingPostBoot();
     set({
       selectedMotherboard: null,
       assembly: { ...INITIAL_ASSEMBLY_STATE },
