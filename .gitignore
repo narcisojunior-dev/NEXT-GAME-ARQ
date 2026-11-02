@@ -36,3 +36,6 @@ next-env.d.ts
 # graphify cache
 graphify-out/cache/
 graphify-out/.graphify_analysis.json
+
+# downloads originais de modelos 3D (só a versão otimizada em public/models vai para o Git)
+/assets-src/

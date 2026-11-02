@@ -15,7 +15,12 @@ import {
   Camera,
   School,
   Cpu,
+  Box,
 } from 'lucide-react';
+import { hasAvailableModels } from '@/engine/models3dIndex';
+import { useModel3DStore } from '@/components/three/model3dStore';
+
+const HAS_3D_MODELS = hasAvailableModels();
 
 const PHASES: { id: AssemblyPhase; label: string; number: number }[] = [
   { id: 'PHASE_1_PREPARATION', label: '1. Bancada & ESD', number: 1 },
@@ -41,6 +46,7 @@ export const TopHUD: React.FC = () => {
     openTeacherDashboard,
   } = useAssemblyStore();
   const currentPhase = useAssemblyStore(selectCurrentPhase);
+  const openGallery = useModel3DStore((s) => s.openGallery);
   const currentPhaseNumber = PHASES.find((p) => p.id === currentPhase)?.number ?? 1;
 
   useEffect(() => {
@@ -138,6 +144,18 @@ export const TopHUD: React.FC = () => {
             <School className="w-3.5 h-3.5" />
             <span>Professor</span>
           </button>
+
+          {/* Vitrine 3D: aparece quando há modelos baixados (docs/modelos-3d.md) */}
+          {HAS_3D_MODELS && (
+            <button
+              onClick={openGallery}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-700/60 text-cyan-300 text-xs font-bold transition-all cursor-pointer"
+              title="Ver peças e periféricos em 3D"
+            >
+              <Box className="w-3.5 h-3.5" />
+              <span>Vitrine 3D</span>
+            </button>
+          )}
 
           {/* Botão de Abrir Sala Virtual & Setup */}
           <button

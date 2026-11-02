@@ -4,6 +4,7 @@ import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { Sparkles, X, Lightbulb } from 'lucide-react';
 import { HardwareImage } from '@/components/common/HardwareImage';
+import { View3DButton } from '@/components/three/View3DButton';
 import { CATEGORY_LABELS } from '@/components/inventory/componentLabels';
 
 export const InspectModal: React.FC = () => {
@@ -71,8 +72,9 @@ export const InspectModal: React.FC = () => {
         </div>
 
         {/* Especificações e Preço */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-800 text-xs">
-          <div>
+        <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-800 text-xs">
+          <View3DButton catalogId={inspectedComponent.id} name={inspectedComponent.name} variant="full" />
+          <div className="mr-auto">
             <span className="text-slate-400">Consumo Energético: </span>
             <span className="font-mono font-bold text-slate-200">
               {inspectedComponent.tdpWatts > 0 ? `${inspectedComponent.tdpWatts} Watts` : 'Incluso no circuito'}

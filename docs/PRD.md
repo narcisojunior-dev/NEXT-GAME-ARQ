@@ -183,25 +183,25 @@ Decisões técnicas: [ADR-010](./adr/ADR-010-cabeamento-e-arrastar-e-soltar.md).
 Permitir que o aluno veja e manipule as peças em 3D (girar, aproximar, ver por baixo) para reconhecer os formatos reais, sem perder a leveza, o funcionamento offline e a acessibilidade da versão 2D. Decisão técnica: [ADR-011](./adr/ADR-011-visualizacao-3d-hibrida.md).
 
 ### 6.2 Fontes de modelos (#35)
-Modelos da coleção do Sketchfab indicada para o projeto, filtrados por licença e peso (consulta à API pública em 02/11/2026):
+Duas buscas na API pública do Sketchfab (02/11/2026), sempre filtrando **modelos baixáveis**, com licença **CC BY, CC BY-SA ou CC0** e no máximo **30 mil faces**:
+1. a coleção "PC" indicada para o projeto;
+2. uma busca ampliada por 21 categorias (monitores, teclados, mouses, headsets, caixas de som, gamepads, suportes, webcams, microfones, mousepads, cadeiras, mesas, gabinetes, fontes, coolers, ventoinhas, memórias, GPUs, armazenamento, CPUs e placas-mãe), com cerca de 800 candidatos revisados manualmente.
 
-| Peça | Modelo | Licença | Faces | Uso |
-| :--- | :--- | :--- | ---: | :--- |
-| Memória RAM | Crucial 8 GB DDR4 2133 | CC-BY | 2.428 | Fase 1 |
-| SSD NVMe | Samsung 980 Pro NVMe 1TB | CC-BY | 1.392 | Fase 1 |
-| SSD SATA | Samsung SSD 2.5in | CC-BY | 918 | Fase 1 |
-| CPU | Intel CPU | CC-BY | 368 | Fase 1 |
-| GPU | GPU AMD RX 6700 XT | CC-BY | 7.620 | Fase 1 |
-| GPU | PowerColor RX 570 | CC-BY | 7.552 | Fase 1 |
-| HD | Hard Drive | CC-BY-SA | 5.131 | Fase 1 |
-| Placa-mãe (leve) | Motherboard (user12350) | CC-BY | 10.056 | Fase 1 |
-| Placa-mãe Micro-ATX | ASUS Prime H510M-K | CC-BY | 406.136 | Fase 2 (reduzir para ~60 mil) |
-| Placa-mãe ATX | MAXIMUS VI Formula | CC-BY | 61.092 | Fase 2 |
+Resultado: **46 modelos aprovados** (25 componentes e 21 periféricos), todos reconferidos individualmente. A lista completa, com links, autores, licenças e o passo a passo de download, está em **[docs/modelos-3d.md](./modelos-3d.md)**; a fonte única para o código é `src/engine/models3d.data.json`.
+
+| Grupo | Ligados a peças do catálogo | Só na vitrine 3D |
+| :--- | :--- | :--- |
+| Componentes | CPUs Intel e Ryzen AM4, placa Z790, memórias DDR4, coolers torre e AIO, 4 GPUs (RX 6700 XT exata), SSDs NVMe e SATA, HD, fontes e 2 gabinetes | Noctua NH-D15, ventoinhas Lian Li e Corsair, memória Corsair DDR4 RGB, placa e memória genéricas, SSD Samsung |
+| Periféricos | 3 monitores, 3 teclados, mouse gamer, fone, caixas de madeira, gamepad e braço articulado | Monitor curvo, kit teclado e mouse RGB, mousepad, fone sem fio, caixas de PC, gamepad clássico, **webcam, microfone, cadeira e mesa** (candidatos a novos periféricos) |
+
+**Regra pedagógica:** um modelo só é ligado a uma peça do catálogo quando não ensina um formato errado. As CPUs AM5 (sem pinos) e as memórias DDR5 (chanfro em outra posição) ficam sem modelo e continuam com a ilustração 2D, que já está correta. Modelos aproximados aparecem marcados como "ilustrativos" no visualizador.
+
+Para a bancada 3D (Fase 2) seguem previstas a ASUS Prime H510M-K (CC BY, 406 mil faces, reduzir para ~60 mil) e a MAXIMUS VI Formula (CC BY, 61 mil faces).
 
 **Não utilizáveis:** "Motherboard mATX" e "RTX 4070" (digitalrazor3d) e "Rebuild ASUS X299 SAGE" não podem ser baixados e não têm licença; o monitor Samsung tem licença Standard paga; as GeForce RTX 20xx são CC-BY-NC (não comercial) e pesadas (350 a 400 mil faces); a Strix B550-F tem 818 mil faces.
 
 ### 6.3 Fases
-1. **Fase 1 — Visualizador 3D das peças (#36):** na ficha didática do card, o aluno gira e aproxima a peça. Carregado sob demanda; se o computador não suportar WebGL, a ilustração 2D continua aparecendo.
+1. **Fase 1 — Visualizador 3D das peças (#36):** na ficha didática do card e no customizador de periféricos, o aluno gira e aproxima a peça; uma **vitrine 3D** reúne todos os modelos baixados, inclusive os que ainda não estão no catálogo. Carregado sob demanda; se o computador não suportar WebGL, a ilustração 2D continua aparecendo.
 2. **Fase 2 — Bancada 3D (#37):** placa-mãe em 3D com câmera de cima para montar e cabear. Slots e conectores são marcados como pontos âncora no modelo e projetados na tela como os mesmos alvos usados hoje, reaproveitando regras, arrastar e soltar, clique e teclado.
 3. **Fase 3 — Polimento (#38):** animação de encaixe em 3D, vista explodida e ventoinhas girando no teste de boot.
 

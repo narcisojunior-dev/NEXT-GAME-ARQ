@@ -1,7 +1,7 @@
 # ADR-011: Visualização 3D Híbrida com Modelos CC-BY do Sketchfab
 
 ## Status
-Proposto (v3.0). Implementação em 3 fases (PRD, seção 6).
+Aprovado (v3.0). **Fase 1 implementada** (#35, #36); fases 2 e 3 pendentes (#37, #38).
 
 ## Contexto
 O usuário pediu placa-mãe e componentes em 3D usando referências do Sketchfab:
@@ -42,6 +42,15 @@ Restrições do projeto: 60 FPS em vídeo integrado de PCs escolares (RNF07), or
 
 ### 5. Offline
 Os modelos entram no cache do service worker. Isso depende de corrigir antes a estratégia de cache do HTML (backlog do PRD, seção 7).
+
+### 6. Como a Fase 1 foi implementada
+* **Curadoria ampliada:** além da coleção indicada, uma busca na API do Sketchfab em 21 categorias resultou em 46 modelos aprovados (componentes e periféricos, inclusive webcam, microfone, cadeira e mesa). Lista e passo a passo em [docs/modelos-3d.md](../modelos-3d.md).
+* **Manifesto em JSON** (`src/engine/models3d.data.json`) como fonte única, lido por `src/engine/models3d.ts` (créditos, categorias, ligação com o catálogo) e testado em `models3d.test.ts` (licenças, faces, ids e regra pedagógica).
+* **Regra pedagógica:** um modelo só é ligado a uma peça do catálogo quando não ensina formato errado (ex: o Ryzen AM4, com pinos, não representa CPUs AM5; pentes DDR4 não representam DDR5). Modelos aproximados são marcados como ilustrativos no visualizador.
+* **Dois níveis de carregamento:** `models3d.available.json` (gerado pelo script, só com os modelos baixados) alimenta o índice leve `models3dIndex.ts`, usado pelos botões "3D" e "Vitrine 3D" na carga inicial. O modal, o manifesto completo e o three.js são carregados sob demanda. A primeira carga passou de 209 para 212 kB.
+* **Pipeline:** `npm run models:optimize` lê `assets-src/models/<id>.glb` (fora do Git), chama o CLI do gltf-transform sem shell (funciona com espaços no caminho), reduz para até 30 mil faces, comprime com meshopt e WebP de 1024 px, grava em `public/models/` e regenera o índice.
+* **Sem rede em tempo de execução:** sem decodificador Draco (viria de CDN) e sem mapas HDR remotos; iluminação local com luz principal vinda de cima e da esquerda, como nas ilustrações 2D.
+* **Pontos de entrada:** "Ver em 3D" na ficha didática, botão "3D" nos cards de periféricos e "Vitrine 3D" no HUD.
 
 ## Alternativas Consideradas e Rejeitadas
 * **Usar a placa "Motherboard mATX" indicada:** rejeitado. O modelo não pode ser baixado e não tem licença; usar seria violar os direitos do autor.
