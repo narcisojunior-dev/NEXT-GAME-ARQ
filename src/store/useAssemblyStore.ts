@@ -569,16 +569,23 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
     }
 
     soundEngine.playSlotClick();
+    const isDualKit = ram.moduleCount === 2;
     set((state) => ({
       assembly: {
         ...state.assembly,
-        ...(slot === 2 ? { ramInstalledSlot2: ram } : { ramInstalledSlot4: ram }),
+        ...(isDualKit
+          ? { ramInstalledSlot2: ram, ramInstalledSlot4: ram }
+          : slot === 2
+          ? { ramInstalledSlot2: ram }
+          : { ramInstalledSlot4: ram }),
       },
       selectedComponentForPlacement: null,
       activeAlert: {
         type: 'success',
-        title: `Memória Travada no Slot ${slot}!`,
-        message: 'As travas plásticas fecharam com firmeza nos dois lados do pente de memória.',
+        title: isDualKit ? 'Kit Dual Channel Travado nos Slots 2 e 4!' : `Memória Travada no Slot ${slot}!`,
+        message: isDualKit
+          ? 'Os dois pentes do kit foram encaixados nos slots ideais (2 e 4) para ativar o modo Dual Channel.'
+          : 'As travas plásticas fecharam com firmeza nos dois lados do pente de memória.',
       },
     }));
     get().checkDiagnosticResolution();

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "models:optimize": "node scripts/optimize-models.mjs"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@gltf-transform/cli": "^4.2.1",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4.0.9",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.13.9",

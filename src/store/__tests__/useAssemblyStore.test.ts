@@ -229,5 +229,24 @@ describe('Store de montagem: integração das regras', () => {
       store().installRam(2, byId(RAMS, 'ram-16gb-d5-dual'));
       expect(selectCurrentPhase(store())).toBe('PHASE_3_CASE_PREPARATION');
     });
+
+    it('instalação atômica de kit Dual Channel preenche slots 2 e 4 e cobra o kit apenas 1 vez (Issue #25)', () => {
+      store().dischargeEsd();
+      store().installMotherboard(intelMb);
+      const ramDual = byId(RAMS, 'ram-16gb-d5-dual');
+      expect(ramDual.moduleCount).toBe(2);
+
+      // Instala o kit arrastando para o slot 2
+      const installed = store().installRam(2, ramDual);
+      expect(installed).toBe(true);
+
+      // Ambos os slots 2 e 4 devem estar preenchidos com o kit
+      expect(store().assembly.ramInstalledSlot2).toBe(ramDual);
+      expect(store().assembly.ramInstalledSlot4).toBe(ramDual);
+
+      // Preço total deve cobrar a placa-mãe + o kit de RAM apenas UMA vez
+      const totalSpent = calculateTotalSpent(store().assembly, store().selectedMotherboard);
+      expect(totalSpent).toBe(intelMb.price + ramDual.price);
+    });
   });
 });

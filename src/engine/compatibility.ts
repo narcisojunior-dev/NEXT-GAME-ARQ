@@ -170,12 +170,28 @@ export function calculateTotalTdp(state: AssemblyState, mb: MotherboardComponent
  * Soma o preço de todas as peças instaladas (inclusive placa-mãe e gabinete)
  */
 export function calculateTotalSpent(state: AssemblyState, mb: MotherboardComponent | null): number {
+  const ramParts: (RamComponent | null)[] = [];
+  if (state.ramInstalledSlot2 && state.ramInstalledSlot4) {
+    if (
+      state.ramInstalledSlot2.id === state.ramInstalledSlot4.id &&
+      state.ramInstalledSlot2.moduleCount === 2
+    ) {
+      // Kit de 2 pentes: cobrar o kit apenas uma vez (Issue #25)
+      ramParts.push(state.ramInstalledSlot2);
+    } else {
+      ramParts.push(state.ramInstalledSlot2, state.ramInstalledSlot4);
+    }
+  } else if (state.ramInstalledSlot2) {
+    ramParts.push(state.ramInstalledSlot2);
+  } else if (state.ramInstalledSlot4) {
+    ramParts.push(state.ramInstalledSlot4);
+  }
+
   const parts = [
     mb,
     state.cpuInstalled,
     state.coolerInstalled,
-    state.ramInstalledSlot2,
-    state.ramInstalledSlot4,
+    ...ramParts,
     state.storageInstalled,
     state.gpuInstalled,
     state.psuInstalled,

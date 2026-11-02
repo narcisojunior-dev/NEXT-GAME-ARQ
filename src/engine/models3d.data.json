@@ -658,5 +658,176 @@
     "targets": [],
     "illustrative": false,
     "note": "Mesa gamer (vitrine; ergonomia)."
+  },
+  {
+    "id": "mb-b550m",
+    "uid": "4c0a2a3008d9402ab9bfd05b2f0cd093",
+    "name": "ARDOR GAMING B550M-HDVAR",
+    "author": "BlenderFace1",
+    "license": "CC-BY-4.0",
+    "faces": 20866,
+    "group": "COMPONENT",
+    "category": "MOTHERBOARD",
+    "targets": [
+      "mb-b550m-am4",
+      "mb-gigabyte-b550m-ds3h"
+    ],
+    "illustrative": true,
+    "note": "Placa-mãe micro-ATX para soquete AMD AM4."
+  },
+  {
+    "id": "mb-b450-atx",
+    "uid": "8ea715471e344599a07bbdbbc77dfbdd",
+    "name": "MSI B450 TOMAHAWK MAX",
+    "author": "shig0",
+    "license": "CC-BY-4.0",
+    "faces": 18856,
+    "group": "COMPONENT",
+    "category": "MOTHERBOARD",
+    "targets": [
+      "mb-msi-b550-tomahawk"
+    ],
+    "illustrative": true,
+    "note": "Placa-mãe ATX para processadores AMD Ryzen AM4."
+  },
+  {
+    "id": "pasta-termica",
+    "uid": "1f3d78897bba4bb0a9102263618f346a",
+    "name": "THERMAL_PASTE",
+    "author": "JpClaudio",
+    "license": "CC-BY-4.0",
+    "faces": 3226,
+    "group": "COMPONENT",
+    "category": "COOLER",
+    "targets": [
+      "paste-silicone-white",
+      "paste-arctic-mx4",
+      "paste-arctic-mx6",
+      "paste-noctua-nth1",
+      "paste-kryonaut"
+    ],
+    "illustrative": true,
+    "note": "Seringa aplicadora de composto térmico condutivo para processador."
+  },
+  {
+    "id": "gpu-gtx-1660",
+    "uid": "6ac9f445402f4941993ab01a1b98d23d",
+    "name": "Nvidia 1660",
+    "author": "bazyaev08",
+    "license": "CC-BY-4.0",
+    "faces": 7504,
+    "group": "COMPONENT",
+    "category": "GPU",
+    "targets": [
+      "gpu-gtx-1650"
+    ],
+    "illustrative": true,
+    "note": "Placa de vídeo compacta NVIDIA de entrada."
+  },
+  {
+    "id": "gpu-rtx-4080",
+    "uid": "a6492a454280409a964c1768ce7f2df9",
+    "name": "Rtx4090",
+    "author": "Brs.blend",
+    "license": "CC-BY-4.0",
+    "faces": 1466,
+    "group": "COMPONENT",
+    "category": "GPU",
+    "targets": [
+      "gpu-rtx-4090"
+    ],
+    "illustrative": true,
+    "note": "Placa de vídeo tri-slot de altíssimo desempenho gráfico."
+  },
+  {
+    "id": "cooler-passivo-noctua",
+    "uid": "b287b18c8c0b4c7eb5fc707af72a6de8",
+    "name": "NH-P1 Passive CPU Cooler",
+    "author": "anachro19",
+    "license": "CC-BY-4.0",
+    "faces": 15858,
+    "group": "COMPONENT",
+    "category": "COOLER",
+    "targets": [],
+    "illustrative": false,
+    "note": "Dissipador massivo para resfriamento passivo sem ruído."
+  },
+  {
+    "id": "stream-deck",
+    "uid": "4c3e4fb6bd4942d3ac167eb400d44669",
+    "name": "Elgato stream deck",
+    "author": "umkhero",
+    "license": "CC-BY-4.0",
+    "faces": 3772,
+    "group": "PERIPHERAL",
+    "category": "STAND",
+    "targets": [],
+    "illustrative": false,
+    "note": "Console de automação com teclas de display LCD."
+  },
+  {
+    "id": "volante-gamer",
+    "uid": "fb6791755a8d4977b320e1e14ca083b5",
+    "name": "Racing Steering Wheel - Game-Ready 3D Model",
+    "author": "gamico",
+    "license": "CC-BY-4.0",
+    "faces": 9490,
+    "group": "PERIPHERAL",
+    "category": "GAMEPAD",
+    "targets": [],
+    "illustrative": false,
+    "note": "Volante esportivo para simuladores de corrida."
+  },
+  {
+    "id": "case-nzxt-h500",
+    "uid": "e0e3dbab28014eb19a123c1be69d42b3",
+    "name": "NZXT H500 PC Case",
+    "author": "max.boylen",
+    "license": "CC-BY-4.0",
+    "faces": 304,
+    "group": "COMPONENT",
+    "category": "CASE",
+    "targets": [],
+    "illustrative": false,
+    "note": "Gabinete mid-tower minimalista com painel de vidro temperado."
+  },
+  {
+    "id": "microfone-mesa",
+    "uid": "11c11849cc1d427386bd64c39078c9ef",
+    "name": "Gaming Microphone",
+    "author": "Lucifer1",
+    "license": "CC-BY-4.0",
+    "faces": 2294,
+    "group": "PERIPHERAL",
+    "category": "MICROPHONE",
+    "targets": [],
+    "illustrative": false,
+    "note": "Microfone condensador gamer com tripé antivibração de mesa."
+  },
+  {
+    "id": "cpu-ryzen-am5",
+    "uid": "b433826fb4b1432dbc18a90b89dede71",
+    "name": "AMD 9600x CPU - LOW POLY",
+    "author": "PolyDavid",
+    "license": "CC-BY-4.0",
+    "faces": 1312,
+    "group": "COMPONENT",
+    "category": "CPU",
+    "targets": [],
+    "illustrative": false,
+    "note": "Processador AMD com soquete AM5 e contatos planos (LGA)."
+  },
+  {
+    "id": "ram-ddr5-corsair",
+    "uid": "5352b17857ea4036ab61980c4c57f265",
+    "name": "Corsair VENGEANCE RGB DDR5 Ram - Low Poly",
+    "author": "PolyDavid",
+    "license": "CC-BY-4.0",
+    "faces": 134,
+    "group": "COMPONENT",
+    "category": "RAM",
+    "targets": [],
+    "illustrative": false,
+    "note": "Módulo de memória RAM geração DDR5 de alta frequência."
   }
 ]
