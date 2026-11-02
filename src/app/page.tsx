@@ -12,6 +12,7 @@ import { InventoryDrawer } from '@/components/inventory/InventoryDrawer';
 import { InspectModal } from '@/components/modals/InspectModal';
 import { BIOSSimulatorModal } from '@/components/modals/BIOSSimulatorModal';
 import { FrontPanelZoomModal } from '@/components/modals/FrontPanelZoomModal';
+import { AcademyOSDesktop } from '@/components/os/AcademyOSDesktop';
 
 export default function Home() {
   return (
@@ -46,6 +47,7 @@ export default function Home() {
       <InspectModal />
       <BIOSSimulatorModal />
       <FrontPanelZoomModal />
+      <AcademyOSDesktop />
     </main>
   );
 }

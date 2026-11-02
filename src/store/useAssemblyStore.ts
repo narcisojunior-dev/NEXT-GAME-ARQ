@@ -44,6 +44,7 @@ interface AssemblyStore {
   isBiosOpen: boolean;
   isScoreModalOpen: boolean;
   isFrontPanelModalOpen: boolean;
+  isAcademyOSOpen: boolean;
   fPanelConnections: Record<FPanelConnectorId, [number, number] | null>;
   activeAlert: { title: string; message: string; type: 'error' | 'success' | 'warning' } | null;
 
@@ -63,6 +64,8 @@ interface AssemblyStore {
   closeScoreModal: () => void;
   openFrontPanelModal: () => void;
   closeFrontPanelModal: () => void;
+  openAcademyOS: () => void;
+  closeAcademyOS: () => void;
   connectFPanelJumper: (connectorId: FPanelConnectorId, pins: [number, number]) => { success: boolean; message: string };
   disconnectFPanelJumper: (connectorId: FPanelConnectorId) => void;
   tickTimer: () => void;
@@ -134,6 +137,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   isBiosOpen: false,
   isScoreModalOpen: false,
   isFrontPanelModalOpen: false,
+  isAcademyOSOpen: false,
   fPanelConnections: {
     POWER_SW: null,
     RESET_SW: null,
@@ -258,6 +262,10 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   openFrontPanelModal: () => set({ isFrontPanelModalOpen: true }),
 
   closeFrontPanelModal: () => set({ isFrontPanelModalOpen: false }),
+
+  openAcademyOS: () => set({ isAcademyOSOpen: true, isBiosOpen: false }),
+
+  closeAcademyOS: () => set({ isAcademyOSOpen: false }),
 
   connectFPanelJumper: (connectorId, pins) => {
     const result = validateConnectorPlacement(connectorId, pins);

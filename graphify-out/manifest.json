@@ -199,10 +199,10 @@
     "semantic_hash": "63a432e6492500548df9e90d2ee1060b"
   },
   "src/app/page.tsx": {
-    "mtime": 1793594369.2399852,
-    "seen": 1793594408.402263,
-    "ast_hash": "d0d14b3f63c4a1e0848aeb14058f100f",
-    "semantic_hash": "d0d14b3f63c4a1e0848aeb14058f100f"
+    "mtime": 1793594611.0378315,
+    "seen": 1793594652.9386303,
+    "ast_hash": "00552d1c066cb18fa8341040e9d61a41",
+    "semantic_hash": "00552d1c066cb18fa8341040e9d61a41"
   },
   "src/components/challenges/TeamChallengeBanner.tsx": {
     "mtime": 1793590852.6696975,
@@ -241,10 +241,10 @@
     "semantic_hash": "4e2e75b09bd2a5cccc95488d435f5b7c"
   },
   "src/components/modals/BIOSSimulatorModal.tsx": {
-    "mtime": 1793593723.728805,
-    "seen": 1793593775.3768084,
-    "ast_hash": "1d211dd9a2e07c4abd82b642bae3535a",
-    "semantic_hash": "1d211dd9a2e07c4abd82b642bae3535a"
+    "mtime": 1793594592.9668467,
+    "seen": 1793594652.941631,
+    "ast_hash": "2cb418242c68e26861a6aa79e72f2b47",
+    "semantic_hash": "2cb418242c68e26861a6aa79e72f2b47"
   },
   "src/components/modals/InspectModal.tsx": {
     "mtime": 1793590852.9147954,
@@ -289,10 +289,10 @@
     "semantic_hash": "47e2bbb878c9b5c8689d93c0f397c0de"
   },
   "src/store/useAssemblyStore.ts": {
-    "mtime": 1793594234.9926443,
-    "seen": 1793594408.4072714,
-    "ast_hash": "dff3b2d65c150155d539e89fdb6d43b8",
-    "semantic_hash": "dff3b2d65c150155d539e89fdb6d43b8"
+    "mtime": 1793594517.865678,
+    "seen": 1793594652.9456306,
+    "ast_hash": "5b833d246b107cbe2f32c7993e3c67e2",
+    "semantic_hash": "5b833d246b107cbe2f32c7993e3c67e2"
   },
   "tsconfig.json": {
     "mtime": 1793590910.7074394,
@@ -353,5 +353,23 @@
     "seen": 1793594408.4062684,
     "ast_hash": "826aa2c3635be8942d4a81206ce44b52",
     "semantic_hash": "826aa2c3635be8942d4a81206ce44b52"
+  },
+  "src/components/os/AcademyOSDesktop.tsx": {
+    "mtime": 1793594562.3343742,
+    "seen": 1793594652.941631,
+    "ast_hash": "300dd71e2d57ad947a0a50b759693a52",
+    "semantic_hash": "300dd71e2d57ad947a0a50b759693a52"
+  },
+  "src/engine/__tests__/benchmark.test.ts": {
+    "mtime": 1793594474.968367,
+    "seen": 1793594652.9426296,
+    "ast_hash": "c2aad31a48bca9183bb2412e37c90821",
+    "semantic_hash": "c2aad31a48bca9183bb2412e37c90821"
+  },
+  "src/engine/benchmark.ts": {
+    "mtime": 1793594461.426186,
+    "seen": 1793594652.94363,
+    "ast_hash": "8a109ce999e40c518e9a6070cb9bfbfc",
+    "semantic_hash": "8a109ce999e40c518e9a6070cb9bfbfc"
   }
 }

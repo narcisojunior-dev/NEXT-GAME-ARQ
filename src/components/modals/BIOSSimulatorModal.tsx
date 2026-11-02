@@ -14,6 +14,7 @@ export const BIOSSimulatorModal: React.FC = () => {
     selectedMotherboard,
     resetAssembly,
     calculateFinalScore,
+    openAcademyOS,
   } = useAssemblyStore();
 
   useEffect(() => {
@@ -167,7 +168,7 @@ export const BIOSSimulatorModal: React.FC = () => {
         )}
 
         {/* Botões de Ação */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800">
           <button
             onClick={() => {
               closeBios();
@@ -179,13 +180,24 @@ export const BIOSSimulatorModal: React.FC = () => {
             <span>Desmontar e Tentar Novamente</span>
           </button>
 
-          <button
-            onClick={closeBios}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold transition-all shadow-md shadow-cyan-500/20 cursor-pointer"
-          >
-            <span>Voltar para a Bancada</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-3">
+            {isSuccess && (
+              <button
+                onClick={openAcademyOS}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-black transition-all shadow-lg shadow-cyan-500/25 cursor-pointer animate-bounce"
+              >
+                <span>🚀 INICIAR ACADEMY OS (BENCHMARKS)</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
+
+            <button
+              onClick={closeBios}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition-all cursor-pointer"
+            >
+              <span>Voltar à Bancada</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
