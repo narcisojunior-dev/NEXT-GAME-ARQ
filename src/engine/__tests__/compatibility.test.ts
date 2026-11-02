@@ -100,3 +100,4 @@ describe('Teste de Diagnóstico do POST (Power-On Self-Test)', () => {
     expect(result.issues.some((i) => i.title.includes('Fonte Subdimensionada'))).toBe(true);
   });
 });
+

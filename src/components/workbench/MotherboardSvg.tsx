@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
-import { Cpu, Zap, HardDrive, Fan, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Cpu, Zap, HardDrive, Fan, AlertTriangle, CheckCircle2, ArrowDown } from 'lucide-react';
 
 interface MotherboardSvgProps {
   onSlotClick?: (slotId: string) => void;
@@ -56,18 +56,40 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
   };
 
   const isPowerOn = postResult?.canPowerOn;
-  const isPostSuccess = postResult?.bootSuccess;
+
+  // Indicadores de onde clicar com base na peça selecionada
+  const isCpuTarget = selectedComponentForPlacement?.category === 'CPU';
+  const isPasteTarget = selectedComponentForPlacement?.category === 'PASTE';
+  const isCoolerTarget = selectedComponentForPlacement?.category === 'COOLER';
+  const isRamTarget = selectedComponentForPlacement?.category === 'RAM';
+  const isStorageTarget = selectedComponentForPlacement?.category === 'STORAGE';
+  const isGpuTarget = selectedComponentForPlacement?.category === 'GPU';
 
   return (
-    <div className="relative w-full aspect-4/3 max-w-4xl mx-auto bg-slate-950/80 rounded-2xl border border-slate-800 p-4 shadow-2xl backdrop-blur-md overflow-hidden select-none">
+    <div className="relative w-full aspect-4/3 max-w-4xl mx-auto bg-slate-950/90 rounded-3xl border-2 border-slate-800 p-4 shadow-2xl backdrop-blur-md overflow-hidden select-none">
+      {/* Banner Superior com Orientação Dinâmica para o Aluno */}
+      {selectedComponentForPlacement && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-2xl bg-cyan-500 text-slate-950 text-xs font-black shadow-xl flex items-center gap-2 animate-bounce">
+          <ArrowDown className="w-4 h-4" />
+          <span>
+            {isCpuTarget && 'CLIQUE NO SOQUETE CENTRAL PARA ENCAIXAR A CPU!'}
+            {isPasteTarget && 'CLIQUE SOBRE O PROCESSADOR PARA APLICAR A PASTA!'}
+            {isCoolerTarget && 'CLIQUE SOBRE A CPU PARA PARAFUSAR O COOLER!'}
+            {isRamTarget && 'CLIQUE NO SLOT 2 OU 4 PARA ENCAIXAR A MEMÓRIA (DUAL CHANNEL)!'}
+            {isStorageTarget && 'CLIQUE NO SLOT M.2 PARA ENCAIXAR O SSD!'}
+            {isGpuTarget && 'CLIQUE NO SLOT PCIe x16 PARA ENCAIXAR A PLACA DE VÍDEO!'}
+            {!isCpuTarget && !isPasteTarget && !isCoolerTarget && !isRamTarget && !isStorageTarget && !isGpuTarget && `CLIQUE NO SLOT CORRESPONDENTE PARA ENCAIXAR ${selectedComponentForPlacement.name}`}
+          </span>
+        </div>
+      )}
+
       <svg
         viewBox="0 0 900 680"
-        className="w-full h-full drop-shadow-lg"
+        className="w-full h-full drop-shadow-2xl"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          {/* Gradientes da PCB */}
           <linearGradient id="pcbBg" x1="0" y1="0" x2="900" y2="680" gradientUnits="userSpaceOnUse">
             <stop stopColor="#0B132B" />
             <stop offset="0.5" stopColor="#0A192F" />
@@ -81,7 +103,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           </linearGradient>
 
           <linearGradient id="goldTraces" x1="0" y1="0" x2="1" y2="0">
-            <stop stopColor="#EAB308" stopOpacity="0.4" />
+            <stop stopColor="#EAB308" stopOpacity="0.5" />
             <stop offset="1" stopColor="#CA8A04" stopOpacity="0.2" />
           </linearGradient>
 
@@ -99,6 +121,10 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
+          </filter>
+
+          <filter id="targetPulse" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="0" stdDeviation="8" floodColor="#06B6D4" floodOpacity="0.8" />
           </filter>
         </defs>
 
@@ -148,7 +174,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
         >
           <rect x="70" y="32" width="70" height="34" rx="4" fill="#0F172A" stroke={assembly.cableCpu8PinConnected ? '#10B981' : '#EAB308'} strokeWidth="2" />
           <text x="105" y="54" fill="#E2E8F0" fontSize="10" fontWeight="bold" textAnchor="middle">
-            {assembly.cableCpu8PinConnected ? 'CPU 8P [OK]' : 'CPU 8-PIN'}
+            {assembly.cableCpu8PinConnected ? 'CPU 8P [OK]' : 'CLIQUE: CABO CPU 8P'}
           </text>
         </g>
 
@@ -157,18 +183,17 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           className="cursor-pointer transition-transform hover:scale-105"
           onClick={connectCoolerFan}
         >
-          <rect x="360" y="45" width="40" height="18" rx="2" fill="#1E293B" stroke={assembly.coolerFanConnected ? '#10B981' : '#64748B'} strokeWidth="1.5" />
-          <text x="380" y="58" fill={assembly.coolerFanConnected ? '#10B981' : '#94A3B8'} fontSize="8" fontWeight="bold" textAnchor="middle">CPU_FAN</text>
+          <rect x="360" y="45" width="55" height="20" rx="3" fill="#1E293B" stroke={assembly.coolerFanConnected ? '#10B981' : '#64748B'} strokeWidth="1.5" />
+          <text x="387" y="59" fill={assembly.coolerFanConnected ? '#10B981' : '#94A3B8'} fontSize="9" fontWeight="bold" textAnchor="middle">
+            {assembly.coolerFanConnected ? 'FAN [OK]' : 'CPU_FAN'}
+          </text>
         </g>
 
         {/* 2. SOQUETE DA CPU (LGA1700 / AM5) */}
         <g
-          className={`cursor-pointer transition-all ${
-            selectedComponentForPlacement?.category === 'CPU' || selectedComponentForPlacement?.category === 'PASTE' || selectedComponentForPlacement?.category === 'COOLER'
-              ? 'animate-pulse'
-              : ''
-          }`}
+          className="cursor-pointer transition-all"
           onClick={handleCpuAreaClick}
+          filter={isCpuTarget || isPasteTarget || isCoolerTarget ? 'url(#targetPulse)' : undefined}
         >
           {/* Base do Soquete */}
           <rect
@@ -178,8 +203,8 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             height="210"
             rx="12"
             fill="#1E293B"
-            stroke={selectedComponentForPlacement?.category === 'CPU' ? '#06B6D4' : '#475569'}
-            strokeWidth={selectedComponentForPlacement?.category === 'CPU' ? 3 : 2}
+            stroke={isCpuTarget || isPasteTarget || isCoolerTarget ? '#06B6D4' : '#475569'}
+            strokeWidth={isCpuTarget || isPasteTarget || isCoolerTarget ? 4 : 2}
           />
           <text x="340" y="115" fill="#94A3B8" fontSize="12" fontWeight="bold" textAnchor="middle">
             SOQUETE {selectedMotherboard.socket}
@@ -191,27 +216,32 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           {/* Área de Pinos do Soquete ou CPU instalada */}
           {!assembly.cpuInstalled ? (
             <g>
-              {/* Grade de micropinos simulados */}
-              <rect x="260" y="125" width="160" height="160" rx="4" fill="#0F172A" stroke="#EAB308" strokeWidth="1" strokeDasharray="4 2" />
-              <text x="340" y="210" fill="#EAB308" fontSize="12" fontWeight="bold" textAnchor="middle">
-                [CLIQUE P/ ENCAIXAR CPU]
+              <rect x="260" y="125" width="160" height="160" rx="4" fill="#0F172A" stroke="#EAB308" strokeWidth="1.5" strokeDasharray="4 2" />
+              <text x="340" y="195" fill="#F59E0B" fontSize="12" fontWeight="black" textAnchor="middle">
+                [ENCAIXAR CPU AQUI]
+              </text>
+              <text x="340" y="215" fill="#94A3B8" fontSize="9" textAnchor="middle">
+                Alinhe o triângulo dourado
               </text>
             </g>
           ) : (
             <g>
               {/* Chapa Metálica IHS da CPU Instalada */}
-              <rect x="258" y="123" width="164" height="164" rx="8" fill="#94A3B8" stroke="#CBD5E1" strokeWidth="2" />
+              <rect x="258" y="123" width="164" height="164" rx="8" fill="#94A3B8" stroke="#CBD5E1" strokeWidth="2.5" />
               <polygon points="262,127 274,127 262,139" fill="#F59E0B" />
-              <text x="340" y="180" fill="#0F172A" fontSize="11" fontWeight="bold" textAnchor="middle">
+              <text x="340" y="175" fill="#0F172A" fontSize="11" fontWeight="bold" textAnchor="middle">
                 {assembly.cpuInstalled.name}
               </text>
-              <text x="340" y="200" fill="#334155" fontSize="10" textAnchor="middle">
+              <text x="340" y="195" fill="#334155" fontSize="10" textAnchor="middle">
                 {assembly.cpuInstalled.cores} Cores / TDP {assembly.cpuInstalled.tdpWatts}W
               </text>
 
               {/* Camada de Pasta Térmica */}
               {assembly.thermalPasteApplied && !assembly.coolerInstalled && (
-                <circle cx="340" cy="215" r="24" fill="#64748B" opacity="0.9" stroke="#94A3B8" strokeWidth="2" />
+                <g>
+                  <circle cx="340" cy="215" r="26" fill="#64748B" opacity="0.95" stroke="#CBD5E1" strokeWidth="2" />
+                  <text x="340" y="219" fill="#F8FAFC" fontSize="9" fontWeight="bold" textAnchor="middle">PASTA APLICADA</text>
+                </g>
               )}
             </g>
           )}
@@ -236,7 +266,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
               fill={assembly.socketLeverLocked ? "#10B981" : "#F59E0B"}
             />
             <text x="475" y="200" fill="#E2E8F0" fontSize="10" fontWeight="bold">
-              {assembly.socketLeverLocked ? 'TRAVADA [OK]' : 'ABERTA'}
+              {assembly.socketLeverLocked ? 'ALAVANCA: TRAVADA [OK]' : 'CLIQUE: TRAVAR ALAVANCA'}
             </text>
           </g>
 
@@ -259,8 +289,8 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
         </g>
 
         {/* 3. SLOTS DE MEMÓRIA RAM (4 Slots) */}
-        <g>
-          <text x="560" y="80" fill="#94A3B8" fontSize="12" fontWeight="bold" letterSpacing="1">
+        <g filter={isRamTarget ? 'url(#targetPulse)' : undefined}>
+          <text x="560" y="80" fill={isRamTarget ? '#06B6D4' : '#94A3B8'} fontSize="12" fontWeight="bold" letterSpacing="1">
             SLOTS DE MEMÓRIA ({selectedMotherboard.supportedRam})
           </text>
 
@@ -275,7 +305,6 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
               className="cursor-pointer transition-transform hover:scale-102"
               onClick={() => handleRamSlotClick(slot.id as 2 | 4)}
             >
-              {/* Canal Slot */}
               <rect
                 x={slot.x}
                 y="95"
@@ -283,14 +312,11 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
                 height="215"
                 rx="4"
                 fill={slot.installed ? '#0284C7' : '#0F172A'}
-                stroke={slot.isDual ? '#06B6D4' : '#334155'}
-                strokeWidth={slot.isDual ? 2 : 1}
+                stroke={slot.isDual ? (isRamTarget ? '#22C55E' : '#06B6D4') : '#334155'}
+                strokeWidth={slot.isDual ? (isRamTarget ? 3 : 2) : 1}
               />
 
-              {/* Chanfro (Notch) da Memória no meio */}
               <rect x={slot.x} y="200" width="28" height="6" fill="#1E293B" />
-
-              {/* Travas Superior e Inferior */}
               <rect x={slot.x + 4} y="90" width="20" height="8" rx="2" fill={slot.installed ? '#10B981' : '#64748B'} />
               <rect x={slot.x + 4} y="307" width="20" height="8" rx="2" fill={slot.installed ? '#10B981' : '#64748B'} />
 
@@ -304,7 +330,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
                   textAnchor="middle"
                   transform={`rotate(-90 ${slot.x + 14} 240)`}
                 >
-                  {slot.installed.capacityGb}GB {slot.installed.ramType}
+                  {slot.installed.capacityGb}GB {slot.installed.ramType} [OK]
                 </text>
               ) : (
                 <text
@@ -347,7 +373,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             textAnchor="middle"
             transform="rotate(-90 685 200)"
           >
-            {assembly.cableAtx24PinConnected ? 'ATX 24-PIN [CONECTADO]' : 'PLUGAR CABO 24 PINOS'}
+            {assembly.cableAtx24PinConnected ? 'ATX 24-PIN [CONECTADO]' : 'CLIQUE: LIGAR CABO 24 PINOS'}
           </text>
         </g>
 
@@ -355,6 +381,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
         <g
           className="cursor-pointer transition-transform hover:scale-102"
           onClick={handleM2SlotClick}
+          filter={isStorageTarget ? 'url(#targetPulse)' : undefined}
         >
           <rect
             x="240"
@@ -363,13 +390,12 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             height="46"
             rx="6"
             fill={assembly.storageInstalled ? '#0F766E' : '#1E293B'}
-            stroke={assembly.storageInstalled ? '#14B8A6' : '#475569'}
-            strokeWidth="2"
+            stroke={isStorageTarget ? '#06B6D4' : assembly.storageInstalled ? '#14B8A6' : '#475569'}
+            strokeWidth={isStorageTarget ? 3 : 2}
           />
           <text x="350" y="358" fill="#F8FAFC" fontSize="11" fontWeight="bold" textAnchor="middle">
-            {assembly.storageInstalled ? `M.2 NVMe: ${assembly.storageInstalled.name}` : 'SLOT M.2 NVMe (PCIe 4.0 x4)'}
+            {assembly.storageInstalled ? `M.2 NVMe: ${assembly.storageInstalled.name}` : isStorageTarget ? '👉 CLIQUE P/ ENCAIXAR SSD M.2' : 'SLOT M.2 NVMe (PCIe 4.0 x4)'}
           </text>
-          {/* Parafuso de Retenção */}
           <circle cx="445" cy="353" r="6" fill="#94A3B8" stroke="#334155" strokeWidth="1.5" />
         </g>
 
@@ -377,8 +403,8 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
         <g
           className="cursor-pointer transition-transform hover:scale-102"
           onClick={handlePcieSlotClick}
+          filter={isGpuTarget ? 'url(#targetPulse)' : undefined}
         >
-          {/* Slot 1: Principal x16 Reforçado com Metal */}
           <rect
             x="80"
             y="410"
@@ -386,14 +412,13 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             height="34"
             rx="4"
             fill={assembly.gpuInstalled ? '#0284C7' : '#0F172A'}
-            stroke={assembly.gpuInstalled ? '#38BDF8' : '#64748B'}
-            strokeWidth="2"
+            stroke={isGpuTarget ? '#06B6D4' : assembly.gpuInstalled ? '#38BDF8' : '#64748B'}
+            strokeWidth={isGpuTarget ? 3 : 2}
           />
           <line x1="160" y1="410" x2="160" y2="444" stroke="#334155" strokeWidth="2" />
           <text x="370" y="432" fill="#F8FAFC" fontSize="12" fontWeight="bold" textAnchor="middle">
-            {assembly.gpuInstalled ? `GPU INSTALADA: ${assembly.gpuInstalled.name}` : 'SLOT PCIe 4.0 x16 (PLACA DE VÍDEO)'}
+            {assembly.gpuInstalled ? `GPU: ${assembly.gpuInstalled.name} [OK]` : isGpuTarget ? '👉 CLIQUE P/ ENCAIXAR PLACA DE VÍDEO' : 'SLOT PCIe 4.0 x16 (PLACA DE VÍDEO)'}
           </text>
-          {/* Trava Plástica da GPU */}
           <rect x="662" y="414" width="16" height="26" rx="3" fill={assembly.gpuInstalled ? '#10B981' : '#F59E0B'} />
         </g>
 
@@ -405,7 +430,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           >
             <rect x="520" y="455" width="140" height="28" rx="4" fill="#0F172A" stroke={assembly.cableGpuPcieConnected ? '#10B981' : '#EAB308'} strokeWidth="2" />
             <text x="590" y="473" fill="#E2E8F0" fontSize="10" fontWeight="bold" textAnchor="middle">
-              {assembly.cableGpuPcieConnected ? 'CABO PCIe 8P [OK]' : 'LIGAR FORÇA PCIe (8 PIN)'}
+              {assembly.cableGpuPcieConnected ? 'CABO PCIe 8P [OK]' : 'CLIQUE: LIGAR CABO PCIe (8P)'}
             </text>
           </g>
         )}
@@ -440,11 +465,10 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           <rect x="680" y="560" width="180" height="70" rx="8" fill="#0F172A" stroke={assembly.frontPanelPowerSwConnected ? '#10B981' : '#EAB308'} strokeWidth="2" />
           <text x="770" y="582" fill="#94A3B8" fontSize="11" fontWeight="bold" textAnchor="middle">F_PANEL (PAINEL FRONTAL)</text>
           <text x="770" y="605" fill={assembly.frontPanelPowerSwConnected ? '#10B981' : '#F59E0B'} fontSize="11" fontWeight="bold" textAnchor="middle">
-            {assembly.frontPanelPowerSwConnected ? 'POWER SW CONECTADO [OK]' : 'CLIQUE P/ LIGAR POWER SW'}
+            {assembly.frontPanelPowerSwConnected ? 'POWER SW CONECTADO [OK]' : 'CLIQUE: LIGAR POWER SW'}
           </text>
         </g>
       </svg>
     </div>
   );
 };
-
