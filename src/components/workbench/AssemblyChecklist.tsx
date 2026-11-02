@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { getRequiredCables, cableById } from '@/engine/cabling';
 import {
   CheckCircle2,
   Circle,
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export const AssemblyChecklist: React.FC = () => {
-  const { assembly, selectedMotherboard, selectedComponentForPlacement } = useAssemblyStore();
+  const { assembly, selectedMotherboard, selectedComponentForPlacement, cableConnections } = useAssemblyStore();
   const [isOpen, setIsOpen] = useState(true);
 
   // Lista de etapas de montagem e seus status
@@ -68,24 +69,28 @@ export const AssemblyChecklist: React.FC = () => {
     },
     {
       id: 'storage',
-      title: '8. Instalar SSD M.2 NVMe',
-      desc: 'Encaixe a 30° no slot M.2 e aperte o parafuso.',
-      isDone: assembly.storageInstalled !== null,
+      title: '8. Instalar Armazenamento (SSD/HD)',
+      desc: 'NVMe vai no slot M.2 da placa; SSD SATA e HD vão na baia SATA com cabos de dados e energia.',
+      isDone:
+        assembly.storageInstalled !== null &&
+        (assembly.storageInstalled.storageType === 'NVMe_M2' || assembly.cableSataConnected),
     },
     {
       id: 'case_prep',
-      title: '9. Espelho I/O & Espaçadores',
-      desc: 'Instale o espelho traseiro e os espaçadores dourados.',
-      isDone: assembly.ioShieldInstalled && assembly.standoffsInstalled,
+      title: '9. Gabinete, Espelho I/O & Espaçadores',
+      desc: 'Escolha um gabinete compatível, instale o espelho traseiro e os espaçadores dourados.',
+      isDone:
+        assembly.caseInstalled !== null &&
+        (assembly.ioShieldInstalled || Boolean(selectedMotherboard?.hasIntegratedIoShield)) &&
+        assembly.standoffsInstalled,
     },
     {
       id: 'psu',
-      title: '10. Instalar Fonte & Conectar Cabos',
-      desc: 'Fixe a fonte e plugue os cabos ATX 24P, CPU 8P e Power SW.',
+      title: '10. Instalar Fonte & Ligar Todos os Cabos',
+      desc: 'Arraste cada cabo da fonte, do gabinete e das peças até o conector certo, e ligue o painel frontal.',
       isDone:
         assembly.psuInstalled !== null &&
-        assembly.cableAtx24PinConnected &&
-        assembly.cableCpu8PinConnected &&
+        getRequiredCables(assembly).every((id) => cableConnections[id] === cableById(id).target) &&
         assembly.frontPanelPowerSwConnected,
     },
     {

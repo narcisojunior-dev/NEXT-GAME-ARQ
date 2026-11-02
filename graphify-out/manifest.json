@@ -193,16 +193,16 @@
     "ast_empty": true
   },
   "src/app/layout.tsx": {
-    "mtime": 1793595577.0083067,
-    "seen": 1793596211.4842741,
-    "ast_hash": "b182f7592d86a28371cf060ee2b6cd41",
-    "semantic_hash": "b182f7592d86a28371cf060ee2b6cd41"
+    "mtime": 1793626003.7334762,
+    "seen": 1793626326.7673314,
+    "ast_hash": "1669596d0003ac293e6b241c9f8ca1f7",
+    "semantic_hash": "1669596d0003ac293e6b241c9f8ca1f7"
   },
   "src/app/page.tsx": {
-    "mtime": 1793595145.7145638,
-    "seen": 1793595206.913387,
-    "ast_hash": "11c74755c4f001fc22c1ac8ea8514221",
-    "semantic_hash": "11c74755c4f001fc22c1ac8ea8514221"
+    "mtime": 1793626003.734481,
+    "seen": 1793626326.7673314,
+    "ast_hash": "1da3959fc651316bc3aadd80795d73ab",
+    "semantic_hash": "1da3959fc651316bc3aadd80795d73ab"
   },
   "src/components/challenges/TeamChallengeBanner.tsx": {
     "mtime": 1793590852.6696975,
@@ -211,28 +211,28 @@
     "semantic_hash": "6afc5655abcc1cb32c64c8c392fa5ad3"
   },
   "src/components/hud/DidacticCompanion.tsx": {
-    "mtime": 1793590852.7024736,
-    "seen": 1793591874.1685615,
-    "ast_hash": "6e873cbcc602160e841ddc8bfd7a069c",
-    "semantic_hash": "6e873cbcc602160e841ddc8bfd7a069c"
+    "mtime": 1793626003.7354813,
+    "seen": 1793626326.7698395,
+    "ast_hash": "c1cb7f2d31ae8dfd0a4f4b25d8cf0bf7",
+    "semantic_hash": "c1cb7f2d31ae8dfd0a4f4b25d8cf0bf7"
   },
   "src/components/hud/TopHUD.tsx": {
-    "mtime": 1793595577.1434736,
-    "seen": 1793596211.485274,
-    "ast_hash": "225427413fa40f04bf129cdf04b811b1",
-    "semantic_hash": "225427413fa40f04bf129cdf04b811b1"
+    "mtime": 1793626003.7364807,
+    "seen": 1793626326.7698395,
+    "ast_hash": "05515344085453f802742834265156b4",
+    "semantic_hash": "05515344085453f802742834265156b4"
   },
   "src/components/inventory/ComponentCard.tsx": {
-    "mtime": 1793595577.1992612,
-    "seen": 1793596211.485274,
-    "ast_hash": "576ee32adc318e46bc4998192a89602b",
-    "semantic_hash": "576ee32adc318e46bc4998192a89602b"
+    "mtime": 1793626003.7364807,
+    "seen": 1793626326.7698395,
+    "ast_hash": "cf511d9488f25ce5c09b000c51b58b6d",
+    "semantic_hash": "cf511d9488f25ce5c09b000c51b58b6d"
   },
   "src/components/inventory/InventoryDrawer.tsx": {
-    "mtime": 1793593625.9309044,
-    "seen": 1793593775.3768084,
-    "ast_hash": "59e016245e1e21b189c5475f5ae6d78b",
-    "semantic_hash": "59e016245e1e21b189c5475f5ae6d78b"
+    "mtime": 1793626003.7374814,
+    "seen": 1793626326.7708392,
+    "ast_hash": "f5fa6dfd681c8eeab9dec385d4a4e339",
+    "semantic_hash": "f5fa6dfd681c8eeab9dec385d4a4e339"
   },
   "src/components/missions/MissionHeader.tsx": {
     "mtime": 1793590852.8500926,
@@ -247,22 +247,22 @@
     "semantic_hash": "2cb418242c68e26861a6aa79e72f2b47"
   },
   "src/components/modals/InspectModal.tsx": {
-    "mtime": 1793590852.9147954,
-    "seen": 1793591874.1685705,
-    "ast_hash": "a1e925e12cc075998181887e7b74abd1",
-    "semantic_hash": "a1e925e12cc075998181887e7b74abd1"
+    "mtime": 1793626003.7384818,
+    "seen": 1793626326.771839,
+    "ast_hash": "be705708db8e5341f57be632bc9086fa",
+    "semantic_hash": "be705708db8e5341f57be632bc9086fa"
   },
   "src/components/workbench/MotherboardSvg.tsx": {
-    "mtime": 1793595577.6710434,
-    "seen": 1793596211.48678,
-    "ast_hash": "49afbc1157bb116222a30ee81618e616",
-    "semantic_hash": "49afbc1157bb116222a30ee81618e616"
+    "mtime": 1793626003.7406008,
+    "seen": 1793626326.774841,
+    "ast_hash": "26cc09e72376306a22e949d6e45fbe2b",
+    "semantic_hash": "26cc09e72376306a22e949d6e45fbe2b"
   },
   "src/components/workbench/WorkbenchMat.tsx": {
-    "mtime": 1793594352.6609352,
-    "seen": 1793594408.405269,
-    "ast_hash": "86c52f5d2dcb49bc4b2755956e612531",
-    "semantic_hash": "86c52f5d2dcb49bc4b2755956e612531"
+    "mtime": 1793626003.7416008,
+    "seen": 1793626326.774841,
+    "ast_hash": "fc8bfb4f8e6b8319d542b4008e3e06e0",
+    "semantic_hash": "fc8bfb4f8e6b8319d542b4008e3e06e0"
   },
   "src/engine/audio/soundEngine.ts": {
     "mtime": 1793590853.3302426,
@@ -271,28 +271,28 @@
     "semantic_hash": "4632df653c41032c2dadbcf9aa29551e"
   },
   "src/engine/compatibility.ts": {
-    "mtime": 1793595577.9430542,
-    "seen": 1793596211.4877863,
-    "ast_hash": "2414bebd00c2903f95a6176dd0bd145b",
-    "semantic_hash": "2414bebd00c2903f95a6176dd0bd145b"
+    "mtime": 1793626003.7466235,
+    "seen": 1793626326.7808547,
+    "ast_hash": "60ac8abe7bc59d3718e316a1adb4f7b3",
+    "semantic_hash": "60ac8abe7bc59d3718e316a1adb4f7b3"
   },
   "src/engine/hardwareCatalog.ts": {
-    "mtime": 1793596794.4002647,
-    "seen": 1793597046.9501312,
-    "ast_hash": "934a8cf17d4949ef16ed70f599cac1cc",
-    "semantic_hash": "934a8cf17d4949ef16ed70f599cac1cc"
+    "mtime": 1793626242.0847445,
+    "seen": 1793626326.7808547,
+    "ast_hash": "af5c22c3aace93e51001c52a04233021",
+    "semantic_hash": "af5c22c3aace93e51001c52a04233021"
   },
   "src/engine/types.ts": {
-    "mtime": 1793590853.5202394,
-    "seen": 1793591874.1685815,
-    "ast_hash": "47e2bbb878c9b5c8689d93c0f397c0de",
-    "semantic_hash": "47e2bbb878c9b5c8689d93c0f397c0de"
+    "mtime": 1793626003.7496247,
+    "seen": 1793626326.7828548,
+    "ast_hash": "329ef3c7a091f0ae68350b635ba2996f",
+    "semantic_hash": "329ef3c7a091f0ae68350b635ba2996f"
   },
   "src/store/useAssemblyStore.ts": {
-    "mtime": 1793595578.1177645,
-    "seen": 1793596211.4887857,
-    "ast_hash": "6e81e5ab97dd776c7c7fefc57d2b0bc3",
-    "semantic_hash": "6e81e5ab97dd776c7c7fefc57d2b0bc3"
+    "mtime": 1793626003.7512274,
+    "seen": 1793626326.7838573,
+    "ast_hash": "3c0abac60fe29ea323bb04c4f4916582",
+    "semantic_hash": "3c0abac60fe29ea323bb04c4f4916582"
   },
   "tsconfig.json": {
     "mtime": 1793590910.7074394,
@@ -301,22 +301,22 @@
     "semantic_hash": "9a359761868dad5dad749ba2a261301d"
   },
   "src/components/common/HardwareImage.tsx": {
-    "mtime": 1793596943.070486,
-    "seen": 1793597046.9421318,
-    "ast_hash": "5838e241d63d67fcedf07a8d1abe0daa",
-    "semantic_hash": "5838e241d63d67fcedf07a8d1abe0daa"
+    "mtime": 1793626136.9325485,
+    "seen": 1793626326.768835,
+    "ast_hash": "21c70957aaf83258bc9f7245438c0ba1",
+    "semantic_hash": "21c70957aaf83258bc9f7245438c0ba1"
   },
   "src/components/workbench/AssemblyChecklist.tsx": {
-    "mtime": 1793595577.629964,
-    "seen": 1793596211.48678,
-    "ast_hash": "9e7502263ffc0e3d7e31e0951607ff7a",
-    "semantic_hash": "9e7502263ffc0e3d7e31e0951607ff7a"
+    "mtime": 1793626003.7394817,
+    "seen": 1793626326.773839,
+    "ast_hash": "46c7d5924eda6cfa070898da02cbc85e",
+    "semantic_hash": "46c7d5924eda6cfa070898da02cbc85e"
   },
   "src/engine/__tests__/compatibility.test.ts": {
-    "mtime": 1793596965.2453372,
-    "seen": 1793597046.9471314,
-    "ast_hash": "ee21be1514e8d6e08b4285c65c51ecc1",
-    "semantic_hash": "ee21be1514e8d6e08b4285c65c51ecc1"
+    "mtime": 1793626003.7441058,
+    "seen": 1793626326.776345,
+    "ast_hash": "0202c290b14f65959472d268e528b6d6",
+    "semantic_hash": "0202c290b14f65959472d268e528b6d6"
   },
   "src/components/diagnostic/DiagnosticBench.tsx": {
     "mtime": 1793595424.9391289,
@@ -331,28 +331,28 @@
     "semantic_hash": "1bafb9c7ee6fa89f3c8d3e501dab72fd"
   },
   "src/engine/diagnosticCases.ts": {
-    "mtime": 1793595426.4492247,
-    "seen": 1793596211.4877863,
-    "ast_hash": "ba3dc51bd6b1bce312d811726589aefe",
-    "semantic_hash": "ba3dc51bd6b1bce312d811726589aefe"
+    "mtime": 1793626003.7476242,
+    "seen": 1793626326.7808547,
+    "ast_hash": "91d63909c9ed29ea6c97dc20f51ac406",
+    "semantic_hash": "91d63909c9ed29ea6c97dc20f51ac406"
   },
   "src/components/modals/FrontPanelZoomModal.tsx": {
-    "mtime": 1793595425.171133,
-    "seen": 1793596211.485274,
-    "ast_hash": "40f930ddeba53cd85576efb2d1fdcb4e",
-    "semantic_hash": "40f930ddeba53cd85576efb2d1fdcb4e"
+    "mtime": 1793626003.7384818,
+    "seen": 1793626326.771839,
+    "ast_hash": "569cbde6cba257e630bb6d7110a8d152",
+    "semantic_hash": "569cbde6cba257e630bb6d7110a8d152"
   },
   "src/engine/__tests__/frontPanel.test.ts": {
-    "mtime": 1793595426.0883696,
-    "seen": 1793596211.4877863,
-    "ast_hash": "094c9a5a15772129c96fef3528da0358",
-    "semantic_hash": "094c9a5a15772129c96fef3528da0358"
+    "mtime": 1793626003.7451117,
+    "seen": 1793626326.7773492,
+    "ast_hash": "ee17114936cad67553edeed41b9843a9",
+    "semantic_hash": "ee17114936cad67553edeed41b9843a9"
   },
   "src/engine/frontPanel.ts": {
-    "mtime": 1793595426.6118445,
-    "seen": 1793596211.4877863,
-    "ast_hash": "239415078a93d2ece6c018b2ff0fc5ff",
-    "semantic_hash": "239415078a93d2ece6c018b2ff0fc5ff"
+    "mtime": 1793626136.933548,
+    "seen": 1793626326.7808547,
+    "ast_hash": "8984629f0bbbf9b37088ea427ff6eb1e",
+    "semantic_hash": "8984629f0bbbf9b37088ea427ff6eb1e"
   },
   "src/components/os/AcademyOSDesktop.tsx": {
     "mtime": 1793595425.2511773,
@@ -361,10 +361,10 @@
     "semantic_hash": "120623f781d60d7fefd61556491639a5"
   },
   "src/engine/__tests__/benchmark.test.ts": {
-    "mtime": 1793595425.8568847,
-    "seen": 1793596211.48678,
-    "ast_hash": "5469a46dbc076c7f08855df33ae1e8c6",
-    "semantic_hash": "5469a46dbc076c7f08855df33ae1e8c6"
+    "mtime": 1793626003.742601,
+    "seen": 1793626326.776345,
+    "ast_hash": "d9d97d58223b14158c352c1f5c41153e",
+    "semantic_hash": "d9d97d58223b14158c352c1f5c41153e"
   },
   "src/engine/benchmark.ts": {
     "mtime": 1793595426.2786195,
@@ -385,8 +385,8 @@
     "semantic_hash": "8f6a405cf1be591fa1989b9ab4e474f5"
   },
   "src/engine/peripheralsCatalog.ts": {
-    "mtime": 1793596866.9642136,
-    "seen": 1793597046.9501312,
+    "mtime": 1793597214.3254945,
+    "seen": 1793626326.7818549,
     "ast_hash": "9f769ffb7a7621a04aa7704b9d32628f",
     "semantic_hash": "9f769ffb7a7621a04aa7704b9d32628f"
   },
@@ -431,5 +431,96 @@
     "seen": 1793596211.4887857,
     "ast_hash": "6827e30e6ce4d725a8833078354a65ee",
     "semantic_hash": "6827e30e6ce4d725a8833078354a65ee"
+  },
+  ".claude/launch.json": {
+    "mtime": 1793626003.732972,
+    "seen": 1793626326.7640631,
+    "ast_hash": "2fc36489748105f1ac832934bdae5738",
+    "semantic_hash": "2fc36489748105f1ac832934bdae5738",
+    "ast_empty": true
+  },
+  "src/components/common/HardwareMaterials.tsx": {
+    "mtime": 1793626003.7354813,
+    "seen": 1793626326.768835,
+    "ast_hash": "c19246edc9bc73818ef10b25bf0ab1af",
+    "semantic_hash": "c19246edc9bc73818ef10b25bf0ab1af"
+  },
+  "src/components/inventory/componentLabels.ts": {
+    "mtime": 1793626003.7374814,
+    "seen": 1793626326.7708392,
+    "ast_hash": "3e2d6aa8ac4dbf83fa986774e6be1d2d",
+    "semantic_hash": "3e2d6aa8ac4dbf83fa986774e6be1d2d"
+  },
+  "src/components/workbench/CableTargets.tsx": {
+    "mtime": 1793626003.7394817,
+    "seen": 1793626326.773839,
+    "ast_hash": "301245fabedecdee01a40dda407c8590",
+    "semantic_hash": "301245fabedecdee01a40dda407c8590"
+  },
+  "src/components/workbench/CableTray.tsx": {
+    "mtime": 1793626003.7406008,
+    "seen": 1793626326.774841,
+    "ast_hash": "8a58ab7c0f04692209af6dd052d16e0d",
+    "semantic_hash": "8a58ab7c0f04692209af6dd052d16e0d"
+  },
+  "src/components/workbench/cableDragStore.ts": {
+    "mtime": 1793626003.7416008,
+    "seen": 1793626326.7758403,
+    "ast_hash": "83a36423a7dd57507775309a0ea020d2",
+    "semantic_hash": "83a36423a7dd57507775309a0ea020d2"
+  },
+  "src/engine/__tests__/assemblyRules.test.ts": {
+    "mtime": 1793626003.742601,
+    "seen": 1793626326.7758403,
+    "ast_hash": "e90c354a18b8f0d8ea3a8f981652bb4e",
+    "semantic_hash": "e90c354a18b8f0d8ea3a8f981652bb4e"
+  },
+  "src/engine/__tests__/cabling.test.ts": {
+    "mtime": 1793626003.742601,
+    "seen": 1793626326.776345,
+    "ast_hash": "fccae555ae1dd942a545ed78754a9f87",
+    "semantic_hash": "fccae555ae1dd942a545ed78754a9f87"
+  },
+  "src/engine/__tests__/cardInsights.test.ts": {
+    "mtime": 1793626003.7441058,
+    "seen": 1793626326.776345,
+    "ast_hash": "2e3c51efa1e6c836ef27b8b2c0bedba0",
+    "semantic_hash": "2e3c51efa1e6c836ef27b8b2c0bedba0"
+  },
+  "src/engine/__tests__/phases.test.ts": {
+    "mtime": 1793626003.7456193,
+    "seen": 1793626326.7773492,
+    "ast_hash": "8a059c73547aefc26c48fcc2757838c6",
+    "semantic_hash": "8a059c73547aefc26c48fcc2757838c6"
+  },
+  "src/engine/assemblyState.ts": {
+    "mtime": 1793626003.7456193,
+    "seen": 1793626326.7783492,
+    "ast_hash": "0e222e11dd45be77ba8df41679558d59",
+    "semantic_hash": "0e222e11dd45be77ba8df41679558d59"
+  },
+  "src/engine/cabling.ts": {
+    "mtime": 1793626003.7466235,
+    "seen": 1793626326.7798538,
+    "ast_hash": "062aea539416155753bda16fe97d9e9c",
+    "semantic_hash": "062aea539416155753bda16fe97d9e9c"
+  },
+  "src/engine/cardInsights.ts": {
+    "mtime": 1793626003.7466235,
+    "seen": 1793626326.7798538,
+    "ast_hash": "bd1576e666307bbef63c96484ad0c4b3",
+    "semantic_hash": "bd1576e666307bbef63c96484ad0c4b3"
+  },
+  "src/engine/phases.ts": {
+    "mtime": 1793626003.7496247,
+    "seen": 1793626326.7818549,
+    "ast_hash": "0b55a76c1f62cba2734085967e0311c4",
+    "semantic_hash": "0b55a76c1f62cba2734085967e0311c4"
+  },
+  "src/store/__tests__/useAssemblyStore.test.ts": {
+    "mtime": 1793626003.7512274,
+    "seen": 1793626326.7838573,
+    "ast_hash": "1dee42dd50a1ecdd884d5eac8850188c",
+    "semantic_hash": "1dee42dd50a1ecdd884d5eac8850188c"
   }
 }

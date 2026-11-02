@@ -1,5 +1,5 @@
 import { AssemblyState, MotherboardComponent } from './types';
-import { CPUS, MOTHERBOARDS, RAMS, COOLERS, STORAGES, GPUS, PSUS } from './hardwareCatalog';
+import { CPUS, MOTHERBOARDS, RAMS, COOLERS, STORAGES, GPUS, PSUS, CASES } from './hardwareCatalog';
 
 export interface DiagnosticScenario {
   id: string;
@@ -26,6 +26,7 @@ const defaultCooler = COOLERS[0];
 const defaultStorage = STORAGES[0];
 const defaultGpu = GPUS[0];
 const defaultPsu = PSUS.find((p) => p.wattage === 650) || PSUS[0];
+const defaultCase = CASES.find((c) => c.id === 'case-gamer-mesh') || CASES[0];
 
 const baseWorkingAssembly: AssemblyState = {
   esdDischarged: true,
@@ -37,6 +38,8 @@ const baseWorkingAssembly: AssemblyState = {
   ramInstalledSlot2: defaultRam,
   ramInstalledSlot4: defaultRam,
   storageInstalled: defaultStorage,
+  cableSataConnected: true,
+  caseInstalled: defaultCase,
   ioShieldInstalled: true,
   standoffsInstalled: true,
   psuInstalled: defaultPsu,
@@ -49,6 +52,9 @@ const baseWorkingAssembly: AssemblyState = {
   frontPanelPowerSwConnected: true,
   frontPanelResetSwConnected: true,
   frontPanelLedsConnected: true,
+  caseFansConnected: true,
+  frontUsbConnected: true,
+  frontAudioConnected: true,
   psuSwitchOn: true,
 };
 
@@ -115,7 +121,7 @@ export const DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
     },
     defectExplanation:
       'Sem a pasta térmica preenchendo as ranhuras microscópicas entre o IHS do processador e a base de cobre do cooler, o ar atua como isolante térmico e a CPU atinge 105°C quase instantaneamente.',
-    solutionHint: 'Aplique a pasta térmica sobre a CPU e garanta que o cooler esteja devidamente fixado.',
+    solutionHint: 'Remova o cooler, aplique a pasta térmica sobre a CPU, reinstale o cooler e conecte o cabo CPU_FAN.',
     isResolved: (state) => Boolean(state.thermalPasteApplied && state.coolerInstalled && state.coolerFanConnected),
     rewardPoints: 1500,
   },

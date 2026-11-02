@@ -11,6 +11,7 @@ import {
   GPUS,
   STORAGES,
   PSUS,
+  CASES,
 } from '@/engine/hardwareCatalog';
 import { ComponentCard } from './ComponentCard';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
@@ -23,6 +24,8 @@ import {
   Zap,
   Box,
   CircuitBoard,
+  Server,
+  Package,
 } from 'lucide-react';
 
 const ALL_COMPONENTS: HardwareComponent[] = [
@@ -34,6 +37,7 @@ const ALL_COMPONENTS: HardwareComponent[] = [
   ...GPUS,
   ...STORAGES,
   ...PSUS,
+  ...CASES,
 ];
 
 type FilterCategory = 'ALL' | ComponentCategory;
@@ -51,6 +55,7 @@ export const InventoryDrawer: React.FC = () => {
     { id: 'GPU', label: 'Placa de Vídeo', icon: <Tv className="w-3.5 h-3.5" /> },
     { id: 'STORAGE', label: 'Armazenamento', icon: <HardDrive className="w-3.5 h-3.5" /> },
     { id: 'PSU', label: 'Fonte (PSU)', icon: <Zap className="w-3.5 h-3.5" /> },
+    { id: 'CASE', label: 'Gabinete', icon: <Server className="w-3.5 h-3.5" /> },
   ];
 
   const filtered = ALL_COMPONENTS.filter((comp) => {
@@ -66,7 +71,8 @@ export const InventoryDrawer: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800">
         <div>
           <h2 className="text-base font-bold text-white flex items-center gap-2">
-            <span>📦 Inventário de Hardware</span>
+            <Package className="w-4 h-4 text-cyan-400" />
+            <span>Inventário de Hardware</span>
           </h2>
           <p className="text-xs text-slate-400">
             Selecione uma peça e clique no slot da bancada para instalar.

@@ -3,6 +3,8 @@
 import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { MotherboardSvg } from './MotherboardSvg';
+import { CableTray } from './CableTray';
+import { CableTargetBox } from './CableTargets';
 import {
   ShieldAlert,
   ShieldCheck,
@@ -13,16 +15,30 @@ import {
   CheckCircle2,
   ArrowDown,
   Maximize2,
+  Server,
+  HardDrive,
+  Zap,
 } from 'lucide-react';
+import { HardwareComponent } from '@/engine/types';
+import { HardwareImage } from '@/components/common/HardwareImage';
+
+/** Miniatura do compartimento: mostra a peça instalada ou o ícone do encaixe vazio */
+const SlotThumb: React.FC<{ component: HardwareComponent | null; icon: React.ReactNode }> = ({ component, icon }) => (
+  <div className="w-14 h-14 shrink-0 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center p-1 text-slate-500">
+    {component ? <HardwareImage component={component} className="w-full h-full" /> : icon}
+  </div>
+);
 
 export const WorkbenchMat: React.FC = () => {
   const {
-    currentPhase,
     assembly,
     dischargeEsd,
     installIoShield,
     installStandoffs,
     installPsu,
+    installCase,
+    installStorage,
+    cableConnections,
     screwMotherboard,
     togglePsuSwitch,
     triggerPostBoot,
@@ -37,7 +53,23 @@ export const WorkbenchMat: React.FC = () => {
     }
   };
 
+  const handleCaseAreaClick = () => {
+    if (selectedComponentForPlacement?.category === 'CASE') {
+      installCase(selectedComponentForPlacement);
+    }
+  };
+
+  const handleSataBayClick = () => {
+    if (selectedComponentForPlacement?.category === 'STORAGE') {
+      installStorage(selectedComponentForPlacement, 'SATA');
+    }
+  };
+
   const isPsuTarget = selectedComponentForPlacement?.category === 'PSU';
+  const isCaseTarget = selectedComponentForPlacement?.category === 'CASE';
+  const isSataTarget = selectedComponentForPlacement?.category === 'STORAGE';
+  const sataStorage =
+    assembly.storageInstalled && assembly.storageInstalled.storageType !== 'NVMe_M2' ? assembly.storageInstalled : null;
 
   return (
     <div className="relative w-full rounded-3xl bg-slate-900 border-2 border-slate-800 p-6 shadow-2xl overflow-hidden">
@@ -71,7 +103,7 @@ export const WorkbenchMat: React.FC = () => {
             ) : (
               <>
                 <ShieldAlert className="w-4 h-4" />
-                <span>👉 1. Toque para Descarregar Estática (ESD)</span>
+                <span>1. Toque para Descarregar Estática (ESD)</span>
               </>
             )}
           </button>
@@ -114,7 +146,7 @@ export const WorkbenchMat: React.FC = () => {
             }`}
           >
             <Maximize2 className="w-4 h-4" />
-            <span>{assembly.frontPanelPowerSwConnected ? 'Painel Frontal F_PANEL [OK]' : 'Pinos F_PANEL (Zoom 300%)'}</span>
+            <span>{assembly.frontPanelPowerSwConnected ? 'Painel Frontal F_PANEL [OK]' : 'Ligar Painel Frontal (F_PANEL)'}</span>
           </button>
         </div>
 
@@ -154,13 +186,82 @@ export const WorkbenchMat: React.FC = () => {
         </div>
       </div>
 
-      {/* Área Central da Bancada com a Placa-Mãe */}
-      <div className="relative z-10">
+      {/* Área Central da Bancada: placa-mãe e, ao lado, a bandeja de cabos (fixa ao rolar a página) */}
+      <div className="relative z-10 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start">
         <MotherboardSvg />
+        <div className="xl:sticky xl:top-32 xl:max-h-[calc(100vh-9rem)] xl:overflow-y-auto">
+          <CableTray />
+        </div>
       </div>
 
-      {/* Área Inferior do Gabinete: Compartimento da Fonte (PSU) e Fixações */}
+      {/* Área Inferior do Gabinete: Gabinete, Baia SATA, Compartimento da Fonte (PSU) e Fixações */}
       <div className="relative z-10 mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Gabinete */}
+        <div
+          onClick={handleCaseAreaClick}
+          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+            assembly.caseInstalled
+              ? 'bg-slate-950/90 border-emerald-500/50 text-emerald-300 shadow-md'
+              : isCaseTarget
+              ? 'bg-cyan-950 border-cyan-400 animate-pulse text-cyan-200 ring-4 ring-cyan-400/30'
+              : 'bg-slate-950/40 border-slate-800 border-dashed text-slate-400 hover:border-slate-700'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <SlotThumb component={assembly.caseInstalled} icon={<Server className="w-6 h-6" />} />
+            <div>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gabinete</div>
+              <div className="text-sm font-bold text-white">
+                {assembly.caseInstalled
+                  ? assembly.caseInstalled.name
+                  : isCaseTarget
+                  ? 'CLIQUE AQUI PARA PREPARAR O GABINETE!'
+                  : 'Escolha um gabinete na aba Gabinete do inventário'}
+              </div>
+            </div>
+          </div>
+          {assembly.caseInstalled && (
+            <div className="text-xs font-mono font-bold bg-emerald-950 px-2.5 py-1 rounded-md text-emerald-400 border border-emerald-800 text-right">
+              GPU até {assembly.caseInstalled.maxGpuLengthMm}mm
+            </div>
+          )}
+        </div>
+
+        {/* Baia SATA (SSD 2,5" / HD 3,5") */}
+        <div
+          onClick={handleSataBayClick}
+          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${
+            sataStorage
+              ? 'bg-slate-950/90 border-emerald-500/50 text-emerald-300 shadow-md'
+              : isSataTarget
+              ? 'bg-cyan-950 border-cyan-400 animate-pulse text-cyan-200 ring-4 ring-cyan-400/30'
+              : 'bg-slate-950/40 border-slate-800 border-dashed text-slate-400 hover:border-slate-700'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <SlotThumb component={sataStorage} icon={<HardDrive className="w-6 h-6" />} />
+            <div>
+              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Baia SATA (SSD 2,5&quot; / HD 3,5&quot;)</div>
+              <div className="text-sm font-bold text-white">
+                {sataStorage
+                  ? sataStorage.name
+                  : isSataTarget
+                  ? 'CLIQUE AQUI PARA FIXAR O DISCO NA BAIA!'
+                  : 'SSDs SATA e HDs ficam aqui, ligados por cabo'}
+              </div>
+            </div>
+          </div>
+          {sataStorage && (
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+              {/* Entrada de energia do disco: recebe o cabo SATA de 15 pinos da fonte */}
+              <CableTargetBox targetId="DRIVE_POWER" title="Energia" hint="arraste o cabo da fonte" />
+              <span className={`text-[11px] font-semibold ${cableConnections.SATA_DATA ? 'text-emerald-300' : 'text-slate-400'}`}>
+                Dados: {cableConnections.SATA_DATA ? 'ligado na placa ✓' : 'porta SATA6G da placa'}
+              </span>
+            </div>
+          )}
+        </div>
+
         {/* Slot da Fonte de Alimentação */}
         <div
           onClick={handlePsuAreaClick}
@@ -173,9 +274,7 @@ export const WorkbenchMat: React.FC = () => {
           }`}
         >
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-2xl">
-              ⚡
-            </div>
+            <SlotThumb component={assembly.psuInstalled} icon={<Zap className="w-6 h-6" />} />
             <div>
               <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
                 Compartimento da Fonte (PSU)
@@ -184,7 +283,7 @@ export const WorkbenchMat: React.FC = () => {
                 {assembly.psuInstalled
                   ? assembly.psuInstalled.name
                   : isPsuTarget
-                  ? '👉 CLIQUE AQUI PARA ENCAIXAR A FONTE!'
+                  ? 'CLIQUE AQUI PARA ENCAIXAR A FONTE!'
                   : 'Clique para instalar Fonte de Alimentação'}
               </div>
             </div>

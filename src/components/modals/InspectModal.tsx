@@ -2,7 +2,9 @@
 
 import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
-import { Info, Sparkles, X, Lightbulb } from 'lucide-react';
+import { Sparkles, X, Lightbulb } from 'lucide-react';
+import { HardwareImage } from '@/components/common/HardwareImage';
+import { CATEGORY_LABELS } from '@/components/inventory/componentLabels';
 
 export const InspectModal: React.FC = () => {
   const { inspectedComponent, setInspectedComponent } = useAssemblyStore();
@@ -18,7 +20,7 @@ export const InspectModal: React.FC = () => {
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800/60 px-2.5 py-1 rounded-md">
-              {inspectedComponent.category}
+              {CATEGORY_LABELS[inspectedComponent.category]}
             </span>
             <h3 className="text-xl font-bold text-white mt-2">
               {inspectedComponent.name}
@@ -26,10 +28,19 @@ export const InspectModal: React.FC = () => {
           </div>
           <button
             onClick={() => setInspectedComponent(null)}
+            aria-label="Fechar ficha"
             className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Ilustração da peça */}
+        <div
+          className="w-full h-40 flex items-center justify-center p-3 mb-4 rounded-2xl border border-slate-800 bg-slate-950"
+          style={{ backgroundImage: 'radial-gradient(rgba(56, 189, 248, 0.10) 1px, transparent 1px)', backgroundSize: '14px 14px' }}
+        >
+          <HardwareImage component={inspectedComponent} className="w-full h-full drop-shadow-[0_8px_14px_rgba(0,0,0,0.5)]" />
         </div>
 
         {/* Descrição Básica */}

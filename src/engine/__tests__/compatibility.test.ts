@@ -53,6 +53,8 @@ describe('Teste de Diagnóstico do POST (Power-On Self-Test)', () => {
     ramInstalledSlot2: ddr5Ram,
     ramInstalledSlot4: ddr5Ram,
     storageInstalled: storage,
+    cableSataConnected: true,
+    caseInstalled: null,
     ioShieldInstalled: true,
     standoffsInstalled: true,
     psuInstalled: psu650,
@@ -65,6 +67,9 @@ describe('Teste de Diagnóstico do POST (Power-On Self-Test)', () => {
     frontPanelPowerSwConnected: true,
     frontPanelResetSwConnected: true,
     frontPanelLedsConnected: true,
+    caseFansConnected: true,
+    frontUsbConnected: true,
+    frontAudioConnected: true,
     psuSwitchOn: true,
   };
 

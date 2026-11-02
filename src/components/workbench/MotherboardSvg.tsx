@@ -4,6 +4,11 @@ import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { MotherboardComponent } from '@/engine/types';
 import { Cpu, Zap, HardDrive, Fan, AlertTriangle, CheckCircle2, ArrowDown, CircuitBoard, RefreshCw } from 'lucide-react';
+import { HardwareImage } from '@/components/common/HardwareImage';
+import { BoardHeader } from './CableTargets';
+
+// Escala da GPU desenhada sobre a placa (viewBox da ilustração 340x130 → 544x208 na placa)
+const GPU_ART = { x: 56, y: 384, scale: 1.6 };
 
 interface MotherboardSvgProps {
   onSlotClick?: (slotId: string) => void;
@@ -21,12 +26,12 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
     toggleSocketLever,
     applyThermalPaste,
     installCooler,
-    connectCoolerFan,
+    removeCooler,
     installRam,
     installStorage,
     installGpu,
-    connectCable,
     openFrontPanelModal,
+    fPanelConnections,
   } = useAssemblyStore();
 
   const handleCpuAreaClick = () => {
@@ -49,7 +54,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
 
   const handleM2SlotClick = () => {
     if (selectedComponentForPlacement?.category === 'STORAGE') {
-      installStorage(selectedComponentForPlacement as never);
+      installStorage(selectedComponentForPlacement, 'M2');
     }
   };
 
@@ -60,6 +65,8 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
   };
 
   const isPowerOn = postResult?.canPowerOn;
+  // Discos SATA ficam na baia do gabinete; só o NVMe aparece no slot M.2 da placa
+  const m2Storage = assembly.storageInstalled?.storageType === 'NVMe_M2' ? assembly.storageInstalled : null;
 
   // Indicadores de onde clicar com base na peça selecionada
   const isCpuTarget = selectedComponentForPlacement?.category === 'CPU';
@@ -94,7 +101,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
               Placa pronta para assentamento
             </span>
             <h3 className="text-xl font-black text-white">
-              👉 CLIQUE AQUI PARA POSICIONAR {selectedComponentForPlacement.name.toUpperCase()} NA BANCADA!
+              CLIQUE AQUI PARA POSICIONAR {selectedComponentForPlacement.name.toUpperCase()} NA BANCADA!
             </h3>
             <p className="text-xs text-cyan-200/80 max-w-md mx-auto">
               Soquete: {(selectedComponentForPlacement as MotherboardComponent).socket} • Memória: {(selectedComponentForPlacement as MotherboardComponent).supportedRam} • Formato: {(selectedComponentForPlacement as MotherboardComponent).formFactor}
@@ -231,34 +238,51 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
         <path d="M 440 80 L 440 180 L 520 220" stroke="url(#goldTraces)" strokeWidth="2" />
         <path d="M 680 500 L 780 500 L 820 460" stroke="url(#goldTraces)" strokeWidth="2" />
 
+        {/* Painel de I/O traseiro (portas que ficam para fora do gabinete) */}
+        <g>
+          <rect x="22" y="62" width="30" height="236" rx="3" fill="url(#hw-alu)" stroke="#94A3B8" strokeWidth="1" />
+          {[74, 96, 118, 140].map((y) => (
+            <rect key={y} x="27" y={y} width="20" height="14" rx="1.5" fill="#1D4ED8" stroke="#0F172A" />
+          ))}
+          <rect x="27" y="166" width="20" height="22" rx="2" fill="#0F172A" stroke="#475569" />
+          <rect x="27" y="196" width="20" height="16" rx="2" fill="#0F172A" stroke="#475569" />
+          {[228, 246, 264, 282].map((y, i) => (
+            <circle key={y} cx="37" cy={y} r="6" fill={['#22C55E', '#EC4899', '#38BDF8', '#F97316'][i]} stroke="#0F172A" strokeWidth="2" />
+          ))}
+        </g>
+
         {/* Dissipador do VRM (Fases de Energia) */}
         <rect x="60" y="80" width="140" height="200" rx="8" fill="url(#heatsinkMetal)" stroke="#334155" strokeWidth="2" />
         <text x="130" y="180" fill="#64748B" fontSize="12" fontWeight="bold" textAnchor="middle" letterSpacing="2">VRM HEATSINK</text>
         {[100, 130, 160, 190, 220, 250].map((y) => (
           <line key={y} x1="75" y1={y} x2="185" y2={y} stroke="#475569" strokeWidth="2" />
         ))}
+        {/* Bobinas (chokes) das fases de energia ao lado do soquete */}
+        {[96, 126, 156, 186, 216, 246].map((y) => (
+          <g key={y}>
+            <rect x="207" y={y} width="22" height="22" rx="3" fill="#1F2937" stroke="#4B5563" />
+            <text x="218" y={y + 14} fill="#9CA3AF" fontSize="6.5" fontWeight="700" textAnchor="middle">R22</text>
+          </g>
+        ))}
 
-        {/* Conector EPS 12V da CPU (8 pinos - Canto Superior Esquerdo) */}
-        <g
-          className="cursor-pointer transition-transform hover:scale-105"
-          onClick={() => connectCable('CPU8')}
-        >
-          <rect x="70" y="32" width="70" height="34" rx="4" fill="#0F172A" stroke={assembly.cableCpu8PinConnected ? '#10B981' : '#EAB308'} strokeWidth="2" />
-          <text x="105" y="54" fill="#E2E8F0" fontSize="10" fontWeight="bold" textAnchor="middle">
-            {assembly.cableCpu8PinConnected ? 'CPU 8P [OK]' : 'CLIQUE: CABO CPU 8P'}
-          </text>
-        </g>
+        {/* Conector EPS 12V da CPU (ATX12V, 8 pinos) */}
+        <BoardHeader targetId="ATX12V" x={70} y={30} w={64} h={32} rows={2} cols={4} labelPos="right" wires="up" />
 
-        {/* Conector do Fan da CPU (CPU_FAN) */}
-        <g
-          className="cursor-pointer transition-transform hover:scale-105"
-          onClick={connectCoolerFan}
-        >
-          <rect x="360" y="45" width="55" height="20" rx="3" fill="#1E293B" stroke={assembly.coolerFanConnected ? '#10B981' : '#64748B'} strokeWidth="1.5" />
-          <text x="387" y="59" fill={assembly.coolerFanConnected ? '#10B981' : '#94A3B8'} fontSize="9" fontWeight="bold" textAnchor="middle">
-            {assembly.coolerFanConnected ? 'FAN [OK]' : 'CPU_FAN'}
-          </text>
-        </g>
+        {/* Conector da ventoinha do processador */}
+        <BoardHeader targetId="CPU_FAN" x={362} y={46} w={42} h={14} rows={1} cols={4} labelPos="right" wires="up" wireCount={3} />
+
+        {/* Conector de ventoinha do gabinete */}
+        <BoardHeader targetId="SYS_FAN" x={640} y={46} w={42} h={14} rows={1} cols={4} labelPos="right" wires="up" wireCount={3} />
+
+        {/* Remover Cooler (necessário para reaplicar pasta térmica) */}
+        {assembly.coolerInstalled && (
+          <g className="cursor-pointer transition-transform hover:scale-105" onClick={removeCooler}>
+            <rect x="240" y="45" width="110" height="20" rx="3" fill="#1E293B" stroke="#F59E0B" strokeWidth="1.5" />
+            <text x="295" y="59" fill="#FBBF24" fontSize="9" fontWeight="bold" textAnchor="middle">
+              REMOVER COOLER
+            </text>
+          </g>
+        )}
 
         {/* 2. SOQUETE DA CPU (LGA1700 / AM5) */}
         <g
@@ -297,15 +321,8 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             </g>
           ) : (
             <g>
-              {/* Chapa Metálica IHS da CPU Instalada */}
-              <rect x="258" y="123" width="164" height="164" rx="8" fill="#94A3B8" stroke="#CBD5E1" strokeWidth="2.5" />
-              <polygon points="262,127 274,127 262,139" fill="#F59E0B" />
-              <text x="340" y="175" fill="#0F172A" fontSize="11" fontWeight="bold" textAnchor="middle">
-                {assembly.cpuInstalled.name}
-              </text>
-              <text x="340" y="195" fill="#334155" fontSize="10" textAnchor="middle">
-                {assembly.cpuInstalled.cores} Cores / TDP {assembly.cpuInstalled.tdpWatts}W
-              </text>
+              {/* CPU instalada desenhada com a mesma ilustração do inventário */}
+              <HardwareImage component={assembly.cpuInstalled} svgProps={{ x: 252, y: 117, width: 176, height: 176 }} />
 
               {/* Camada de Pasta Térmica */}
               {assembly.thermalPasteApplied && !assembly.coolerInstalled && (
@@ -336,7 +353,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
               rx="4"
               fill={assembly.socketLeverLocked ? "#10B981" : "#F59E0B"}
             />
-            <text x="475" y="200" fill="#E2E8F0" fontSize="10" fontWeight="bold">
+            <text x="440" y="317" fill="#E2E8F0" fontSize="10" fontWeight="bold" textAnchor="end">
               {assembly.socketLeverLocked ? 'ALAVANCA: TRAVADA [OK]' : 'CLIQUE: TRAVAR ALAVANCA'}
             </text>
           </g>
@@ -382,10 +399,18 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
                 width="28"
                 height="215"
                 rx="4"
-                fill={slot.installed ? '#0284C7' : '#0F172A'}
+                fill={slot.installed ? 'url(#hw-alu-dark)' : '#0F172A'}
                 stroke={slot.isDual ? (isRamTarget ? '#22C55E' : '#06B6D4') : '#334155'}
                 strokeWidth={slot.isDual ? (isRamTarget ? 3 : 2) : 1}
               />
+
+              {/* Pente instalado: dissipador escuro, faixa da geração e LEDs só se o kit for RGB */}
+              {slot.installed && (
+                <>
+                  <rect x={slot.x + 21} y="100" width="3" height="205" rx="1.5" fill={slot.installed.ramType === 'DDR5' ? '#22D3EE' : '#F59E0B'} />
+                  {/rgb/i.test(slot.installed.name) && <rect x={slot.x + 3} y="100" width="4" height="205" rx="2" fill="url(#hw-rgb)" />}
+                </>
+              )}
 
               <rect x={slot.x} y="200" width="28" height="6" fill="#1E293B" />
               <rect x={slot.x + 4} y="90" width="20" height="8" rx="2" fill={slot.installed ? '#10B981' : '#64748B'} />
@@ -401,7 +426,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
                   textAnchor="middle"
                   transform={`rotate(-90 ${slot.x + 14} 240)`}
                 >
-                  {slot.installed.capacityGb}GB {slot.installed.ramType} [OK]
+                  {slot.installed.capacityGb / slot.installed.moduleCount}GB {slot.installed.ramType}
                 </text>
               ) : (
                 <text
@@ -420,32 +445,29 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           ))}
         </g>
 
-        {/* Conector ATX 24 Pinos da Placa-Mãe (Lado Direito) */}
-        <g
-          className="cursor-pointer transition-transform hover:scale-105"
-          onClick={() => connectCable('ATX24')}
-        >
-          <rect
-            x="660"
-            y="110"
-            width="50"
-            height="180"
-            rx="6"
-            fill="#0F172A"
-            stroke={assembly.cableAtx24PinConnected ? '#10B981' : '#EAB308'}
-            strokeWidth="3"
-          />
-          <text
-            x="685"
-            y="200"
-            fill={assembly.cableAtx24PinConnected ? '#10B981' : '#E2E8F0'}
-            fontSize="11"
-            fontWeight="bold"
-            textAnchor="middle"
-            transform="rotate(-90 685 200)"
-          >
-            {assembly.cableAtx24PinConnected ? 'ATX 24-PIN [CONECTADO]' : 'CLIQUE: LIGAR CABO 24 PINOS'}
-          </text>
+        {/* Conector principal ATX de 24 pinos (lado direito) */}
+        <BoardHeader targetId="ATX_PWR" x={662} y={110} w={46} h={184} rows={12} cols={2} wires="right" wireCount={8} />
+
+        {/* Cabeçalho USB 3.0 de 19 pinos (o 20º é a chave) */}
+        <BoardHeader targetId="USB3_HEADER" x={772} y={176} w={28} h={104} rows={10} cols={2} missing={[19]} shroud="#1E3A8A" wires="right" wireCount={2} />
+
+        {/* Bateria CMOS: mantém o relógio e as configurações da BIOS */}
+        <g>
+          <circle cx="722" cy="384" r="22" fill="url(#hw-alu)" stroke="#CBD5E1" strokeWidth="1.5" />
+          <circle cx="722" cy="384" r="15" stroke="#94A3B8" strokeWidth="1" />
+          <text x="722" y="388" fill="#334155" fontSize="9" fontWeight="800" textAnchor="middle">CR2032</text>
+        </g>
+
+        {/* Portas SATA de dados */}
+        <BoardHeader targetId="SATA_PORT" variant="sata" x={804} y={372} w={54} h={100} rows={4} cols={1} labelPos="below" wires="right" wireCount={2} />
+
+        {/* Dissipador do chipset */}
+        <g>
+          <rect x="640" y="474" width="82" height="70" rx="6" fill="url(#heatsinkMetal)" stroke="#475569" strokeWidth="1.5" />
+          {[488, 500, 512, 524].map((y) => (
+            <line key={y} x1="648" y1={y} x2="714" y2={y} stroke="#334155" strokeWidth="2" />
+          ))}
+          <text x="681" y="538" fill="#94A3B8" fontSize="10" fontWeight="800" textAnchor="middle">{selectedMotherboard.chipset}</text>
         </g>
 
         {/* 4. SLOT M.2 NVMe (Abaixo do Soquete) */}
@@ -460,13 +482,17 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             width="220"
             height="46"
             rx="6"
-            fill={assembly.storageInstalled ? '#0F766E' : '#1E293B'}
-            stroke={isStorageTarget ? '#06B6D4' : assembly.storageInstalled ? '#14B8A6' : '#475569'}
+            fill="#1E293B"
+            stroke={isStorageTarget ? '#06B6D4' : m2Storage ? '#14B8A6' : '#475569'}
             strokeWidth={isStorageTarget ? 3 : 2}
           />
-          <text x="350" y="358" fill="#F8FAFC" fontSize="11" fontWeight="bold" textAnchor="middle">
-            {assembly.storageInstalled ? `M.2 NVMe: ${assembly.storageInstalled.name}` : isStorageTarget ? '👉 CLIQUE P/ ENCAIXAR SSD M.2' : 'SLOT M.2 NVMe (PCIe 4.0 x4)'}
-          </text>
+          {m2Storage ? (
+            <HardwareImage component={m2Storage} svgProps={{ x: 246, y: 330, width: 192, height: 46 }} />
+          ) : (
+            <text x="350" y="358" fill="#F8FAFC" fontSize="11" fontWeight="bold" textAnchor="middle">
+              {isStorageTarget ? 'CLIQUE P/ ENCAIXAR SSD M.2' : 'SLOT M.2 NVMe (PCIe 4.0 x4)'}
+            </text>
+          )}
           <circle cx="445" cy="353" r="6" fill="#94A3B8" stroke="#334155" strokeWidth="1.5" />
         </g>
 
@@ -482,28 +508,40 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
             width="580"
             height="34"
             rx="4"
-            fill={assembly.gpuInstalled ? '#0284C7' : '#0F172A'}
+            fill="#0F172A"
             stroke={isGpuTarget ? '#06B6D4' : assembly.gpuInstalled ? '#38BDF8' : '#64748B'}
             strokeWidth={isGpuTarget ? 3 : 2}
           />
           <line x1="160" y1="410" x2="160" y2="444" stroke="#334155" strokeWidth="2" />
-          <text x="370" y="432" fill="#F8FAFC" fontSize="12" fontWeight="bold" textAnchor="middle">
-            {assembly.gpuInstalled ? `GPU: ${assembly.gpuInstalled.name} [OK]` : isGpuTarget ? '👉 CLIQUE P/ ENCAIXAR PLACA DE VÍDEO' : 'SLOT PCIe 4.0 x16 (PLACA DE VÍDEO)'}
-          </text>
+          {!assembly.gpuInstalled && (
+            <text x="370" y="432" fill="#F8FAFC" fontSize="12" fontWeight="bold" textAnchor="middle">
+              {isGpuTarget ? 'CLIQUE P/ ENCAIXAR PLACA DE VÍDEO' : 'SLOT PCIe 4.0 x16 (PLACA DE VÍDEO)'}
+            </text>
+          )}
           <rect x="662" y="414" width="16" height="26" rx="3" fill={assembly.gpuInstalled ? '#10B981' : '#F59E0B'} />
+          {/* GPU instalada em escala real (1,6 px por mm): placas longas cobrem mais da placa-mãe */}
+          {assembly.gpuInstalled && (
+            <HardwareImage
+              component={assembly.gpuInstalled}
+              svgProps={{ x: 56, y: 384, width: 544, height: 208, preserveAspectRatio: 'xMinYMin meet', className: 'drop-shadow-2xl' }}
+            />
+          )}
         </g>
 
-        {/* Cabo PCIe da GPU (se instalada) */}
+        {/* Entrada de energia da GPU (no topo da placa de vídeo, na mesma escala da ilustração) */}
         {assembly.gpuInstalled && assembly.gpuInstalled.powerPins !== 'none' && (
-          <g
-            className="cursor-pointer transition-transform hover:scale-105"
-            onClick={() => connectCable('GPU_PCIE')}
-          >
-            <rect x="520" y="455" width="140" height="28" rx="4" fill="#0F172A" stroke={assembly.cableGpuPcieConnected ? '#10B981' : '#EAB308'} strokeWidth="2" />
-            <text x="590" y="473" fill="#E2E8F0" fontSize="10" fontWeight="bold" textAnchor="middle">
-              {assembly.cableGpuPcieConnected ? 'CABO PCIe 8P [OK]' : 'CLIQUE: LIGAR CABO PCIe (8P)'}
-            </text>
-          </g>
+          <BoardHeader
+            targetId="GPU_POWER"
+            x={GPU_ART.x + (assembly.gpuInstalled.lengthMm - 24) * GPU_ART.scale}
+            y={GPU_ART.y + 2}
+            w={48}
+            h={16}
+            rows={2}
+            cols={4}
+            labelPos="left"
+            label="PCIe 8P"
+            wires="up"
+          />
         )}
 
         {/* 6. DEBUG LEDs (Canto Superior Direito) */}
@@ -531,35 +569,58 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           })}
         </g>
 
-        {/* 7. PAINEL FRONTAL (Front Panel Header - Canto Inferior Direito com Zoom de Precisão) */}
+        {/* Fileira inferior: cabeçalhos que recebem os cabos frontais do gabinete */}
+        <BoardHeader targetId="HD_AUDIO" x={80} y={606} w={62} h={26} rows={2} cols={5} missing={[8]} wires="down" />
+        <g>
+          <rect x="164" y="608" width="24" height="24" rx="2" fill="#111827" stroke="#374151" />
+          <text x="176" y="623" fill="#9CA3AF" fontSize="6" fontWeight="800" textAnchor="middle">ALC897</text>
+        </g>
+        <BoardHeader targetId="USB2_HEADER" x={250} y={606} w={62} h={26} rows={2} cols={5} missing={[9]} wires="down" />
+        <g>
+          <rect x="336" y="612" width="22" height="16" rx="1.5" fill="#111827" stroke="#374151" />
+          <text x="347" y="623" fill="#9CA3AF" fontSize="5.5" fontWeight="800" textAnchor="middle">BIOS</text>
+        </g>
+
+        {/* Painel frontal (F_PANEL): abre o minigame de precisão dos 9 pinos */}
         <g
-          className="cursor-pointer transition-transform hover:scale-105"
+          role="button"
+          tabIndex={0}
+          aria-label={`F_PANEL: painel frontal, ${Object.values(fPanelConnections).filter(Boolean).length} de 4 fios ligados. Abrir minigame.`}
           onClick={openFrontPanelModal}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openFrontPanelModal();
+            }
+          }}
+          className="cursor-pointer outline-none [&:focus-visible>.focus-ring]:opacity-100"
         >
+          <rect className="focus-ring opacity-0" x="693" y="599" width="76" height="40" rx="6" stroke="#22D3EE" strokeWidth="2" />
           <rect
-            x="680"
-            y="560"
-            width="180"
-            height="70"
-            rx="8"
-            fill="#0F172A"
-            stroke={assembly.frontPanelPowerSwConnected ? '#10B981' : '#EAB308'}
-            strokeWidth="2"
+            x="700"
+            y="606"
+            width="62"
+            height="26"
+            rx="2.5"
+            fill="#0B1220"
+            stroke={assembly.frontPanelPowerSwConnected ? '#10B981' : '#F59E0B'}
+            strokeWidth="1.5"
           />
-          <text x="770" y="582" fill="#94A3B8" fontSize="11" fontWeight="bold" textAnchor="middle">
-            F_PANEL (PAINEL FRONTAL)
+          {[...Array(10)].map((_, i) => {
+            if (i === 9) return null;
+            const col = i % 5;
+            const row = Math.floor(i / 5);
+            return <rect key={i} x={706 + col * 11.2} y={611 + row * 9} width="5" height="5" rx="0.6" fill="url(#hw-gold)" />;
+          })}
+          {/* Fios finos já encaixados pelo minigame */}
+          {Object.values(fPanelConnections).filter(Boolean).length > 0 && (
+            <rect x="698" y="604" width="66" height="30" rx="3" fill="#0F172A" fillOpacity="0.55" stroke="#10B981" strokeWidth="1.2" />
+          )}
+          <text x="688" y="617" fill="#CBD5E1" fontSize="10" fontWeight="700" fontFamily="var(--font-mono)" textAnchor="end">
+            F_PANEL
           </text>
-          <text
-            x="770"
-            y="605"
-            fill={assembly.frontPanelPowerSwConnected ? '#10B981' : '#F59E0B'}
-            fontSize="10"
-            fontWeight="bold"
-            textAnchor="middle"
-          >
-            {assembly.frontPanelPowerSwConnected
-              ? 'POWER SW CONECTADO [OK]'
-              : '🔍 CLIQUE P/ ZOOM 300% (9 PINOS)'}
+          <text x="688" y="630" fill={assembly.frontPanelPowerSwConnected ? '#6EE7B7' : '#FBBF24'} fontSize="9" fontWeight="700" textAnchor="end">
+            {Object.values(fPanelConnections).filter(Boolean).length}/4 fios · clique
           </text>
         </g>
       </svg>
