@@ -37,25 +37,25 @@ export { isWebGLAvailable };
  * Espaçamento ergonômico nos quadrantes físicos reais da placa-mãe
  * ==================================================================================== */
 const POSITIONS = {
-  // Soquete da CPU (Centro exato do soquete AM4/LGA entre as presilhas de retenção)
-  CPU_SOCKET: [-0.65, 0.22, -1.05] as [number, number, number],
-  // Conector de Ventoinha da CPU (Borda superior, diretamente acima da CPU)
-  CPU_FAN_HEADER: [-0.65, 0.22, -2.75] as [number, number, number],
+  // Soquete da CPU (Centro exato do soquete AM4 da ASRock B550M entre os brackets)
+  CPU_SOCKET: [0.38, 0.22, -0.08] as [number, number, number],
+  // Conector de Ventoinha da CPU (Borda superior, acima do soquete)
+  CPU_FAN_HEADER: [0.38, 0.22, -2.50] as [number, number, number],
   // Conector ATX 12V 8P (Borda superior esquerda, próximo ao VRM)
-  ATX12V_HEADER: [-2.65, 0.22, -3.15] as [number, number, number],
-  // Slots de Memória RAM (À direita da CPU, estendendo-se na VERTICAL ao longo do eixo Z)
-  RAM_SLOT_2: [1.45, 0.22, -1.05] as [number, number, number],
-  RAM_SLOT_4: [1.85, 0.22, -1.05] as [number, number, number],
-  // Slot M.2 NVMe (Centro, entre a CPU e o slot PCIe)
-  M2_SLOT: [-0.65, 0.22, 0.15] as [number, number, number],
-  // Slot PCIe x16 da Placa de Vídeo (Quadrante inferior, horizontal ao longo de X)
-  PCIE_SLOT: [-0.65, 0.22, 1.35] as [number, number, number],
+  ATX12V_HEADER: [-2.80, 0.22, -2.90] as [number, number, number],
+  // Slots de Memória RAM (Dentro dos trilhos dos slots DIMM da placa)
+  RAM_SLOT_2: [1.72, 0.22, -0.38] as [number, number, number],
+  RAM_SLOT_4: [2.02, 0.22, -0.38] as [number, number, number],
+  // Slot M.2 NVMe (Abaixo da CPU)
+  M2_SLOT: [0.20, 0.22, 0.65] as [number, number, number],
+  // Slot PCIe x16 da Placa de Vídeo (No slot longo horizontal)
+  PCIE_SLOT: [-0.30, 0.22, 1.35] as [number, number, number],
   // Conector Principal ATX 24P (Borda direita da placa)
-  ATX24P_HEADER: [3.15, 0.22, -0.65] as [number, number, number],
-  // Painel Frontal F_PANEL (Canto inferior direito)
-  FPANEL_HEADER: [2.95, 0.22, 3.15] as [number, number, number],
+  ATX24P_HEADER: [3.10, 0.22, -0.38] as [number, number, number],
+  // Painel Frontal F_PANEL (Canto inferior direito da placa)
+  FPANEL_HEADER: [2.90, 0.22, 2.90] as [number, number, number],
   // LEDs de Diagnóstico EZ Debug (Canto superior direito)
-  DEBUG_LEDS: [3.05, 0.22, -2.9] as [number, number, number],
+  DEBUG_LEDS: [2.90, 0.22, -2.80] as [number, number, number],
 };
 
 /* ====================================================================================
@@ -132,16 +132,22 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
 
   const preparedScene = useMemo(() => {
     const clone = scene.clone(true);
+
+    // 1. Aplica a rotação pretendida internamente no clone ANTES de medir a caixa delimitadora
+    clone.rotation.set(rotation[0], rotation[1], rotation[2]);
+    clone.updateMatrixWorld(true);
+
+    // 2. Calcula o bounding box real do objeto já devidamente rotacionado
     const box = new THREE.Box3().setFromObject(clone);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
 
-    // Centraliza em X e Z e assenta a base em Y=0
+    // 3. Centraliza a base em X e Z e assenta a face inferior em Y=0
     clone.position.x = -center.x;
     clone.position.z = -center.z;
     clone.position.y = -box.min.y;
 
-    // Escala para o tamanho alvo na maior dimensão horizontal/vertical
+    // 4. Normaliza para o tamanho alvo na maior dimensão
     const maxDim = Math.max(size.x, size.y, size.z);
     const scaleFactor = targetSize / Math.max(0.001, maxDim);
     clone.scale.set(scaleFactor, scaleFactor, scaleFactor);
@@ -154,9 +160,8 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
     });
 
     return clone;
-  }, [scene, targetSize]);
+  }, [scene, targetSize, rotation]);
 
-  // Efeito da Fase 3: ventoinha girando suavemente quando o sistema dá boot com sucesso
   useFrame((_, delta) => {
     if (isSpinning && fanGroupRef.current) {
       fanGroupRef.current.rotation.y += delta * 12;
@@ -164,7 +169,7 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
   });
 
   return (
-    <group position={position} rotation={rotation}>
+    <group position={position}>
       <group ref={fanGroupRef}>
         <primitive object={preparedScene} />
       </group>
@@ -211,7 +216,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
 
   return (
     <group position={position}>
-      <Html center distanceFactor={14} zIndexRange={[100, 0]}>
+      <Html center distanceFactor={14} zIndexRange={[20, 0]}>
         <div
           data-cable-target={dataCableTarget}
           onMouseEnter={() => setIsHovered(true)}
@@ -536,7 +541,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
       {/* ==================================================================================
        * BARRA SUPERIOR DE FERRAMENTAS E CONTROLES DE CÂMERA
        * ================================================================================== */}
-      <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
+      <div className="absolute top-3 left-3 right-3 z-40 flex items-center justify-between pointer-events-none">
         {/* Identificador de Placa e Modo 3D */}
         <div className="flex items-center gap-2 pointer-events-auto bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-700/80 shadow-lg text-xs font-mono">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-sm shadow-cyan-400" />
@@ -708,17 +713,29 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             )}
 
             {/* Pasta Térmica aplicada sobre o IHS da CPU */}
-            {assembly.thermalPasteApplied && !assembly.coolerInstalled && (
-              <mesh
-                position={[POSITIONS.CPU_SOCKET[0], 0.28, POSITIONS.CPU_SOCKET[2]]}
-                rotation={[-Math.PI / 2, 0, 0]}
-              >
-                <circleGeometry args={[0.26, 24]} />
-                <meshStandardMaterial color="#94a3b8" roughness={0.3} metalness={0.6} />
-              </mesh>
+            {assembly.cpuInstalled && assembly.thermalPasteApplied && !assembly.coolerInstalled && (
+              <group position={[POSITIONS.CPU_SOCKET[0], 0.28, POSITIONS.CPU_SOCKET[2]]}>
+                {/* Gota tridimensional de composto térmico prateado metálico */}
+                <mesh position={[0, 0.015, 0]}>
+                  <cylinderGeometry args={[0.22, 0.28, 0.03, 32]} />
+                  <meshStandardMaterial
+                    color="#a1a1aa"
+                    roughness={0.25}
+                    metalness={0.75}
+                  />
+                </mesh>
+                <mesh position={[0, 0.03, 0]}>
+                  <sphereGeometry args={[0.12, 16, 16]} />
+                  <meshStandardMaterial
+                    color="#d4d4d8"
+                    roughness={0.2}
+                    metalness={0.85}
+                  />
+                </mesh>
+              </group>
             )}
 
-            {/* Cooler Instalado com rotação no POST bem-sucedido */}
+            {/* Cooler Instalado Assentado sobre a CPU e Pasta Térmica */}
             {assembly.coolerInstalled && (
               <AutoNormalizedPart
                 modelUrl={
@@ -727,7 +744,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                     : '/models/cooler-torre.glb'
                 }
                 targetSize={2.4}
-                position={[POSITIONS.CPU_SOCKET[0], 0.35, POSITIONS.CPU_SOCKET[2]]}
+                position={[POSITIONS.CPU_SOCKET[0], 0.31, POSITIONS.CPU_SOCKET[2]]}
                 isSpinning={Boolean(postResult?.bootSuccess)}
               />
             )}
@@ -770,10 +787,11 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                 isSpinning={Boolean(postResult?.bootSuccess)}
               />
             )}
+          </Suspense>
 
-            {/* ==============================================================================
-             * HOTSPOTS TÁTEIS (PINS) NOS QUADRANTES FÍSICOS DA PLACA
-             * ============================================================================== */}
+          {/* ==============================================================================
+           * HOTSPOTS TÁTEIS (PINS) NOS QUADRANTES FÍSICOS DA PLACA (Sempre ativos)
+           * ============================================================================== */}
             {/* 1. Hotspot: Soquete CPU */}
             <WorkbenchPin
               position={POSITIONS.CPU_SOCKET}
@@ -961,14 +979,13 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               actionText="Abrir Zoom F_PANEL"
               onAction={openFrontPanelModal}
             />
-          </Suspense>
         </Canvas>
       </div>
 
       {/* ==================================================================================
        * BARRA INFERIOR HUD: LEDS EZ DEBUG E GUIA DE ATALHOS DA BANCADA
        * ================================================================================== */}
-      <div className="relative z-10 px-4 py-2 bg-slate-950/90 border-t border-slate-800/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+      <div className="relative z-40 px-4 py-2 bg-slate-950/90 border-t border-slate-800/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
         {/* Painel EZ Debug LEDs de Hardware */}
         <div className="flex items-center gap-3">
           <span className="text-[11px] font-bold text-slate-400">EZ Debug:</span>

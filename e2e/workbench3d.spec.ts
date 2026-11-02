@@ -82,8 +82,8 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
     await expect(page.locator('span:text-is("BOOT")')).toBeVisible();
 
     // Salva screenshot do visual limpo da bancada
-    const workbench = page.locator('div:has-text("Bancada 3D Interativa")').locator('..').first();
-    await page.waitForTimeout(2000);
-    await workbench.screenshot({ path: 'workbench3d-clean.png' });
+    await page.waitForTimeout(1000);
+    const canvas = page.locator('canvas').first();
+    await canvas.screenshot({ path: 'workbench3d-clean.png' });
   });
 });

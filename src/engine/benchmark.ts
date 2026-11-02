@@ -108,7 +108,7 @@ export function calculateBenchmark(
   if (cpuInstalled) {
     const coolerCapacity = coolerInstalled ? coolerInstalled.maxTdpWatts : 65;
     const thermalRatio = cpuInstalled.tdpWatts / coolerCapacity;
-    cpuTempC = Math.round(28 + thermalRatio * 45);
+    cpuTempC = Math.min(105, Math.round(28 + thermalRatio * 45));
 
     if (!thermalPasteApplied) {
       cpuTempC = 98; // Superaquecimento severo
@@ -120,7 +120,9 @@ export function calculateBenchmark(
     }
   }
 
-  const gpuTempC = gpuInstalled ? Math.round(40 + (gpuPower / 8000) * 28) : 45;
+  const gpuTempC = gpuInstalled
+    ? Math.min(85, Math.round(48 + (Math.min(gpuPower, 25000) / 25000) * 32))
+    : 45;
   const avgFps = Math.max(12, Math.round(baseFps));
   const onePercentLowFps = Math.max(6, Math.round(avgFps * onePercentLowFactor));
 

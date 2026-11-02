@@ -739,7 +739,10 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
 
   connectCableTo: (cableId, targetId) => {
     const { assembly, selectedMotherboard } = get();
-    const cable = cableById(cableId);
+    const cable = CABLES.find((c) => c.id === cableId);
+    if (!cable) {
+      return { success: false, message: 'Cabo desconhecido: ' + cableId };
+    }
 
     if (!isCableAvailable(cableId, assembly) || !isTargetAvailable(targetId, assembly, selectedMotherboard)) {
       const result: CableResult = {
@@ -880,3 +883,6 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   };
 });
 
+if (typeof window !== 'undefined') {
+  (window as any).useAssemblyStore = useAssemblyStore;
+}

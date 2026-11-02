@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Visualizador 3D e Vitrine (Fase 1)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    // Aguarda carregar a aplicação
+    await page.waitForLoadState('networkidle');
     await expect(page.locator('body')).toBeVisible();
   });
 
@@ -20,6 +20,15 @@ test.describe('Visualizador 3D e Vitrine (Fase 1)', () => {
     // Deve exibir modelos catalogados na galeria
     const galleryItems = modal.locator('button').filter({ hasText: /MB|GPU|CPU|Cooler|RAM|Case/i });
     expect(await galleryItems.count()).toBeGreaterThan(0);
+
+    // Fecha o modal
+    const closeBtn = modal.locator('button[aria-label*="Fechar"]').first();
+    if (await closeBtn.isVisible()) {
+      await closeBtn.click();
+    } else {
+      await page.keyboard.press('Escape');
+    }
+    await expect(modal).not.toBeVisible();
   });
 
   test('renderiza o Canvas 3D e permite alternar pontos de vista', async ({ page }) => {

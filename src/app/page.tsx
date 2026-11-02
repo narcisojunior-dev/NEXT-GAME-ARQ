@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { LazyMotion, MotionConfig, domAnimation } from 'framer-motion';
 import { TopHUD } from '@/components/hud/TopHUD';
 import { DidacticCompanion } from '@/components/hud/DidacticCompanion';
@@ -24,6 +25,12 @@ const Model3DModal = dynamic(() => import('@/components/three/Model3DModal').the
 
 export default function Home() {
   const is3DOpen = useModel3DStore((s) => Boolean(s.modelId) || s.isGalleryOpen);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).useAssemblyStore = useAssemblyStore;
+    }
+  }, []);
   return (
     <LazyMotion features={domAnimation} strict>
     <MotionConfig reducedMotion="user">
