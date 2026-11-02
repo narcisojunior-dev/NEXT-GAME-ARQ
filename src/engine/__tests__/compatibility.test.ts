@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { validateSocket, validateRamType, evaluatePostTest, calculateTotalTdp, calculateTotalSpent, validateCoolerPrerequisites } from '../compatibility';
+import {
+  validateSocket,
+  validateRamType,
+  validateCoolerPrerequisites,
+  evaluatePostTest,
+  calculateTotalTdp,
+  calculateTotalSpent,
+} from '../compatibility';
 import { CPUS, MOTHERBOARDS, RAMS, COOLERS, PSUS, STORAGES, GPUS } from '../hardwareCatalog';
 import { AssemblyState } from '../types';
 import { INITIAL_ASSEMBLY_STATE } from '../assemblyState';
@@ -189,6 +196,24 @@ describe('Teste de Diagnóstico do POST (Power-On Self-Test)', () => {
     });
   });
 
+  describe('Pré-requisitos do cooler (pasta térmica obrigatória)', () => {
+    const amdCpu = CPUS.find((c) => c.socket === 'AM5')!;
+    const noCpu = { cpuInstalled: null, thermalPasteApplied: false } as unknown as AssemblyState;
+
+    it('bloqueia o cooler com o soquete vazio', () => {
+      expect(validateCoolerPrerequisites(noCpu)?.type).toBe('ERROR');
+    });
+
+    it('bloqueia o cooler sobre a CPU sem pasta térmica', () => {
+      const issue = validateCoolerPrerequisites({ ...noCpu, cpuInstalled: amdCpu });
+      expect(issue?.type).toBe('ERROR');
+      expect(issue?.title).toMatch(/pasta térmica/i);
+    });
+
+    it('libera o cooler com CPU e pasta aplicada', () => {
+      expect(validateCoolerPrerequisites({ ...noCpu, cpuInstalled: amdCpu, thermalPasteApplied: true })).toBeNull();
+    });
+  });
 });
 
 describe('Ordem didática CPU → Pasta Térmica → Cooler (validateCoolerPrerequisites)', () => {

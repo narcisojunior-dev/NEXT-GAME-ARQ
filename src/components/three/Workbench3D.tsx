@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -8,7 +8,13 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useCableDragStore } from '@/components/workbench/cableDragStore';
 import { CABLES, CableSpec, CableTargetId, cableTargetById } from '@/engine/cabling';
-import { CpuSocket, MotherboardComponent, RamType } from '@/engine/types';
+import { HardwareComponent, MotherboardComponent } from '@/engine/types';
+import {
+  WORKBENCH_CPU_HEIGHTS,
+  resolveWorkbenchModelId,
+  workbenchModelRotation,
+  workbenchModelUrl,
+} from '@/engine/workbenchModels';
 import {
   Cpu,
   Layers,
@@ -136,23 +142,34 @@ const AutoNormalizedMotherboard: React.FC<{ modelUrl: string }> = ({ modelUrl })
     wrapper.scale.set(scaleFactor, scaleFactor, scaleFactor);
     wrapper.updateMatrixWorld(true);
 
-    // Ajusta materiais para aspecto limpo e sem estouro de brilho
+    // Ajusta materiais para aspecto limpo e sem estouro de brilho. clone(true) compartilha os
+    // materiais com o cache do useGLTF: clona antes de alterar, senão a rugosidade vaza para a
+    // Vitrine 3D e para as próximas montagens (correção do PR #58)
+    const ownedMaterials = new Map<THREE.Material, THREE.Material>();
+    const tune = (source: THREE.Material) => {
+      let owned = ownedMaterials.get(source);
+      if (!owned) {
+        owned = source.clone();
+        if (owned instanceof THREE.MeshStandardMaterial) owned.roughness = Math.max(0.3, owned.roughness ?? 0.5);
+        ownedMaterials.set(source, owned);
+      }
+      return owned;
+    };
     wrapper.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        if (mesh.material) {
-          const mat = mesh.material as THREE.MeshStandardMaterial;
-          mat.roughness = Math.max(0.3, mat.roughness ?? 0.5);
-        }
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        child.material = Array.isArray(child.material) ? child.material.map(tune) : tune(child.material);
       }
     });
 
-    return wrapper;
+    return { root: wrapper, materials: [...ownedMaterials.values()] };
   }, [scene]);
 
-  return <primitive object={normalizedScene} />;
+  // Geometrias e texturas pertencem ao cache do useGLTF; só os materiais clonados aqui são nossos
+  useEffect(() => () => normalizedScene.materials.forEach((m) => m.dispose()), [normalizedScene]);
+
+  return <primitive object={normalizedScene.root} />;
 };
 
 const NO_ROTATION: [number, number, number] = [0, 0, 0];
@@ -160,29 +177,8 @@ const NO_ROTATION: [number, number, number] = [0, 0, 0];
 /** Tamanho (maior dimensão) da CPU no soquete: ~39 mm na escala das placas */
 const CPU_TARGET_SIZE = 1.15;
 
-/**
- * Modelo de CPU por soquete. `height` = espessura após normalizar para CPU_TARGET_SIZE,
- * medida das bounding boxes dos GLBs; usada para assentar a pasta e o cooler sobre o IHS.
- * AM5 tem modelo próprio (LGA, sem pinos): o modelo AM4 é PGA e o Intel não representa a Ryzen.
- */
-const CPU_MODELS: Record<CpuSocket, { url: string; height: number }> = {
-  AM4: { url: '/models/cpu-ryzen-am4.glb', height: 0.114 },
-  AM5: { url: '/models/cpu-ryzen-am5.glb', height: 0.075 },
-  LGA1700: { url: '/models/cpu-intel-lga1700.glb', height: 0.104 },
-};
-
 /** Espessura da camada de pasta espalhada pela pressão do cooler */
 const PASTE_LAYER = 0.01;
-
-/**
- * Modelo de RAM por geração, com a rotação que deixa o pente EM PÉ e ao longo do slot (eixo Z):
- * - ram-ddr4-crucial: comprimento em X, espessura em Y, altura em Z (contatos em -Z) → [-π/2, 0, π/2]
- * - ram-ddr5-corsair: altura em X (contatos em -X), espessura em Y, comprimento em Z → [0, 0, π/2]
- */
-const RAM_MODELS: Record<RamType, { url: string; rotation: [number, number, number] }> = {
-  DDR4: { url: '/models/ram-ddr4-crucial.glb', rotation: [-Math.PI / 2, 0, Math.PI / 2] },
-  DDR5: { url: '/models/ram-ddr5-corsair.glb', rotation: [0, 0, Math.PI / 2] },
-};
 
 /* ====================================================================================
  * COMPONENTE: Peça Auto-Normalizada com Animação Opcional de Fan
@@ -432,6 +428,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
   visible = true,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const detailId = useId();
 
   if (!visible) return null;
 
@@ -441,21 +438,32 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
   return (
     <group position={position}>
       <Html center distanceFactor={9} zIndexRange={[25, 0]}>
+        {/* Aberto por hover OU por foco em qualquer elemento do pino (inclusive os botões do
+            próprio tooltip), para que o Tab alcance "Remover Cooler" e as demais ações */}
         <div
           data-cable-target={dataCableTarget}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
+          onFocus={() => setIsHovered(true)}
+          onBlur={(e) => {
+            const next = e.relatedTarget;
+            if (!(next instanceof Node) || !e.currentTarget.contains(next)) setIsHovered(false);
+          }}
+          onKeyDown={(e) => {
+            // WCAG 1.4.13: o conteúdo exibido no foco/hover pode ser dispensado sem mover o foco
+            if (e.key === 'Escape') setIsHovered(false);
+          }}
           className="relative flex items-center justify-center select-none"
         >
           {/* Botão circular tátil compacto (28x28px com hit-area de 44x44px) */}
           <button
+            type="button"
             onClick={onAction}
-            onFocus={() => setIsHovered(true)}
-            onBlur={() => setIsHovered(false)}
-            aria-label={`${label}: ${detailText}`}
-            className={`relative flex items-center justify-center w-7 h-7 rounded-full border shadow-lg backdrop-blur-md transition-all duration-200 cursor-pointer ${
+            aria-label={label}
+            aria-describedby={detailId}
+            className={`relative flex items-center justify-center w-7 h-7 rounded-full border shadow-lg backdrop-blur-md transition-all duration-200 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400 ${
               isTargeted
-                ? 'bg-amber-950/95 border-amber-400 text-amber-200 ring-4 ring-amber-400/50 animate-bounce scale-110 shadow-amber-500/50'
+                ? 'bg-amber-950/95 border-amber-400 text-amber-200 ring-4 ring-amber-400/50 animate-bounce motion-reduce:animate-none scale-110 shadow-amber-500/50'
                 : isInstalled
                 ? 'bg-emerald-950/90 border-emerald-500/80 text-emerald-300 hover:border-emerald-400 hover:scale-105 shadow-emerald-900/40'
                 : isHovered
@@ -469,7 +477,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
             <span
               className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-slate-950 ${
                 isTargeted
-                  ? 'bg-amber-400 animate-ping'
+                  ? 'bg-amber-400 animate-ping motion-reduce:animate-none'
                   : isInstalled
                   ? 'bg-emerald-400'
                   : 'bg-slate-600'
@@ -477,11 +485,20 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
             />
           </button>
 
-          {/* Tooltip técnico que expande suavemente apenas no hover / foco */}
+          {/* Descrição sempre presente para leitores de tela (o tooltip visual só existe no hover/foco) */}
+          <span id={detailId} className="sr-only">
+            {isInstalled ? 'Instalado. ' : isTargeted ? 'Pronto para encaixe. ' : ''}
+            {detailText}
+          </span>
+
+          {/* Tooltip técnico: pb-2 (e não mb-2) mantém a área de hover contínua entre o pino e o
+              cartão — com margem, o mouse "caía" no vão e o tooltip sumia antes do clique */}
           {isHovered && (
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 z-50 pb-2 pointer-events-auto">
             <div
-              role="tooltip"
-              className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 min-w-[180px] max-w-[230px] p-2 rounded-xl bg-slate-950/95 border border-cyan-500/50 shadow-2xl backdrop-blur-lg text-left pointer-events-auto animate-in fade-in duration-150"
+              role="group"
+              aria-label={`Ações: ${label}`}
+              className="min-w-[180px] max-w-[230px] p-2 rounded-xl bg-slate-950/95 border border-cyan-500/50 shadow-2xl backdrop-blur-lg text-left animate-in fade-in duration-150"
             >
               <div className="flex items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-800 font-mono text-[10px] font-bold text-cyan-300">
                 <span className="truncate">{label}</span>
@@ -493,7 +510,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
                 )}
               </div>
 
-              <p className="text-[9px] font-mono text-slate-300 leading-tight mb-1.5">
+              <p aria-hidden="true" className="text-[9px] font-mono text-slate-300 leading-tight mb-1.5">
                 {detailText}
               </p>
 
@@ -503,13 +520,14 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
               <div className="flex flex-col gap-1">
                 {actionText && onAction && (
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onAction();
                     }}
                     className={`w-full py-1 px-2 rounded-lg text-[9px] font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                       isTargeted
-                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md animate-pulse'
+                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md animate-pulse motion-reduce:animate-none'
                         : isInstalled
                         ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
                         : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md'
@@ -521,6 +539,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
 
                 {secondaryAction && (
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       secondaryAction.onClick();
@@ -531,6 +550,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
                   </button>
                 )}
               </div>
+            </div>
             </div>
           )}
         </div>
@@ -721,19 +741,21 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
       ? (selectedComponentForPlacement as MotherboardComponent)
       : null);
 
-  const isIntel = targetMb?.socket === 'LGA1700';
+  // Modelo da mesma família física da peça (engine/workbenchModels) e layout medido naquele GLB
+  const mbModelId = (targetMb && resolveWorkbenchModelId(targetMb)) ?? 'mb-b550m';
+  const mbModelUrl = workbenchModelUrl(mbModelId);
+  const layout = mbModelId === 'mb-z790-atx' ? MOTHERBOARD_LAYOUTS.INTEL_LGA1700 : MOTHERBOARD_LAYOUTS.AMD_AM4_AM5;
 
-  const mbModelUrl = isIntel
-    ? '/models/mb-z790-atx.glb'
-    : '/models/mb-b550m.glb';
-
-  const layout = isIntel
-    ? MOTHERBOARD_LAYOUTS.INTEL_LGA1700
-    : MOTHERBOARD_LAYOUTS.AMD_AM4_AM5;
+  const partModel = (component: HardwareComponent) => {
+    const id = resolveWorkbenchModelId(component);
+    return id ? { id, url: workbenchModelUrl(id), rotation: workbenchModelRotation(id) } : null;
+  };
+  const cpuModel = assembly.cpuInstalled ? partModel(assembly.cpuInstalled) : null;
+  const ramModel2 = assembly.ramInstalledSlot2 ? partModel(assembly.ramInstalledSlot2) : null;
+  const ramModel4 = assembly.ramInstalledSlot4 ? partModel(assembly.ramInstalledSlot4) : null;
 
   // Topo do IHS da CPU instalada: referência para a gota de pasta e a base do cooler
-  const ihsTopY =
-    layout.CPU_SOCKET[1] + (assembly.cpuInstalled ? CPU_MODELS[assembly.cpuInstalled.socket].height : 0);
+  const ihsTopY = layout.CPU_SOCKET[1] + (cpuModel ? WORKBENCH_CPU_HEIGHTS[cpuModel.id] ?? 0.1 : 0);
 
   // Aciona preset de câmera
   const applyViewPreset = (view: 'iso' | 'top' | 'front') => {
@@ -804,6 +826,8 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
           {/* Presets de Câmera */}
           <div className="bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700/80 p-1 flex items-center gap-1 shadow-lg">
             <button
+              type="button"
+              aria-pressed={activePreset === 'iso'}
               onClick={() => applyViewPreset('iso')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono whitespace-nowrap transition-all cursor-pointer ${
                 activePreset === 'iso'
@@ -817,6 +841,8 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             </button>
 
             <button
+              type="button"
+              aria-pressed={activePreset === 'top'}
               onClick={() => applyViewPreset('top')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono whitespace-nowrap transition-all cursor-pointer ${
                 activePreset === 'top'
@@ -830,6 +856,8 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             </button>
 
             <button
+              type="button"
+              aria-pressed={activePreset === 'front'}
               onClick={() => applyViewPreset('front')}
               className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono whitespace-nowrap transition-all cursor-pointer ${
                 activePreset === 'front'
@@ -914,6 +942,8 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
         <Canvas
           camera={{ position: [6.2, 8.2, 7.2], fov: 42 }}
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+          // Telas Retina/4K em PCs escolares: limita a 1.5x para manter 60 FPS com sombras ativas
+          dpr={[1, 1.5]}
           shadows
         >
           <color attach="background" args={['#070b14']} />
@@ -1050,9 +1080,9 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
 
             {/* 2. Peças Físicas Instaladas */}
             {/* CPU Instalada no Soquete */}
-            {assembly.cpuInstalled && (
+            {cpuModel && (
               <AutoNormalizedPart
-                modelUrl={CPU_MODELS[assembly.cpuInstalled.socket].url}
+                modelUrl={cpuModel.url}
                 targetSize={CPU_TARGET_SIZE}
                 position={layout.CPU_SOCKET}
               />
@@ -1086,30 +1116,30 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               ))}
 
             {/* Pentes de Memória RAM EM PÉ, encaixados no canal do slot DIMM e alinhados ao seu comprimento */}
-            {assembly.ramInstalledSlot2 && (
+            {ramModel2 && (
               <AutoNormalizedPart
-                modelUrl={RAM_MODELS[assembly.ramInstalledSlot2.ramType].url}
+                modelUrl={ramModel2.url}
                 targetSize={layout.RAM_STICK_LENGTH}
                 position={layout.RAM_SLOT_2}
-                rotation={RAM_MODELS[assembly.ramInstalledSlot2.ramType].rotation}
+                rotation={ramModel2.rotation}
               />
             )}
-            {assembly.ramInstalledSlot4 && (
+            {ramModel4 && (
               <AutoNormalizedPart
-                modelUrl={RAM_MODELS[assembly.ramInstalledSlot4.ramType].url}
+                modelUrl={ramModel4.url}
                 targetSize={layout.RAM_STICK_LENGTH}
                 position={layout.RAM_SLOT_4}
-                rotation={RAM_MODELS[assembly.ramInstalledSlot4.ramType].rotation}
+                rotation={ramModel4.rotation}
               />
             )}
 
             {/* Armazenamento SSD M.2 */}
             {assembly.storageInstalled && assembly.storageInstalled.storageType.includes('M2') && (
               <AutoNormalizedPart
-                modelUrl="/models/ssd-nvme-990pro.glb"
+                modelUrl={workbenchModelUrl('ssd-nvme-990pro')}
                 targetSize={1.3}
                 position={layout.M2_SLOT}
-                rotation={[0, Math.PI / 2, 0]}
+                rotation={workbenchModelRotation('ssd-nvme-990pro')}
               />
             )}
 

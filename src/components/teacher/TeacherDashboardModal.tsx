@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import {
   INITIAL_LEADERBOARD_ENTRIES,
   StudentLeaderboardEntry,
@@ -33,7 +34,16 @@ export const TeacherDashboardModal: React.FC = () => {
     calculateFinalScore,
     assembly,
     selectedMotherboard,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      isTeacherDashboardOpen: s.isTeacherDashboardOpen,
+      closeTeacherDashboard: s.closeTeacherDashboard,
+      teamName: s.teamName,
+      calculateFinalScore: s.calculateFinalScore,
+      assembly: s.assembly,
+      selectedMotherboard: s.selectedMotherboard,
+    }))
+  );
 
   const [activeTab, setActiveTab] = useState<'LEADERBOARD' | 'CERTIFICATE' | 'VALIDATOR'>('LEADERBOARD');
   const [selectedClass, setSelectedClass] = useState<string>('TODAS');

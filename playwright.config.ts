@@ -1,8 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3001';
+
 export default defineConfig({
   testDir: './e2e',
-  timeout: 30 * 1000,
+  // WebGL roda por software (SwiftShader): a Vitrine 3D após a bancada 3D chegava a 31s com teto de 30s
+  timeout: 60 * 1000,
   expect: {
     timeout: 10 * 1000,
   },
@@ -12,7 +15,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3001',
+    baseURL,
     trace: 'on-first-retry',
     viewport: { width: 1366, height: 768 },
     screenshot: 'only-on-failure',
@@ -29,9 +32,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // Porta explícita: 'next dev' sozinho escuta na 3000 e o webServer esperava a 3001 (timeout)
-    command: 'npm run dev -- -p 3001',
-    url: 'http://localhost:3001',
+    // `npm run dev` sobe na 3000: sem a porta explícita o Playwright esperava a 3001 até o timeout
+    command: `npm run dev -- -p ${new URL(baseURL).port || '3001'}`,
+    url: baseURL,
     reuseExistingServer: true,
     timeout: 120 * 1000,
   },

@@ -309,6 +309,7 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
         <Canvas
           camera={{ position: DESK_CAMERA_PRESETS['setup-wide'].pos, fov: 42, near: 0.03, far: 40 }}
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+          dpr={[1, 1.5]}
           shadows
         >
           {/* Luzes do laboratório (~5500K) em escala métrica, sombra recortada na área da estação */}

@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import {
   MONITORS,
   KEYBOARDS,
@@ -41,7 +42,20 @@ export const VirtualRoomModal: React.FC = () => {
     assembly,
     selectedMotherboard,
     calculateFinalScore,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      isVirtualRoomModalOpen: s.isVirtualRoomModalOpen,
+      closeVirtualRoomModal: s.closeVirtualRoomModal,
+      studentSetup: s.studentSetup,
+      setStudentPeripheral: s.setStudentPeripheral,
+      selectedRoomTheme: s.selectedRoomTheme,
+      setSelectedRoomTheme: s.setSelectedRoomTheme,
+      teamName: s.teamName,
+      assembly: s.assembly,
+      selectedMotherboard: s.selectedMotherboard,
+      calculateFinalScore: s.calculateFinalScore,
+    }))
+  );
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [activeTab, setActiveTab] = useState<'THEME' | 'MONITOR' | 'KEYBOARD' | 'MOUSE' | 'CASE' | 'AUDIO' | 'STAND' | 'GAMEPAD'>('THEME');

@@ -2,13 +2,22 @@
 
 import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Sparkles, X, Lightbulb } from 'lucide-react';
 import { HardwareImage } from '@/components/common/HardwareImage';
 import { View3DButton } from '@/components/three/View3DButton';
 import { CATEGORY_LABELS } from '@/components/inventory/componentLabels';
 
 export const InspectModal: React.FC = () => {
-  const { inspectedComponent, setInspectedComponent } = useAssemblyStore();
+  const {
+    inspectedComponent,
+    setInspectedComponent,
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      inspectedComponent: s.inspectedComponent,
+      setInspectedComponent: s.setInspectedComponent,
+    }))
+  );
 
   if (!inspectedComponent) return null;
 
