@@ -11,6 +11,7 @@ import { WorkbenchMat } from '@/components/workbench/WorkbenchMat';
 import { InventoryDrawer } from '@/components/inventory/InventoryDrawer';
 import { InspectModal } from '@/components/modals/InspectModal';
 import { BIOSSimulatorModal } from '@/components/modals/BIOSSimulatorModal';
+import { FrontPanelZoomModal } from '@/components/modals/FrontPanelZoomModal';
 
 export default function Home() {
   return (
@@ -44,6 +45,7 @@ export default function Home() {
       {/* Modais Flutuantes */}
       <InspectModal />
       <BIOSSimulatorModal />
+      <FrontPanelZoomModal />
     </main>
   );
 }

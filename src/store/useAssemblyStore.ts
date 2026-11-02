@@ -15,6 +15,7 @@ import {
 } from '../engine/types';
 import { MOTHERBOARDS, CLIENT_MISSIONS } from '../engine/hardwareCatalog';
 import { DiagnosticScenario, DIAGNOSTIC_SCENARIOS } from '../engine/diagnosticCases';
+import { FPanelConnectorId, validateConnectorPlacement } from '../engine/frontPanel';
 import { evaluatePostTest, PostResult, validateSocket, validateRamType } from '../engine/compatibility';
 import { soundEngine } from '../engine/audio/soundEngine';
 
@@ -42,6 +43,8 @@ interface AssemblyStore {
   postResult: PostResult | null;
   isBiosOpen: boolean;
   isScoreModalOpen: boolean;
+  isFrontPanelModalOpen: boolean;
+  fPanelConnections: Record<FPanelConnectorId, [number, number] | null>;
   activeAlert: { title: string; message: string; type: 'error' | 'success' | 'warning' } | null;
 
   // Ações
@@ -58,6 +61,10 @@ interface AssemblyStore {
   dismissAlert: () => void;
   closeBios: () => void;
   closeScoreModal: () => void;
+  openFrontPanelModal: () => void;
+  closeFrontPanelModal: () => void;
+  connectFPanelJumper: (connectorId: FPanelConnectorId, pins: [number, number]) => { success: boolean; message: string };
+  disconnectFPanelJumper: (connectorId: FPanelConnectorId) => void;
   tickTimer: () => void;
 
   // Ações de Montagem (com regras e áudio)
@@ -126,6 +133,13 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   postResult: null,
   isBiosOpen: false,
   isScoreModalOpen: false,
+  isFrontPanelModalOpen: false,
+  fPanelConnections: {
+    POWER_SW: null,
+    RESET_SW: null,
+    HDD_LED: null,
+    POWER_LED: null,
+  },
   activeAlert: null,
 
   setGameMode: (mode) => {
@@ -240,6 +254,64 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   closeBios: () => set({ isBiosOpen: false }),
 
   closeScoreModal: () => set({ isScoreModalOpen: false }),
+
+  openFrontPanelModal: () => set({ isFrontPanelModalOpen: true }),
+
+  closeFrontPanelModal: () => set({ isFrontPanelModalOpen: false }),
+
+  connectFPanelJumper: (connectorId, pins) => {
+    const result = validateConnectorPlacement(connectorId, pins);
+    if (result.success) {
+      soundEngine.playSlotClick();
+      set((state) => {
+        const nextConns = { ...state.fPanelConnections, [connectorId]: pins };
+        const updatedAssembly = { ...state.assembly };
+        if (connectorId === 'POWER_SW') updatedAssembly.frontPanelPowerSwConnected = true;
+        if (connectorId === 'RESET_SW') updatedAssembly.frontPanelResetSwConnected = true;
+        if (connectorId === 'HDD_LED' || connectorId === 'POWER_LED') {
+          if (nextConns.HDD_LED && nextConns.POWER_LED) {
+            updatedAssembly.frontPanelLedsConnected = true;
+          }
+        }
+        return {
+          fPanelConnections: nextConns,
+          assembly: updatedAssembly,
+          activeAlert: {
+            type: 'success',
+            title: `${connectorId} Conectado!`,
+            message: result.message,
+          },
+        };
+      });
+      get().checkDiagnosticResolution();
+      return result;
+    } else {
+      soundEngine.playErrorBuzz();
+      set({
+        activeAlert: {
+          type: 'error',
+          title: result.isPolarityInverted ? 'Polaridade Invertida (+/-)' : 'Pinos Incorretos',
+          message: result.message,
+        },
+      });
+      return result;
+    }
+  },
+
+  disconnectFPanelJumper: (connectorId) => {
+    soundEngine.playSlotClick();
+    set((state) => {
+      const nextConns = { ...state.fPanelConnections, [connectorId]: null };
+      const updatedAssembly = { ...state.assembly };
+      if (connectorId === 'POWER_SW') updatedAssembly.frontPanelPowerSwConnected = false;
+      if (connectorId === 'RESET_SW') updatedAssembly.frontPanelResetSwConnected = false;
+      if (connectorId === 'HDD_LED' || connectorId === 'POWER_LED') updatedAssembly.frontPanelLedsConnected = false;
+      return {
+        fPanelConnections: nextConns,
+        assembly: updatedAssembly,
+      };
+    });
+  },
 
   tickTimer: () => {
     if (get().isTimerRunning) {

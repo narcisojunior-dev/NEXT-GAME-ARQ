@@ -12,6 +12,7 @@ import {
   Wrench,
   CheckCircle2,
   ArrowDown,
+  Maximize2,
 } from 'lucide-react';
 
 export const WorkbenchMat: React.FC = () => {
@@ -26,6 +27,7 @@ export const WorkbenchMat: React.FC = () => {
     togglePsuSwitch,
     triggerPostBoot,
     resetAssembly,
+    openFrontPanelModal,
     selectedComponentForPlacement,
   } = useAssemblyStore();
 
@@ -100,6 +102,19 @@ export const WorkbenchMat: React.FC = () => {
           >
             <Wrench className="w-4 h-4" />
             <span>{assembly.ioShieldInstalled ? 'Espelho I/O Traseiro [OK]' : 'Instalar Espelho Traseiro'}</span>
+          </button>
+
+          {/* Minigame Zoom F_PANEL (Painel Frontal) */}
+          <button
+            onClick={openFrontPanelModal}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              assembly.frontPanelPowerSwConnected
+                ? 'bg-slate-800 text-emerald-400 border border-emerald-800/60'
+                : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-md shadow-amber-500/20 animate-pulse'
+            }`}
+          >
+            <Maximize2 className="w-4 h-4" />
+            <span>{assembly.frontPanelPowerSwConnected ? 'Painel Frontal F_PANEL [OK]' : 'Pinos F_PANEL (Zoom 300%)'}</span>
           </button>
         </div>
 

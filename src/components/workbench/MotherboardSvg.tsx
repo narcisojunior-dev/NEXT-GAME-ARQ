@@ -26,6 +26,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
     installStorage,
     installGpu,
     connectCable,
+    openFrontPanelModal,
   } = useAssemblyStore();
 
   const handleCpuAreaClick = () => {
@@ -530,12 +531,35 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           })}
         </g>
 
-        {/* 7. PAINEL FRONTAL (Front Panel Header - Canto Inferior Direito) */}
-        <g className="cursor-pointer" onClick={() => connectCable('POWER_SW')}>
-          <rect x="680" y="560" width="180" height="70" rx="8" fill="#0F172A" stroke={assembly.frontPanelPowerSwConnected ? '#10B981' : '#EAB308'} strokeWidth="2" />
-          <text x="770" y="582" fill="#94A3B8" fontSize="11" fontWeight="bold" textAnchor="middle">F_PANEL (PAINEL FRONTAL)</text>
-          <text x="770" y="605" fill={assembly.frontPanelPowerSwConnected ? '#10B981' : '#F59E0B'} fontSize="11" fontWeight="bold" textAnchor="middle">
-            {assembly.frontPanelPowerSwConnected ? 'POWER SW CONECTADO [OK]' : 'CLIQUE: LIGAR POWER SW'}
+        {/* 7. PAINEL FRONTAL (Front Panel Header - Canto Inferior Direito com Zoom de Precisão) */}
+        <g
+          className="cursor-pointer transition-transform hover:scale-105"
+          onClick={openFrontPanelModal}
+        >
+          <rect
+            x="680"
+            y="560"
+            width="180"
+            height="70"
+            rx="8"
+            fill="#0F172A"
+            stroke={assembly.frontPanelPowerSwConnected ? '#10B981' : '#EAB308'}
+            strokeWidth="2"
+          />
+          <text x="770" y="582" fill="#94A3B8" fontSize="11" fontWeight="bold" textAnchor="middle">
+            F_PANEL (PAINEL FRONTAL)
+          </text>
+          <text
+            x="770"
+            y="605"
+            fill={assembly.frontPanelPowerSwConnected ? '#10B981' : '#F59E0B'}
+            fontSize="10"
+            fontWeight="bold"
+            textAnchor="middle"
+          >
+            {assembly.frontPanelPowerSwConnected
+              ? 'POWER SW CONECTADO [OK]'
+              : '🔍 CLIQUE P/ ZOOM 300% (9 PINOS)'}
           </text>
         </g>
       </svg>
