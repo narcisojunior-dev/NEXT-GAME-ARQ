@@ -37,23 +37,23 @@ export { isWebGLAvailable };
  * Espaçamento ergonômico nos quadrantes físicos reais da placa-mãe
  * ==================================================================================== */
 const POSITIONS = {
-  // Soquete da CPU (Quadrante superior esquerdo)
-  CPU_SOCKET: [-0.75, 0.22, -1.3] as [number, number, number],
-  // Conector de Ventoinha da CPU (Borda superior, acima do soquete)
-  CPU_FAN_HEADER: [-0.3, 0.22, -2.85] as [number, number, number],
+  // Soquete da CPU (Centro exato do soquete AM4/LGA entre as presilhas de retenção)
+  CPU_SOCKET: [-0.65, 0.22, -1.05] as [number, number, number],
+  // Conector de Ventoinha da CPU (Borda superior, diretamente acima da CPU)
+  CPU_FAN_HEADER: [-0.65, 0.22, -2.75] as [number, number, number],
   // Conector ATX 12V 8P (Borda superior esquerda, próximo ao VRM)
-  ATX12V_HEADER: [-2.6, 0.22, -3.1] as [number, number, number],
-  // Slots de Memória RAM (Quadrante superior direito, paralelos à CPU)
-  RAM_SLOT_2: [1.35, 0.22, -1.2] as [number, number, number],
-  RAM_SLOT_4: [1.85, 0.22, -1.2] as [number, number, number],
+  ATX12V_HEADER: [-2.65, 0.22, -3.15] as [number, number, number],
+  // Slots de Memória RAM (À direita da CPU, estendendo-se na VERTICAL ao longo do eixo Z)
+  RAM_SLOT_2: [1.45, 0.22, -1.05] as [number, number, number],
+  RAM_SLOT_4: [1.85, 0.22, -1.05] as [number, number, number],
   // Slot M.2 NVMe (Centro, entre a CPU e o slot PCIe)
-  M2_SLOT: [-0.75, 0.22, -0.1] as [number, number, number],
-  // Slot PCIe x16 da Placa de Vídeo (Quadrante inferior, horizontal)
-  PCIE_SLOT: [-0.75, 0.22, 1.25] as [number, number, number],
+  M2_SLOT: [-0.65, 0.22, 0.15] as [number, number, number],
+  // Slot PCIe x16 da Placa de Vídeo (Quadrante inferior, horizontal ao longo de X)
+  PCIE_SLOT: [-0.65, 0.22, 1.35] as [number, number, number],
   // Conector Principal ATX 24P (Borda direita da placa)
   ATX24P_HEADER: [3.15, 0.22, -0.65] as [number, number, number],
   // Painel Frontal F_PANEL (Canto inferior direito)
-  FPANEL_HEADER: [2.95, 0.22, 3.1] as [number, number, number],
+  FPANEL_HEADER: [2.95, 0.22, 3.15] as [number, number, number],
   // LEDs de Diagnóstico EZ Debug (Canto superior direito)
   DEBUG_LEDS: [3.05, 0.22, -2.9] as [number, number, number],
 };
@@ -507,6 +507,26 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
     } else if (isPasteTarget) {
       applyThermalPaste();
     } else if (isCoolerTarget) {
+      if (!assembly.cpuInstalled) {
+        useAssemblyStore.setState({
+          activeAlert: {
+            type: 'error',
+            title: 'Soquete Vazio!',
+            message: 'Instale o processador no soquete antes de fixar o cooler.',
+          },
+        });
+        return;
+      }
+      if (!assembly.thermalPasteApplied) {
+        useAssemblyStore.setState({
+          activeAlert: {
+            type: 'error',
+            title: 'Pasta Térmica Obrigatória!',
+            message: 'Você não pode instalar o cooler sem antes aplicar a pasta térmica sobre o processador! Selecione a pasta térmica no catálogo.',
+          },
+        });
+        return;
+      }
       installCooler(selectedComponentForPlacement as never);
     }
   };
@@ -712,13 +732,13 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               />
             )}
 
-            {/* Pentes de Memória RAM */}
+            {/* Pentes de Memória RAM na VERTICAL */}
             {assembly.ramInstalledSlot2 && (
               <AutoNormalizedPart
                 modelUrl="/models/ram-ddr4-crucial.glb"
                 targetSize={1.9}
                 position={POSITIONS.RAM_SLOT_2}
-                rotation={[0, 0, 0]}
+                rotation={[-Math.PI / 2, 0, Math.PI / 2]}
               />
             )}
             {assembly.ramInstalledSlot4 && (
@@ -726,7 +746,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                 modelUrl="/models/ram-ddr4-crucial.glb"
                 targetSize={1.9}
                 position={POSITIONS.RAM_SLOT_4}
-                rotation={[0, 0, 0]}
+                rotation={[-Math.PI / 2, 0, Math.PI / 2]}
               />
             )}
 
@@ -762,7 +782,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               status={
                 assembly.coolerInstalled
                   ? 'installed'
-                  : isCpuTarget || isPasteTarget || isCoolerTarget
+                  : isCpuTarget || isPasteTarget || (isCoolerTarget && assembly.thermalPasteApplied)
                   ? 'targeted'
                   : assembly.cpuInstalled
                   ? 'installed'
@@ -770,11 +790,13 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               }
               detailText={
                 assembly.coolerInstalled
-                  ? `Cooler ${assembly.coolerInstalled.name} instalado`
+                  ? `Cooler ${assembly.coolerInstalled.name} fixado sobre a CPU e pasta térmica.`
                   : assembly.thermalPasteApplied
-                  ? 'Pasta térmica aplicada. Pronto para o cooler.'
+                  ? 'Pasta térmica aplicada sobre o processador. Pronto para o cooler!'
+                  : assembly.cpuInstalled && !assembly.socketLeverLocked
+                  ? `${assembly.cpuInstalled.name} no soquete. Trave a alavanca para prender os pinos.`
                   : assembly.cpuInstalled
-                  ? `${assembly.cpuInstalled.name} encaixado no soquete.`
+                  ? `${assembly.cpuInstalled.name} preso no soquete. Aplique pasta térmica antes de fixar o cooler.`
                   : 'Soquete vazio. Selecione uma CPU compatível para encaixar.'
               }
               actionText={
@@ -782,18 +804,20 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                   ? 'Encaixar CPU'
                   : isPasteTarget
                   ? 'Aplicar Pasta Térmica'
+                  : isCoolerTarget && !assembly.thermalPasteApplied
+                  ? 'Pasta Térmica Obrigatória ⚠'
                   : isCoolerTarget
-                  ? 'Instalar Cooler'
-                  : assembly.cpuInstalled && !assembly.coolerInstalled
-                  ? assembly.socketLeverLocked
-                    ? 'Alavanca Travada ✓'
-                    : 'Destravada: Travar Alavanca ⚠'
+                  ? 'Instalar Cooler sobre a CPU'
+                  : assembly.cpuInstalled && !assembly.coolerInstalled && !assembly.socketLeverLocked
+                  ? 'Destravada: Travar Alavanca ⚠'
+                  : assembly.cpuInstalled && !assembly.coolerInstalled && !assembly.thermalPasteApplied
+                  ? 'Aplicar Pasta Térmica'
                   : undefined
               }
               onAction={
                 isCpuTarget || isPasteTarget || isCoolerTarget
                   ? handleCpuAreaClick
-                  : assembly.cpuInstalled && !assembly.coolerInstalled
+                  : assembly.cpuInstalled && !assembly.coolerInstalled && !assembly.socketLeverLocked
                   ? toggleSocketLever
                   : undefined
               }

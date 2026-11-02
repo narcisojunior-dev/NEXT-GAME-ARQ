@@ -622,10 +622,10 @@
     "semantic_hash": "7f05ea38c6b8ea5054405ffbd50df291"
   },
   "src/components/three/Workbench3D.tsx": {
-    "mtime": 1793645439.5672688,
-    "seen": 1793645780.6046722,
-    "ast_hash": "2e2ce956326fe90560ef9ca75e73dd7f",
-    "semantic_hash": "2e2ce956326fe90560ef9ca75e73dd7f"
+    "mtime": 1793646977.0176158,
+    "seen": 1793647212.5669565,
+    "ast_hash": "c146385294f3017179c896149bcdc978",
+    "semantic_hash": "c146385294f3017179c896149bcdc978"
   },
   "src/components/three/webglDetect.ts": {
     "mtime": 1793643598.2876432,
