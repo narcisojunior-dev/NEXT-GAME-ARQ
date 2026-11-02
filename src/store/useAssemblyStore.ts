@@ -16,6 +16,8 @@ import {
 import { MOTHERBOARDS, CLIENT_MISSIONS } from '../engine/hardwareCatalog';
 import { DiagnosticScenario, DIAGNOSTIC_SCENARIOS } from '../engine/diagnosticCases';
 import { FPanelConnectorId, validateConnectorPlacement } from '../engine/frontPanel';
+import { StudentSetupConfig, DEFAULT_STUDENT_SETUP, PeripheralItem } from '../engine/peripheralsCatalog';
+import { RoomThemeId } from '../engine/roomThemes';
 import { evaluatePostTest, PostResult, validateSocket, validateRamType } from '../engine/compatibility';
 import { soundEngine } from '../engine/audio/soundEngine';
 
@@ -45,6 +47,9 @@ interface AssemblyStore {
   isScoreModalOpen: boolean;
   isFrontPanelModalOpen: boolean;
   isAcademyOSOpen: boolean;
+  isVirtualRoomModalOpen: boolean;
+  studentSetup: StudentSetupConfig;
+  selectedRoomTheme: RoomThemeId;
   fPanelConnections: Record<FPanelConnectorId, [number, number] | null>;
   activeAlert: { title: string; message: string; type: 'error' | 'success' | 'warning' } | null;
 
@@ -66,6 +71,10 @@ interface AssemblyStore {
   closeFrontPanelModal: () => void;
   openAcademyOS: () => void;
   closeAcademyOS: () => void;
+  openVirtualRoomModal: () => void;
+  closeVirtualRoomModal: () => void;
+  setStudentPeripheral: (category: keyof StudentSetupConfig, item: PeripheralItem) => void;
+  setSelectedRoomTheme: (themeId: RoomThemeId) => void;
   connectFPanelJumper: (connectorId: FPanelConnectorId, pins: [number, number]) => { success: boolean; message: string };
   disconnectFPanelJumper: (connectorId: FPanelConnectorId) => void;
   tickTimer: () => void;
@@ -138,6 +147,9 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   isScoreModalOpen: false,
   isFrontPanelModalOpen: false,
   isAcademyOSOpen: false,
+  isVirtualRoomModalOpen: false,
+  studentSetup: DEFAULT_STUDENT_SETUP,
+  selectedRoomTheme: 'ROOM_GAMER',
   fPanelConnections: {
     POWER_SW: null,
     RESET_SW: null,
@@ -266,6 +278,25 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   openAcademyOS: () => set({ isAcademyOSOpen: true, isBiosOpen: false }),
 
   closeAcademyOS: () => set({ isAcademyOSOpen: false }),
+
+  openVirtualRoomModal: () => set({ isVirtualRoomModalOpen: true }),
+
+  closeVirtualRoomModal: () => set({ isVirtualRoomModalOpen: false }),
+
+  setStudentPeripheral: (category, item) => {
+    soundEngine.playSlotClick();
+    set((state) => ({
+      studentSetup: {
+        ...state.studentSetup,
+        [category]: item,
+      },
+    }));
+  },
+
+  setSelectedRoomTheme: (themeId) => {
+    soundEngine.playSuccessChime();
+    set({ selectedRoomTheme: themeId });
+  },
 
   connectFPanelJumper: (connectorId, pins) => {
     const result = validateConnectorPlacement(connectorId, pins);

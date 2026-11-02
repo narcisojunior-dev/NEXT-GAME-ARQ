@@ -13,6 +13,7 @@ import { InspectModal } from '@/components/modals/InspectModal';
 import { BIOSSimulatorModal } from '@/components/modals/BIOSSimulatorModal';
 import { FrontPanelZoomModal } from '@/components/modals/FrontPanelZoomModal';
 import { AcademyOSDesktop } from '@/components/os/AcademyOSDesktop';
+import { VirtualRoomModal } from '@/components/room/VirtualRoomModal';
 
 export default function Home() {
   return (
@@ -48,6 +49,7 @@ export default function Home() {
       <BIOSSimulatorModal />
       <FrontPanelZoomModal />
       <AcademyOSDesktop />
+      <VirtualRoomModal />
     </main>
   );
 }

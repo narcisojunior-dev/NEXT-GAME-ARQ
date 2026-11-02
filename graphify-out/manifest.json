@@ -199,10 +199,10 @@
     "semantic_hash": "63a432e6492500548df9e90d2ee1060b"
   },
   "src/app/page.tsx": {
-    "mtime": 1793594611.0378315,
-    "seen": 1793594652.9386303,
-    "ast_hash": "00552d1c066cb18fa8341040e9d61a41",
-    "semantic_hash": "00552d1c066cb18fa8341040e9d61a41"
+    "mtime": 1793594883.0423205,
+    "seen": 1793594934.9546614,
+    "ast_hash": "4da398f21fdcc08f2c80af6934778e35",
+    "semantic_hash": "4da398f21fdcc08f2c80af6934778e35"
   },
   "src/components/challenges/TeamChallengeBanner.tsx": {
     "mtime": 1793590852.6696975,
@@ -217,10 +217,10 @@
     "semantic_hash": "6e873cbcc602160e841ddc8bfd7a069c"
   },
   "src/components/hud/TopHUD.tsx": {
-    "mtime": 1793594048.761345,
-    "seen": 1793594113.2211032,
-    "ast_hash": "7f81fd38e799321ad76770a9e748bc7a",
-    "semantic_hash": "7f81fd38e799321ad76770a9e748bc7a"
+    "mtime": 1793594864.4765012,
+    "seen": 1793594934.9556668,
+    "ast_hash": "a91365fac48e9ea974b515a59773eec7",
+    "semantic_hash": "a91365fac48e9ea974b515a59773eec7"
   },
   "src/components/inventory/ComponentCard.tsx": {
     "mtime": 1793593638.0244644,
@@ -289,10 +289,10 @@
     "semantic_hash": "47e2bbb878c9b5c8689d93c0f397c0de"
   },
   "src/store/useAssemblyStore.ts": {
-    "mtime": 1793594517.865678,
-    "seen": 1793594652.9456306,
-    "ast_hash": "5b833d246b107cbe2f32c7993e3c67e2",
-    "semantic_hash": "5b833d246b107cbe2f32c7993e3c67e2"
+    "mtime": 1793594754.8410125,
+    "seen": 1793594934.9616835,
+    "ast_hash": "bf6f607373b8ecaf424e9edaf88e7383",
+    "semantic_hash": "bf6f607373b8ecaf424e9edaf88e7383"
   },
   "tsconfig.json": {
     "mtime": 1793590910.7074394,
@@ -371,5 +371,29 @@
     "seen": 1793594652.94363,
     "ast_hash": "8a109ce999e40c518e9a6070cb9bfbfc",
     "semantic_hash": "8a109ce999e40c518e9a6070cb9bfbfc"
+  },
+  "src/components/room/VirtualRoomModal.tsx": {
+    "mtime": 1793594820.4051523,
+    "seen": 1793594934.9581788,
+    "ast_hash": "275f0f13caee9d9fbc0f226dac989809",
+    "semantic_hash": "275f0f13caee9d9fbc0f226dac989809"
+  },
+  "src/engine/__tests__/setupAndRoom.test.ts": {
+    "mtime": 1793594716.8796082,
+    "seen": 1793594934.9601784,
+    "ast_hash": "b908be12e3732c89c73e8c6743c481a5",
+    "semantic_hash": "b908be12e3732c89c73e8c6743c481a5"
+  },
+  "src/engine/peripheralsCatalog.ts": {
+    "mtime": 1793594695.4936683,
+    "seen": 1793594934.9616835,
+    "ast_hash": "c3571b9311470403a0247918c081dd07",
+    "semantic_hash": "c3571b9311470403a0247918c081dd07"
+  },
+  "src/engine/roomThemes.ts": {
+    "mtime": 1793594707.3877735,
+    "seen": 1793594934.9616835,
+    "ast_hash": "135683b402039b3f0cb8ceda870a05d1",
+    "semantic_hash": "135683b402039b3f0cb8ceda870a05d1"
   }
 }

@@ -11,6 +11,7 @@ import {
   Coins,
   AlertCircle,
   Stethoscope,
+  Camera,
 } from 'lucide-react';
 
 const PHASES: { id: AssemblyPhase; label: string; number: number }[] = [
@@ -34,6 +35,7 @@ export const TopHUD: React.FC = () => {
     activeMission,
     assembly,
     penaltiesCount,
+    openVirtualRoomModal,
   } = useAssemblyStore();
 
   useEffect(() => {
@@ -130,7 +132,17 @@ export const TopHUD: React.FC = () => {
         </div>
 
         {/* Métricas: Orçamento e Cronômetro */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Botão de Abrir Sala Virtual & Setup */}
+          <button
+            onClick={openVirtualRoomModal}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-purple-600/20 cursor-pointer active:scale-95"
+            title="Ver meu computador na Sala Virtual e exportar foto PNG"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            <span>Meu Setup & Sala</span>
+          </button>
+
           {budgetRemaining !== null && (
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
               budgetRemaining >= 0
