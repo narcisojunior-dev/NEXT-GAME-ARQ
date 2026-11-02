@@ -1,9 +1,10 @@
 'use client';
 
-import React, { Suspense, useRef, useState, useTransition } from 'react';
+import React, { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, useGLTF } from '@react-three/drei';
+import { Html, OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useCableDragStore } from '@/components/workbench/cableDragStore';
 import { CABLES, CableSpec, CableTargetId, cableTargetById } from '@/engine/cabling';
@@ -20,14 +21,303 @@ import {
   Maximize2,
   Wrench,
   Power,
+  ZoomIn,
+  ZoomOut,
+  Fan,
+  HelpCircle,
+  Sparkles,
 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { isWebGLAvailable } from './webglDetect';
 export { isWebGLAvailable };
 
-/** Hook de alvo de cabo compatível com a máquina de estados do workbench */
-function useCableTarget3D(targetId: CableTargetId) {
+/* ====================================================================================
+ * COORDENADAS PADRÃO CALIBRADAS DA BANCADA 3D (Escala Normalizada da Placa: ~7.2 x 7.6)
+ * Espaçamento ergonômico nos quadrantes físicos reais da placa-mãe
+ * ==================================================================================== */
+const POSITIONS = {
+  // Soquete da CPU (Quadrante superior esquerdo)
+  CPU_SOCKET: [-0.75, 0.22, -1.3] as [number, number, number],
+  // Conector de Ventoinha da CPU (Borda superior, acima do soquete)
+  CPU_FAN_HEADER: [-0.3, 0.22, -2.85] as [number, number, number],
+  // Conector ATX 12V 8P (Borda superior esquerda, próximo ao VRM)
+  ATX12V_HEADER: [-2.6, 0.22, -3.1] as [number, number, number],
+  // Slots de Memória RAM (Quadrante superior direito, paralelos à CPU)
+  RAM_SLOT_2: [1.35, 0.22, -1.2] as [number, number, number],
+  RAM_SLOT_4: [1.85, 0.22, -1.2] as [number, number, number],
+  // Slot M.2 NVMe (Centro, entre a CPU e o slot PCIe)
+  M2_SLOT: [-0.75, 0.22, -0.1] as [number, number, number],
+  // Slot PCIe x16 da Placa de Vídeo (Quadrante inferior, horizontal)
+  PCIE_SLOT: [-0.75, 0.22, 1.25] as [number, number, number],
+  // Conector Principal ATX 24P (Borda direita da placa)
+  ATX24P_HEADER: [3.15, 0.22, -0.65] as [number, number, number],
+  // Painel Frontal F_PANEL (Canto inferior direito)
+  FPANEL_HEADER: [2.95, 0.22, 3.1] as [number, number, number],
+  // LEDs de Diagnóstico EZ Debug (Canto superior direito)
+  DEBUG_LEDS: [3.05, 0.22, -2.9] as [number, number, number],
+};
+
+/* ====================================================================================
+ * COMPONENTE: Placa-Mãe Auto-Normalizada
+ * Centraliza e nivela qualquer modelo GLB para o plano XZ em Y=0 com tamanho padrão ~7.2
+ * ==================================================================================== */
+const AutoNormalizedMotherboard: React.FC<{ modelUrl: string }> = ({ modelUrl }) => {
+  const { scene } = useGLTF(modelUrl);
+
+  const normalizedScene = useMemo(() => {
+    const clone = scene.clone(true);
+    // 1. Calcula a caixa delimitadora inicial
+    let box = new THREE.Box3().setFromObject(clone);
+    let size = box.getSize(new THREE.Vector3());
+
+    // Se Z for a menor dimensão (como em modelos Z-Up estilo Sketchfab Z790), rotaciona -90° em X
+    if (size.z < size.y && size.z < size.x) {
+      clone.rotation.x = -Math.PI / 2;
+      box = new THREE.Box3().setFromObject(clone);
+      size = box.getSize(new THREE.Vector3());
+    }
+
+    // 2. Alinha a base em Y=0 e centraliza em X e Z
+    const center = box.getCenter(new THREE.Vector3());
+    clone.position.x = -center.x;
+    clone.position.z = -center.z;
+    clone.position.y = -box.min.y;
+
+    // 3. Normaliza para a largura padrão do laboratório (7.2 unidades)
+    const targetWidth = 7.2;
+    const scaleFactor = targetWidth / Math.max(0.001, size.x);
+    clone.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+    // Ajusta materiais para aspecto limpo e sem estouro de brilho
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        if (mesh.material) {
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          mat.roughness = Math.max(0.3, mat.roughness ?? 0.5);
+        }
+      }
+    });
+
+    return clone;
+  }, [scene]);
+
+  return <primitive object={normalizedScene} />;
+};
+
+/* ====================================================================================
+ * COMPONENTE: Peça Auto-Normalizada com Animação Opcional de Fan
+ * Dimensiona peças arbitrariamente baixadas para encaixe perfeito nas proporções da placa
+ * ==================================================================================== */
+interface AutoNormalizedPartProps {
+  modelUrl: string;
+  targetSize: number;
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  isSpinning?: boolean;
+}
+
+const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
+  modelUrl,
+  targetSize,
+  position,
+  rotation = [0, 0, 0],
+  isSpinning = false,
+}) => {
+  const { scene } = useGLTF(modelUrl);
+  const fanGroupRef = useRef<THREE.Group>(null);
+
+  const preparedScene = useMemo(() => {
+    const clone = scene.clone(true);
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    // Centraliza em X e Z e assenta a base em Y=0
+    clone.position.x = -center.x;
+    clone.position.z = -center.z;
+    clone.position.y = -box.min.y;
+
+    // Escala para o tamanho alvo na maior dimensão horizontal/vertical
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const scaleFactor = targetSize / Math.max(0.001, maxDim);
+    clone.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+
+    return clone;
+  }, [scene, targetSize]);
+
+  // Efeito da Fase 3: ventoinha girando suavemente quando o sistema dá boot com sucesso
+  useFrame((_, delta) => {
+    if (isSpinning && fanGroupRef.current) {
+      fanGroupRef.current.rotation.y += delta * 12;
+    }
+  });
+
+  return (
+    <group position={position} rotation={rotation}>
+      <group ref={fanGroupRef}>
+        <primitive object={preparedScene} />
+      </group>
+    </group>
+  );
+};
+
+/* ====================================================================================
+ * COMPONENTE: Hotspot Tátil de Engenharia (WorkbenchPin)
+ * Marcador circular compacto com tooltip expansível no hover/foco para zero sobreposição
+ * ==================================================================================== */
+interface WorkbenchPinProps {
+  position: [number, number, number];
+  icon: React.ReactNode;
+  label: string;
+  status: 'empty' | 'installed' | 'targeted';
+  detailText: string;
+  actionText?: string;
+  onAction?: () => void;
+  dataCableTarget?: CableTargetId;
+  badgeContent?: React.ReactNode;
+  secondaryAction?: {
+    text: string;
+    onClick: () => void;
+  };
+}
+
+const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
+  position,
+  icon,
+  label,
+  status,
+  detailText,
+  actionText,
+  onAction,
+  dataCableTarget,
+  badgeContent,
+  secondaryAction,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const isTargeted = status === 'targeted';
+  const isInstalled = status === 'installed';
+
+  return (
+    <group position={position}>
+      <Html center distanceFactor={14} zIndexRange={[100, 0]}>
+        <div
+          data-cable-target={dataCableTarget}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className="relative flex items-center justify-center select-none"
+        >
+          {/* Botão circular tátil compacto (32x32px com hit-area de 44x44px) */}
+          <button
+            onClick={onAction}
+            onFocus={() => setIsHovered(true)}
+            onBlur={() => setIsHovered(false)}
+            aria-label={`${label}: ${detailText}`}
+            className={`relative flex items-center justify-center w-8 h-8 rounded-full border shadow-xl backdrop-blur-md transition-all duration-200 cursor-pointer ${
+              isTargeted
+                ? 'bg-amber-950/95 border-amber-400 text-amber-200 ring-4 ring-amber-400/50 animate-bounce scale-110 shadow-amber-500/50'
+                : isInstalled
+                ? 'bg-emerald-950/90 border-emerald-500/80 text-emerald-300 hover:border-emerald-400 hover:scale-105 shadow-emerald-900/40'
+                : isHovered
+                ? 'bg-cyan-950/95 border-cyan-400 text-cyan-200 scale-110 shadow-cyan-500/40'
+                : 'bg-slate-900/85 border-slate-700/80 text-slate-300 hover:border-cyan-400 hover:text-cyan-200 hover:scale-105'
+            }`}
+          >
+            {icon}
+
+            {/* Micro-indicador de status no topo direito do pino */}
+            <span
+              className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-950 ${
+                isTargeted
+                  ? 'bg-amber-400 animate-ping'
+                  : isInstalled
+                  ? 'bg-emerald-400'
+                  : 'bg-slate-600'
+              }`}
+            />
+          </button>
+
+          {/* Tooltip técnico que expande suavemente apenas no hover / foco */}
+          {isHovered && (
+            <div
+              role="tooltip"
+              className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 min-w-[190px] max-w-[240px] p-2.5 rounded-xl bg-slate-950/95 border border-cyan-500/50 shadow-2xl backdrop-blur-lg text-left pointer-events-auto animate-in fade-in duration-150"
+            >
+              <div className="flex items-center justify-between gap-1 pb-1 mb-1.5 border-b border-slate-800 font-mono text-[11px] font-bold text-cyan-300">
+                <span className="truncate">{label}</span>
+                {isInstalled && (
+                  <span className="flex items-center gap-0.5 text-[9px] text-emerald-400 font-normal">
+                    <CheckCircle2 className="w-3 h-3" />
+                    OK
+                  </span>
+                )}
+              </div>
+
+              <p className="text-[10px] font-mono text-slate-300 leading-tight mb-2">
+                {detailText}
+              </p>
+
+              {badgeContent && <div className="mb-2">{badgeContent}</div>}
+
+              {/* Botões de Ação Contextual dentro do Tooltip */}
+              <div className="flex flex-col gap-1">
+                {actionText && onAction && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAction();
+                    }}
+                    className={`w-full py-1 px-2 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                      isTargeted
+                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md animate-pulse'
+                        : isInstalled
+                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                        : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md'
+                    }`}
+                  >
+                    <span>{actionText}</span>
+                  </button>
+                )}
+
+                {secondaryAction && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      secondaryAction.onClick();
+                    }}
+                    className="w-full py-0.5 px-2 rounded text-[9px] font-mono text-amber-300 hover:text-amber-200 hover:bg-amber-950/40 border border-amber-800/60 transition-all cursor-pointer"
+                  >
+                    {secondaryAction.text}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </Html>
+    </group>
+  );
+};
+
+/* ====================================================================================
+ * COMPONENTE: Conector de Cabo Integrado ao CableDragStore
+ * ==================================================================================== */
+const CableTargetPin: React.FC<{
+  targetId: CableTargetId;
+  position: [number, number, number];
+  name: string;
+}> = ({ targetId, position, name }) => {
   const cableConnections = useAssemblyStore((s) => s.cableConnections);
   const { heldCableId, isDragging, hoverTargetId, tryConnect, setFeedback } = useCableDragStore(
     useShallow((s) => ({
@@ -43,127 +333,118 @@ function useCableTarget3D(targetId: CableTargetId) {
     CABLES.find((c) => cableConnections[c.id] === targetId) ?? null;
   const isHovered = hoverTargetId === targetId;
   const showAffordance = Boolean(heldCableId) && !connectedCable;
-  const label = cableTargetById(targetId).label;
+  const targetSpec = cableTargetById(targetId);
 
-  const activate = () => {
+  const handleActivate = () => {
     if (heldCableId) {
       tryConnect(heldCableId, targetId);
     } else if (connectedCable) {
       setFeedback({
         tone: 'info',
-        text: `${label}: ${connectedCable.name} conectado. Para soltar, utilize a bandeja de cabos.`,
+        text: `${targetSpec.label}: ${connectedCable.name} já conectado com sucesso.`,
       });
     } else {
       setFeedback({
         tone: 'info',
-        text: `${label}: ${cableTargetById(targetId).description}. Pegue o cabo na bandeja lateral.`,
+        text: `${targetSpec.label}: ${targetSpec.description}. Selecione o cabo correto na bandeja.`,
       });
     }
   };
 
-  return { connectedCable, isHovered, showAffordance, label, activate };
+  const status = connectedCable ? 'installed' : showAffordance ? 'targeted' : 'empty';
+
+  return (
+    <WorkbenchPin
+      position={position}
+      dataCableTarget={targetId}
+      icon={<Zap className="w-3.5 h-3.5" />}
+      label={name}
+      status={status}
+      detailText={
+        connectedCable
+          ? `Conectado: ${connectedCable.name}`
+          : showAffordance
+          ? `Clique para conectar o cabo ${heldCableId}`
+          : targetSpec.description
+      }
+      actionText={
+        showAffordance
+          ? 'Conectar Cabo Aqui'
+          : connectedCable
+          ? 'Conectado ✓'
+          : 'Instruções do Cabo'
+      }
+      onAction={handleActivate}
+    />
+  );
+};
+
+/* ====================================================================================
+ * GERENCIADOR DE CÂMERA SUAVE (Permite OrbitControls livre sem lerp forçado permanente)
+ * ==================================================================================== */
+interface CameraTransitionTarget {
+  pos: THREE.Vector3;
+  target: THREE.Vector3;
 }
 
-/** Conector de cabo projetado em 3D sobre a placa */
-const CableAnchorNode: React.FC<{
-  targetId: CableTargetId;
-  position: [number, number, number];
-  name: string;
-}> = ({ targetId, position, name }) => {
-  const { connectedCable, isHovered, showAffordance, label, activate } = useCableTarget3D(targetId);
-
-  return (
-    <group position={position}>
-      <Html center distanceFactor={14}>
-        <div
-          data-cable-target={targetId}
-          onClick={activate}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              activate();
-            }
-          }}
-          tabIndex={0}
-          role="button"
-          aria-label={`Conector ${name}: ${connectedCable ? connectedCable.name : 'desconectado'}`}
-          className={`px-2 py-1 rounded text-[10px] font-mono cursor-pointer border transition-all select-none shadow-md ${
-            connectedCable
-              ? 'bg-emerald-950/90 text-emerald-300 border-emerald-500/80 shadow-emerald-900/40'
-              : showAffordance
-              ? 'bg-amber-500/30 text-amber-200 border-amber-400 animate-pulse ring-2 ring-amber-400/50'
-              : isHovered
-              ? 'bg-cyan-500/40 text-cyan-200 border-cyan-400 ring-2 ring-cyan-400/50'
-              : 'bg-slate-900/80 text-slate-300 border-slate-700/80 hover:border-cyan-400 hover:text-cyan-200'
-          }`}
-        >
-          <div className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-current" />
-            <span className="font-semibold">{name}</span>
-          </div>
-          {connectedCable && <div className="text-[8px] text-emerald-400 truncate max-w-[80px]">{connectedCable.name}</div>}
-        </div>
-      </Html>
-    </group>
-  );
+const PRESET_VIEWS: Record<'iso' | 'top' | 'front', CameraTransitionTarget> = {
+  iso: {
+    pos: new THREE.Vector3(6.2, 8.2, 7.2),
+    target: new THREE.Vector3(0, 0, 0),
+  },
+  top: {
+    pos: new THREE.Vector3(0, 11.2, 0.001),
+    target: new THREE.Vector3(0, 0, 0),
+  },
+  front: {
+    pos: new THREE.Vector3(0, 3.8, 9.2),
+    target: new THREE.Vector3(0, 0, 0),
+  },
 };
 
-/** Modelo GLB da placa-mãe */
-const MotherboardMesh: React.FC<{ modelUrl: string }> = ({ modelUrl }) => {
-  const { scene } = useGLTF(modelUrl);
-  return (
-    <primitive
-      object={scene.clone()}
-      scale={[2.8, 2.8, 2.8]}
-      position={[0, -0.05, 0]}
-      rotation={[0, 0, 0]}
-    />
-  );
-};
-
-/** Componente de Peça Encaixada sobre a Placa (CPU, Cooler, GPU, RAM) */
-const InstalledPartMesh: React.FC<{
-  modelUrl: string;
-  position: [number, number, number];
-  scale?: [number, number, number];
-  rotation?: [number, number, number];
-}> = ({ modelUrl, position, scale = [1, 1, 1], rotation = [0, 0, 0] }) => {
-  const { scene } = useGLTF(modelUrl);
-  return (
-    <primitive
-      object={scene.clone()}
-      position={position}
-      scale={scale}
-      rotation={rotation}
-    />
-  );
-};
-
-/** Controlador suave de câmera entre vista Superior e Isométrica */
-const CameraController: React.FC<{ view: 'top' | 'iso' }> = ({ view }) => {
+const SmoothCameraController: React.FC<{
+  transitionTarget: CameraTransitionTarget | null;
+  onTransitionEnd: () => void;
+  controlsRef: React.RefObject<OrbitControlsImpl | null>;
+}> = ({ transitionTarget, onTransitionEnd, controlsRef }) => {
   const { camera } = useThree();
-  const targetPos = useRef(new THREE.Vector3());
-  const targetLook = useRef(new THREE.Vector3(0, 0, 0));
 
   useFrame((_, delta) => {
-    if (view === 'top') {
-      targetPos.current.set(0, 9.5, 0.001);
-    } else {
-      targetPos.current.set(4.8, 6.2, 5.2);
+    if (!transitionTarget) return;
+
+    const t = Math.min(1, delta * 5.5);
+    camera.position.lerp(transitionTarget.pos, t);
+
+    if (controlsRef.current) {
+      controlsRef.current.target.lerp(transitionTarget.target, t);
+      controlsRef.current.update();
     }
-    camera.position.lerp(targetPos.current, Math.min(1, delta * 7));
-    camera.lookAt(targetLook.current);
+
+    if (camera.position.distanceTo(transitionTarget.pos) < 0.05) {
+      camera.position.copy(transitionTarget.pos);
+      if (controlsRef.current) {
+        controlsRef.current.target.copy(transitionTarget.target);
+        controlsRef.current.update();
+      }
+      onTransitionEnd();
+    }
   });
 
   return null;
 };
 
+/* ====================================================================================
+ * COMPONENTE PRINCIPAL: Workbench3D
+ * ==================================================================================== */
 export interface Workbench3DProps {
   onToggle2D?: () => void;
 }
 
 export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
-  const [view, setView] = useState<'top' | 'iso'>('iso');
+  const [activePreset, setActivePreset] = useState<'iso' | 'top' | 'front'>('iso');
+  const [transitionTarget, setTransitionTarget] = useState<CameraTransitionTarget | null>(null);
+  const controlsRef = useRef<OrbitControlsImpl | null>(null);
+
   const {
     selectedMotherboard,
     assembly,
@@ -180,7 +461,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
     openFrontPanelModal,
   } = useAssemblyStore();
 
-  // Escolhe o modelo 3D correspondente à placa instalada
+  // Seleciona o modelo 3D compatível da placa
   const mbModelUrl =
     selectedMotherboard?.formFactor === 'Micro-ATX'
       ? '/models/mb-b550m.glb'
@@ -188,81 +469,140 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
       ? '/models/mb-z790-atx.glb'
       : '/models/mb-generica.glb';
 
-  // Lógica de clique na área do Soquete da CPU
+  // Aciona preset de câmera
+  const applyViewPreset = (view: 'iso' | 'top' | 'front') => {
+    setActivePreset(view);
+    setTransitionTarget(PRESET_VIEWS[view]);
+  };
+
+  const handleZoom = (factor: number) => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    const camera = controls.object as THREE.PerspectiveCamera;
+    const offset = camera.position.clone().sub(controls.target);
+    const length = THREE.MathUtils.clamp(
+      offset.length() * factor,
+      controls.minDistance,
+      controls.maxDistance
+    );
+    camera.position.copy(controls.target).add(offset.setLength(length));
+    controls.update();
+  };
+
+  const handleResetCamera = () => {
+    applyViewPreset('iso');
+  };
+
+  // Interações de instalação de peças
+  const isCpuTarget = selectedComponentForPlacement?.category === 'CPU';
+  const isPasteTarget = selectedComponentForPlacement?.category === 'PASTE';
+  const isCoolerTarget = selectedComponentForPlacement?.category === 'COOLER';
+  const isRamTarget = selectedComponentForPlacement?.category === 'RAM';
+  const isStorageTarget = selectedComponentForPlacement?.category === 'STORAGE';
+  const isGpuTarget = selectedComponentForPlacement?.category === 'GPU';
+
   const handleCpuAreaClick = () => {
-    if (selectedComponentForPlacement?.category === 'CPU') {
+    if (isCpuTarget) {
       installCpu(selectedComponentForPlacement as never);
-    } else if (selectedComponentForPlacement?.category === 'PASTE') {
+    } else if (isPasteTarget) {
       applyThermalPaste();
-    } else if (selectedComponentForPlacement?.category === 'COOLER') {
+    } else if (isCoolerTarget) {
       installCooler(selectedComponentForPlacement as never);
     }
   };
 
-  const handleRamClick = (slot: 2 | 4) => {
-    if (selectedComponentForPlacement?.category === 'RAM') {
-      installRam(slot, selectedComponentForPlacement as never);
-    }
-  };
-
-  const handleM2Click = () => {
-    if (selectedComponentForPlacement?.category === 'STORAGE') {
-      installStorage(selectedComponentForPlacement as never, 'M2');
-    }
-  };
-
-  const handleGpuClick = () => {
-    if (selectedComponentForPlacement?.category === 'GPU') {
-      installGpu(selectedComponentForPlacement as never);
-    }
-  };
-
   return (
-    <div className="relative w-full h-[540px] rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl flex flex-col">
-      {/* Barra de Ferramentas Superior da Bancada 3D */}
+    <div className="relative w-full h-[580px] rounded-2xl overflow-hidden border border-slate-800 bg-[#070b14] shadow-2xl flex flex-col select-none">
+      {/* ==================================================================================
+       * BARRA SUPERIOR DE FERRAMENTAS E CONTROLES DE CÂMERA
+       * ================================================================================== */}
       <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-2 pointer-events-auto bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-700/80 shadow-lg text-xs font-mono">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        {/* Identificador de Placa e Modo 3D */}
+        <div className="flex items-center gap-2 pointer-events-auto bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-700/80 shadow-lg text-xs font-mono">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-sm shadow-cyan-400" />
           <span className="text-slate-200 font-bold">Bancada 3D Interativa</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-cyan-400">
-            {selectedMotherboard ? selectedMotherboard.name : 'Placa de Teste'}
+          <span className="text-slate-600">/</span>
+          <span className="text-cyan-300 font-semibold truncate max-w-[200px]">
+            {selectedMotherboard ? selectedMotherboard.name : 'Placa-Mãe ATX'}
           </span>
         </div>
 
-        {/* Controles de Câmera e Alternância 2D */}
+        {/* Controles de Câmera e Modos */}
         <div className="flex items-center gap-2 pointer-events-auto">
-          <div className="bg-slate-900/90 backdrop-blur rounded-xl border border-slate-700/80 p-1 flex items-center gap-1 shadow-lg">
+          {/* Presets de Câmera */}
+          <div className="bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700/80 p-1 flex items-center gap-1 shadow-lg">
             <button
-              onClick={() => setView('top')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
-                view === 'top'
+              onClick={() => applyViewPreset('iso')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                activePreset === 'iso'
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
-              title="Vista superior ortográfica para montagem e cabos"
-            >
-              <ArrowUpFromLine className="w-3.5 h-3.5" />
-              <span>Topo</span>
-            </button>
-            <button
-              onClick={() => setView('iso')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all ${
-                view === 'iso'
-                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-              title="Vista isométrica técnica para visualização em profundidade"
+              title="Vista Isométrica técnica em 45 graus"
             >
               <Eye className="w-3.5 h-3.5" />
               <span>Isométrica</span>
             </button>
+
+            <button
+              onClick={() => applyViewPreset('top')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                activePreset === 'top'
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+              title="Vista superior ortográfica para alinhamento de cabos e pinos"
+            >
+              <ArrowUpFromLine className="w-3.5 h-3.5" />
+              <span>Topo</span>
+            </button>
+
+            <button
+              onClick={() => applyViewPreset('front')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                activePreset === 'front'
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+              title="Vista frontal em perfil"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+              <span>Frente</span>
+            </button>
           </div>
 
+          {/* Botões de Zoom e Reset */}
+          <div className="bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700/80 p-1 flex items-center gap-1 shadow-lg">
+            <button
+              onClick={() => handleZoom(0.85)}
+              className="p-1 rounded-lg text-slate-300 hover:text-cyan-300 hover:bg-slate-800 transition-all cursor-pointer"
+              title="Aproximar Câmera (+)"
+              aria-label="Aproximar Câmera"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleZoom(1.18)}
+              className="p-1 rounded-lg text-slate-300 hover:text-cyan-300 hover:bg-slate-800 transition-all cursor-pointer"
+              title="Afastar Câmera (-)"
+              aria-label="Afastar Câmera"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleResetCamera}
+              className="px-2 py-1 rounded-lg text-xs font-mono text-slate-300 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              title="Recentralizar Enquadramento da Placa"
+            >
+              Reset
+            </button>
+          </div>
+
+          {/* Alternador 2D */}
           {onToggle2D && (
             <button
               onClick={onToggle2D}
-              className="px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 backdrop-blur border border-slate-700/80 text-xs font-mono text-slate-300 hover:text-cyan-300 shadow-lg transition-all"
+              className="px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md border border-slate-700/80 text-xs font-mono text-slate-300 hover:text-cyan-300 shadow-lg transition-all cursor-pointer"
               title="Alternar para o modo 2D leve (ideal para economia de bateria)"
             >
               Modo 2D Leve
@@ -271,313 +611,391 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
         </div>
       </div>
 
-      {/* Cena 3D Three.js */}
-      <div className="flex-1 w-full h-full">
+      {/* ==================================================================================
+       * CENA THREE.JS COM ORBIT CONTROLS LIVRE E ENQUADRAMENTO AUTOMÁTICO
+       * ================================================================================== */}
+      <div className="flex-1 w-full h-full relative">
         <Canvas
-          camera={{ position: [4.8, 6.2, 5.2], fov: 42 }}
+          camera={{ position: [6.2, 8.2, 7.2], fov: 42 }}
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+          shadows
         >
           <color attach="background" args={['#070b14']} />
-          <CameraController view={view} />
 
-          {/* Iluminação de Bancada de Laboratório */}
-          <ambientLight intensity={1.2} color="#94a3b8" />
-          <directionalLight position={[6, 12, 6]} intensity={1.8} color="#ffffff" castShadow />
-          <directionalLight position={[-6, 8, -6]} intensity={0.6} color="#38bdf8" />
-          <pointLight position={[0, 3, 0]} intensity={1.5} color="#38bdf8" distance={8} />
+          {/* OrbitControls do Drei: Livre, suave e com limites de segurança */}
+          <OrbitControls
+            ref={controlsRef}
+            makeDefault
+            enableDamping
+            dampingFactor={0.08}
+            minDistance={3.5}
+            maxDistance={22}
+            maxPolarAngle={Math.PI / 2.05}
+            minPolarAngle={0.05}
+            onStart={() => setTransitionTarget(null)}
+          />
 
-          {/* Tapete Antiestático Escuro com Grade Subtil */}
-          <mesh position={[0, -0.15, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-            <planeGeometry args={[16, 16]} />
-            <meshStandardMaterial color="#0b1324" roughness={0.8} metalness={0.1} />
+          <SmoothCameraController
+            transitionTarget={transitionTarget}
+            onTransitionEnd={() => setTransitionTarget(null)}
+            controlsRef={controlsRef}
+          />
+
+          {/* Iluminação Técnica de Laboratório Cyber-Industrial */}
+          <ambientLight intensity={1.1} color="#94a3b8" />
+          <directionalLight
+            position={[8, 14, 8]}
+            intensity={1.8}
+            color="#ffffff"
+            castShadow
+            shadow-mapSize={[1024, 1024]}
+          />
+          <directionalLight position={[-8, 10, -8]} intensity={0.6} color="#38bdf8" />
+          <pointLight position={[0, 4, 0]} intensity={1.4} color="#38bdf8" distance={10} />
+
+          {/* Tapete Antiestático Escuro com Grade Milimetrada Subtil */}
+          <mesh position={[0, -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+            <planeGeometry args={[20, 20]} />
+            <meshStandardMaterial color="#0a101f" roughness={0.85} metalness={0.1} />
           </mesh>
-          <gridHelper args={[14, 28, '#1e293b', '#0f172a']} position={[0, -0.14, 0]} />
+          <gridHelper args={[18, 36, '#1e293b', '#0f172a']} position={[0, 0, 0]} />
 
           <Suspense
             fallback={
               <Html center>
-                <div className="bg-slate-900/90 border border-cyan-500/50 text-cyan-300 font-mono text-xs px-4 py-2 rounded-xl shadow-2xl flex items-center gap-2">
-                  <div className="w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-                  <span>Carregando Bancada 3D…</span>
+                <div className="bg-slate-900/90 border border-cyan-500/50 text-cyan-300 font-mono text-xs px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                  <span>Carregando Placa-Mãe 3D…</span>
                 </div>
               </Html>
             }
           >
-            {/* Modelo 3D da Placa-Mãe */}
-            <MotherboardMesh modelUrl={mbModelUrl} />
+            {/* 1. Placa-Mãe Auto-Normalizada */}
+            <AutoNormalizedMotherboard modelUrl={mbModelUrl} />
 
-            {/* Peças Instaladas Renderizadas na Cena 3D */}
+            {/* 2. Peças Físicas Instaladas */}
+            {/* CPU Instalada no Soquete */}
             {assembly.cpuInstalled && (
-              <InstalledPartMesh
-                modelUrl="/models/cpu-intel-lga1700.glb"
-                position={[-0.2, 0.12, -0.25]}
-                scale={[0.8, 0.8, 0.8]}
+              <AutoNormalizedPart
+                modelUrl={
+                  assembly.cpuInstalled.socket === 'AM4'
+                    ? '/models/cpu-ryzen-am4.glb'
+                    : '/models/cpu-intel-lga1700.glb'
+                }
+                targetSize={1.15}
+                position={POSITIONS.CPU_SOCKET}
               />
             )}
 
-            {/* Pasta Térmica aplicada sobre a CPU */}
+            {/* Pasta Térmica aplicada sobre o IHS da CPU */}
             {assembly.thermalPasteApplied && !assembly.coolerInstalled && (
-              <mesh position={[-0.2, 0.16, -0.25]} rotation={[-Math.PI / 2, 0, 0]}>
-                <circleGeometry args={[0.22, 16]} />
+              <mesh
+                position={[POSITIONS.CPU_SOCKET[0], 0.28, POSITIONS.CPU_SOCKET[2]]}
+                rotation={[-Math.PI / 2, 0, 0]}
+              >
+                <circleGeometry args={[0.26, 24]} />
                 <meshStandardMaterial color="#94a3b8" roughness={0.3} metalness={0.6} />
               </mesh>
             )}
 
-            {/* Cooler Instalado */}
+            {/* Cooler Instalado com rotação no POST bem-sucedido */}
             {assembly.coolerInstalled && (
-              <InstalledPartMesh
+              <AutoNormalizedPart
                 modelUrl={
                   assembly.coolerInstalled.coolerType === 'Water'
                     ? '/models/cooler-aio-240.glb'
                     : '/models/cooler-torre.glb'
                 }
-                position={[-0.2, 0.2, -0.25]}
-                scale={[1.1, 1.1, 1.1]}
+                targetSize={2.4}
+                position={[POSITIONS.CPU_SOCKET[0], 0.35, POSITIONS.CPU_SOCKET[2]]}
+                isSpinning={Boolean(postResult?.bootSuccess)}
               />
             )}
 
-            {/* Módulos de RAM nos Slots */}
+            {/* Pentes de Memória RAM */}
             {assembly.ramInstalledSlot2 && (
-              <InstalledPartMesh
+              <AutoNormalizedPart
                 modelUrl="/models/ram-ddr4-crucial.glb"
-                position={[0.7, 0.15, -0.1]}
-                scale={[0.8, 0.8, 0.8]}
-                rotation={[0, Math.PI / 2, 0]}
+                targetSize={1.9}
+                position={POSITIONS.RAM_SLOT_2}
+                rotation={[0, 0, 0]}
               />
             )}
             {assembly.ramInstalledSlot4 && (
-              <InstalledPartMesh
+              <AutoNormalizedPart
                 modelUrl="/models/ram-ddr4-crucial.glb"
-                position={[1.0, 0.15, -0.1]}
-                scale={[0.8, 0.8, 0.8]}
-                rotation={[0, Math.PI / 2, 0]}
-              />
-            )}
-
-            {/* Placa de Vídeo (GPU) no Slot PCIe */}
-            {assembly.gpuInstalled && (
-              <InstalledPartMesh
-                modelUrl="/models/gpu-rx-6700xt.glb"
-                position={[-0.2, 0.45, 1.1]}
-                scale={[0.85, 0.85, 0.85]}
+                targetSize={1.9}
+                position={POSITIONS.RAM_SLOT_4}
                 rotation={[0, 0, 0]}
               />
             )}
 
-            {/* Âncora Projetada: Soquete da CPU */}
-            <group position={[-0.2, 0.15, -0.25]}>
-              <Html center distanceFactor={12}>
-                <div
-                  onClick={handleCpuAreaClick}
-                  role="button"
-                  tabIndex={0}
-                  className={`p-2 rounded-xl font-mono text-[11px] cursor-pointer border shadow-lg backdrop-blur select-none transition-all ${
-                    assembly.coolerInstalled
-                      ? 'bg-slate-900/90 border-cyan-500/80 text-cyan-300'
-                      : assembly.thermalPasteApplied
-                      ? 'bg-amber-950/90 border-amber-500 text-amber-200'
-                      : assembly.cpuInstalled
-                      ? 'bg-indigo-950/90 border-indigo-500 text-indigo-200'
-                      : 'bg-slate-950/90 border-dashed border-slate-700 text-slate-400 hover:border-cyan-400 hover:text-cyan-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 font-bold">
-                    <Cpu className="w-3.5 h-3.5" />
-                    <span>
-                      {assembly.coolerInstalled
-                        ? 'Cooler Instalado'
-                        : assembly.thermalPasteApplied
-                        ? 'Pasta Aplicada'
-                        : assembly.cpuInstalled
-                        ? 'CPU no Soquete'
-                        : 'Soquete CPU'}
-                    </span>
-                  </div>
-                  {assembly.cpuInstalled && !assembly.coolerInstalled && (
-                    <div className="mt-1 flex items-center gap-1 text-[9px]">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSocketLever();
-                        }}
-                        className={`px-1.5 py-0.5 rounded border ${
-                          assembly.socketLeverLocked
-                            ? 'bg-emerald-950 text-emerald-300 border-emerald-600'
-                            : 'bg-amber-950 text-amber-300 border-amber-600 animate-pulse'
-                        }`}
-                      >
-                        {assembly.socketLeverLocked ? 'Alavanca Travada ✓' : 'Travar Alavanca ⚠'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </Html>
-            </group>
+            {/* Armazenamento SSD M.2 */}
+            {assembly.storageInstalled && assembly.storageInstalled.storageType.includes('M2') && (
+              <AutoNormalizedPart
+                modelUrl="/models/ssd-nvme-990pro.glb"
+                targetSize={1.3}
+                position={POSITIONS.M2_SLOT}
+                rotation={[0, Math.PI / 2, 0]}
+              />
+            )}
 
-            {/* Âncoras Projetadas: Slots de Memória RAM */}
-            <group position={[0.7, 0.15, -0.1]}>
-              <Html center distanceFactor={12}>
-                <button
-                  onClick={() => handleRamClick(2)}
-                  className={`px-2 py-1 rounded text-[10px] font-mono border shadow backdrop-blur transition-all ${
-                    assembly.ramInstalledSlot2
-                      ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300'
-                      : 'bg-slate-900/90 border-dashed border-slate-700 text-slate-400 hover:border-cyan-400 hover:text-cyan-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-1 font-semibold">
-                    <Layers className="w-3 h-3" />
-                    <span>DIMM A2 (Slot 2)</span>
-                  </div>
-                </button>
-              </Html>
-            </group>
+            {/* Placa de Vídeo (GPU) */}
+            {assembly.gpuInstalled && (
+              <AutoNormalizedPart
+                modelUrl="/models/gpu-rx-6700xt.glb"
+                targetSize={4.2}
+                position={POSITIONS.PCIE_SLOT}
+                rotation={[0, 0, 0]}
+                isSpinning={Boolean(postResult?.bootSuccess)}
+              />
+            )}
 
-            <group position={[1.0, 0.15, -0.1]}>
-              <Html center distanceFactor={12}>
-                <button
-                  onClick={() => handleRamClick(4)}
-                  className={`px-2 py-1 rounded text-[10px] font-mono border shadow backdrop-blur transition-all ${
-                    assembly.ramInstalledSlot4
-                      ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300'
-                      : 'bg-slate-900/90 border-dashed border-slate-700 text-slate-400 hover:border-cyan-400 hover:text-cyan-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-1 font-semibold">
-                    <Layers className="w-3 h-3" />
-                    <span>DIMM B2 (Slot 4)</span>
-                  </div>
-                </button>
-              </Html>
-            </group>
+            {/* ==============================================================================
+             * HOTSPOTS TÁTEIS (PINS) NOS QUADRANTES FÍSICOS DA PLACA
+             * ============================================================================== */}
+            {/* 1. Hotspot: Soquete CPU */}
+            <WorkbenchPin
+              position={POSITIONS.CPU_SOCKET}
+              icon={<Cpu className="w-4 h-4" />}
+              label="Soquete CPU"
+              status={
+                assembly.coolerInstalled
+                  ? 'installed'
+                  : isCpuTarget || isPasteTarget || isCoolerTarget
+                  ? 'targeted'
+                  : assembly.cpuInstalled
+                  ? 'installed'
+                  : 'empty'
+              }
+              detailText={
+                assembly.coolerInstalled
+                  ? `Cooler ${assembly.coolerInstalled.name} instalado`
+                  : assembly.thermalPasteApplied
+                  ? 'Pasta térmica aplicada. Pronto para o cooler.'
+                  : assembly.cpuInstalled
+                  ? `${assembly.cpuInstalled.name} encaixado no soquete.`
+                  : 'Soquete vazio. Selecione uma CPU compatível para encaixar.'
+              }
+              actionText={
+                isCpuTarget
+                  ? 'Encaixar CPU'
+                  : isPasteTarget
+                  ? 'Aplicar Pasta Térmica'
+                  : isCoolerTarget
+                  ? 'Instalar Cooler'
+                  : assembly.cpuInstalled && !assembly.coolerInstalled
+                  ? assembly.socketLeverLocked
+                    ? 'Alavanca Travada ✓'
+                    : 'Destravada: Travar Alavanca ⚠'
+                  : undefined
+              }
+              onAction={
+                isCpuTarget || isPasteTarget || isCoolerTarget
+                  ? handleCpuAreaClick
+                  : assembly.cpuInstalled && !assembly.coolerInstalled
+                  ? toggleSocketLever
+                  : undefined
+              }
+              secondaryAction={
+                assembly.coolerInstalled
+                  ? {
+                      text: 'Remover Cooler',
+                      onClick: removeCooler,
+                    }
+                  : undefined
+              }
+            />
 
-            {/* Âncora Projetada: Slot PCIe x16 (GPU) */}
-            <group position={[-0.2, 0.15, 1.1]}>
-              <Html center distanceFactor={12}>
-                <button
-                  onClick={handleGpuClick}
-                  className={`px-2.5 py-1 rounded text-[10px] font-mono border shadow backdrop-blur transition-all ${
-                    assembly.gpuInstalled
-                      ? 'bg-indigo-950/90 border-indigo-500 text-indigo-300'
-                      : 'bg-slate-900/90 border-dashed border-slate-700 text-slate-400 hover:border-cyan-400 hover:text-cyan-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-1 font-semibold">
-                    <Zap className="w-3 h-3" />
-                    <span>PCIe x16: {assembly.gpuInstalled ? assembly.gpuInstalled.name : 'Vazio'}</span>
-                  </div>
-                </button>
-              </Html>
-            </group>
+            {/* 2. Hotspots: Slots de Memória RAM */}
+            <WorkbenchPin
+              position={POSITIONS.RAM_SLOT_2}
+              icon={<Layers className="w-3.5 h-3.5" />}
+              label="DIMM A2 (Slot 2)"
+              status={
+                assembly.ramInstalledSlot2 ? 'installed' : isRamTarget ? 'targeted' : 'empty'
+              }
+              detailText={
+                assembly.ramInstalledSlot2
+                  ? `${assembly.ramInstalledSlot2.name} (Slot Recomendado)`
+                  : 'Slot primário recomendado para canal duplo.'
+              }
+              actionText={
+                isRamTarget
+                  ? 'Encaixar no Slot 2'
+                  : assembly.ramInstalledSlot2
+                  ? 'Instalado ✓'
+                  : undefined
+              }
+              onAction={() => {
+                if (isRamTarget) installRam(2, selectedComponentForPlacement as never);
+              }}
+            />
 
-            {/* Âncora Projetada: Slot M.2 SSD */}
-            <group position={[-0.2, 0.12, 0.4]}>
-              <Html center distanceFactor={12}>
-                <button
-                  onClick={handleM2Click}
-                  className={`px-2 py-1 rounded text-[10px] font-mono border shadow backdrop-blur transition-all ${
-                    assembly.storageInstalled?.storageType.includes('NVME')
-                      ? 'bg-emerald-950/90 border-emerald-500 text-emerald-300'
-                      : 'bg-slate-900/90 border-dashed border-slate-700 text-slate-400 hover:border-cyan-400 hover:text-cyan-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-1">
-                    <HardDrive className="w-3 h-3" />
-                    <span>M.2 NVMe</span>
-                  </div>
-                </button>
-              </Html>
-            </group>
+            <WorkbenchPin
+              position={POSITIONS.RAM_SLOT_4}
+              icon={<Layers className="w-3.5 h-3.5" />}
+              label="DIMM B2 (Slot 4)"
+              status={
+                assembly.ramInstalledSlot4 ? 'installed' : isRamTarget ? 'targeted' : 'empty'
+              }
+              detailText={
+                assembly.ramInstalledSlot4
+                  ? `${assembly.ramInstalledSlot4.name} (Dual Channel Ativo)`
+                  : 'Slot secundário para completar o Dual Channel.'
+              }
+              actionText={
+                isRamTarget
+                  ? 'Encaixar no Slot 4'
+                  : assembly.ramInstalledSlot4
+                  ? 'Instalado ✓'
+                  : undefined
+              }
+              onAction={() => {
+                if (isRamTarget) installRam(4, selectedComponentForPlacement as never);
+              }}
+            />
 
-            {/* Âncoras Projetadas de Conectores de Cabos com data-cable-target */}
-            <CableAnchorNode
+            {/* 3. Hotspot: Slot M.2 NVMe SSD */}
+            <WorkbenchPin
+              position={POSITIONS.M2_SLOT}
+              icon={<HardDrive className="w-3.5 h-3.5" />}
+              label="Slot M.2 NVMe"
+              status={
+                assembly.storageInstalled?.storageType.includes('M2')
+                  ? 'installed'
+                  : isStorageTarget && selectedComponentForPlacement?.storageType.includes('M2')
+                  ? 'targeted'
+                  : 'empty'
+              }
+              detailText={
+                assembly.storageInstalled?.storageType.includes('M2')
+                  ? `${assembly.storageInstalled.name} fixado`
+                  : 'Slot PCIe 4.0 para SSDs NVMe velozes.'
+              }
+              actionText={
+                isStorageTarget && selectedComponentForPlacement?.storageType.includes('M2')
+                  ? 'Fixar SSD M.2'
+                  : undefined
+              }
+              onAction={() => {
+                if (isStorageTarget) installStorage(selectedComponentForPlacement as never, 'M2');
+              }}
+            />
+
+            {/* 4. Hotspot: Slot PCIe x16 (Placa de Vídeo) */}
+            <WorkbenchPin
+              position={POSITIONS.PCIE_SLOT}
+              icon={<Zap className="w-3.5 h-3.5" />}
+              label="PCIe 4.0 x16"
+              status={assembly.gpuInstalled ? 'installed' : isGpuTarget ? 'targeted' : 'empty'}
+              detailText={
+                assembly.gpuInstalled
+                  ? `${assembly.gpuInstalled.name} travada no slot`
+                  : 'Slot principal reforçado para Placas de Vídeo (GPU).'
+              }
+              actionText={
+                isGpuTarget
+                  ? 'Encaixar GPU no Slot'
+                  : assembly.gpuInstalled
+                  ? 'Placa Instalada ✓'
+                  : undefined
+              }
+              onAction={() => {
+                if (isGpuTarget) installGpu(selectedComponentForPlacement as never);
+              }}
+            />
+
+            {/* 5. Conectores de Cabos com Alvos Físicos Separados */}
+            <CableTargetPin
               targetId="ATX_PWR"
-              position={[1.35, 0.12, 0.35]}
+              position={POSITIONS.ATX24P_HEADER}
               name="ATX 24P"
             />
-            <CableAnchorNode
+            <CableTargetPin
               targetId="ATX12V"
-              position={[-1.15, 0.12, -1.05]}
+              position={POSITIONS.ATX12V_HEADER}
               name="CPU 8P"
             />
-            <CableAnchorNode
+            <CableTargetPin
               targetId="CPU_FAN"
-              position={[0.3, 0.12, -0.85]}
+              position={POSITIONS.CPU_FAN_HEADER}
               name="CPU_FAN"
             />
 
-            {/* Âncora do Painel Frontal (F_PANEL) */}
-            <group position={[1.2, 0.12, 1.35]}>
-              <Html center distanceFactor={12}>
-                <button
-                  onClick={openFrontPanelModal}
-                  className="px-2 py-1 rounded text-[10px] font-mono border border-slate-700 bg-slate-900/90 hover:border-cyan-400 text-slate-300 hover:text-cyan-300 shadow backdrop-blur transition-all flex items-center gap-1"
-                >
-                  <Power className="w-3 h-3 text-cyan-400" />
-                  <span>F_PANEL</span>
-                </button>
-              </Html>
-            </group>
-
-            {/* LEDs de Diagnóstico do POST (Debug LEDs) */}
-            <group position={[1.35, 0.12, -0.9]}>
-              <Html center distanceFactor={14}>
-                <div className="px-2 py-1 rounded bg-slate-950/90 border border-slate-800 text-[8px] font-mono text-slate-400 flex items-center gap-1.5 shadow">
-                  <div className="flex items-center gap-0.5">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        postResult?.debugLed.cpu === 'GREEN'
-                          ? 'bg-emerald-400 shadow-sm shadow-emerald-400'
-                          : postResult?.debugLed.cpu === 'RED'
-                          ? 'bg-rose-500 shadow-sm shadow-rose-500 animate-pulse'
-                          : 'bg-slate-700'
-                      }`}
-                    />
-                    <span>CPU</span>
-                  </div>
-                  <div className="flex items-center gap-0.5">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        postResult?.debugLed.dram === 'GREEN'
-                          ? 'bg-emerald-400 shadow-sm shadow-emerald-400'
-                          : postResult?.debugLed.dram === 'RED'
-                          ? 'bg-rose-500 shadow-sm shadow-rose-500 animate-pulse'
-                          : 'bg-slate-700'
-                      }`}
-                    />
-                    <span>DRAM</span>
-                  </div>
-                  <div className="flex items-center gap-0.5">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        postResult?.debugLed.vga === 'GREEN'
-                          ? 'bg-emerald-400 shadow-sm shadow-emerald-400'
-                          : postResult?.debugLed.vga === 'RED'
-                          ? 'bg-rose-500 shadow-sm shadow-rose-500 animate-pulse'
-                          : 'bg-slate-700'
-                      }`}
-                    />
-                    <span>VGA</span>
-                  </div>
-                  <div className="flex items-center gap-0.5">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        postResult?.debugLed.boot === 'GREEN'
-                          ? 'bg-emerald-400 shadow-sm shadow-emerald-400'
-                          : postResult?.debugLed.boot === 'RED'
-                          ? 'bg-rose-500 shadow-sm shadow-rose-500 animate-pulse'
-                          : 'bg-slate-700'
-                      }`}
-                    />
-                    <span>BOOT</span>
-                  </div>
-                </div>
-              </Html>
-            </group>
+            {/* 6. Painel Frontal (F_PANEL) */}
+            <WorkbenchPin
+              position={POSITIONS.FPANEL_HEADER}
+              icon={<Power className="w-3.5 h-3.5" />}
+              label="Painel Frontal"
+              status={assembly.frontPanelPowerSwConnected ? 'installed' : 'empty'}
+              detailText={
+                assembly.frontPanelPowerSwConnected
+                  ? 'POWER SW e LEDs do gabinete devidamente conectados.'
+                  : 'Conecte os pinos minúsculos do botão liga/desliga (POWER SW).'
+              }
+              actionText="Abrir Zoom F_PANEL"
+              onAction={openFrontPanelModal}
+            />
           </Suspense>
         </Canvas>
+      </div>
+
+      {/* ==================================================================================
+       * BARRA INFERIOR HUD: LEDS EZ DEBUG E GUIA DE ATALHOS DA BANCADA
+       * ================================================================================== */}
+      <div className="relative z-10 px-4 py-2 bg-slate-950/90 border-t border-slate-800/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+        {/* Painel EZ Debug LEDs de Hardware */}
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] font-bold text-slate-400">EZ Debug:</span>
+          <div className="flex items-center gap-2.5">
+            {[
+              { id: 'cpu', label: 'CPU', state: postResult?.debugLed.cpu },
+              { id: 'dram', label: 'DRAM', state: postResult?.debugLed.dram },
+              { id: 'vga', label: 'VGA', state: postResult?.debugLed.vga },
+              { id: 'boot', label: 'BOOT', state: postResult?.debugLed.boot },
+            ].map(({ id, label, state }) => {
+              const isGreen = state === 'GREEN';
+              const isRed = state === 'RED';
+              return (
+                <div key={id} className="flex items-center gap-1.5">
+                  <span
+                    className={`w-2 h-2 rounded-full transition-all ${
+                      isGreen
+                        ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
+                        : isRed
+                        ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)] animate-pulse'
+                        : 'bg-slate-700'
+                    }`}
+                  />
+                  <span
+                    className={`text-[10px] ${
+                      isGreen
+                        ? 'text-emerald-300 font-bold'
+                        : isRed
+                        ? 'text-rose-400 font-bold'
+                        : 'text-slate-500'
+                    }`}
+                  >
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Guia de Navegação Tátil */}
+        <div className="hidden sm:flex items-center gap-3 text-[11px] text-slate-400">
+          <span>🖱️ <strong className="text-slate-300">Arrastar:</strong> Girar</span>
+          <span>•</span>
+          <span>📜 <strong className="text-slate-300">Scroll:</strong> Zoom</span>
+          <span>•</span>
+          <span>✨ <strong className="text-slate-300">Clique no Pino:</strong> Interagir</span>
+        </div>
       </div>
     </div>
   );
 };
+
 export default Workbench3D;

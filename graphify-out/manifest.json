@@ -616,16 +616,16 @@
     "semantic_hash": "a7123669fe9c29145403b559a92595e6"
   },
   "e2e/workbench3d.spec.ts": {
-    "mtime": 1793643629.9117084,
-    "seen": 1793644007.6063716,
-    "ast_hash": "d738af46f58f88e488392e5287a0fb5e",
-    "semantic_hash": "d738af46f58f88e488392e5287a0fb5e"
+    "mtime": 1793645617.523527,
+    "seen": 1793645780.592499,
+    "ast_hash": "7f05ea38c6b8ea5054405ffbd50df291",
+    "semantic_hash": "7f05ea38c6b8ea5054405ffbd50df291"
   },
   "src/components/three/Workbench3D.tsx": {
-    "mtime": 1793643597.513631,
-    "seen": 1793644007.6158893,
-    "ast_hash": "239034ddf07cf62fa26c6657499ab964",
-    "semantic_hash": "239034ddf07cf62fa26c6657499ab964"
+    "mtime": 1793645439.5672688,
+    "seen": 1793645780.6046722,
+    "ast_hash": "2e2ce956326fe90560ef9ca75e73dd7f",
+    "semantic_hash": "2e2ce956326fe90560ef9ca75e73dd7f"
   },
   "src/components/three/webglDetect.ts": {
     "mtime": 1793643598.2876432,

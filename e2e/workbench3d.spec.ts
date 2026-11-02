@@ -50,4 +50,40 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
     await expect(isoBtn).toBeVisible();
     await isoBtn.click();
   });
+
+  test('oferece controles de câmera (Frente, Zoom, Reset) e exibe barra de EZ Debug LEDs', async ({ page }) => {
+    const btn3D = page.locator('button[title*="Modo 3D da Bancada"]');
+    await btn3D.click();
+
+    // Verifica botões de preset Frente, Zoom In, Zoom Out e Reset
+    const frenteBtn = page.getByRole('button', { name: 'Frente' });
+    const zoomInBtn = page.locator('button[aria-label="Aproximar Câmera"]');
+    const zoomOutBtn = page.locator('button[aria-label="Afastar Câmera"]');
+    const resetBtn = page.getByRole('button', { name: 'Reset' });
+
+    await expect(frenteBtn).toBeVisible({ timeout: 15000 });
+    await frenteBtn.click();
+
+    await expect(zoomInBtn).toBeVisible();
+    await zoomInBtn.click();
+
+    await expect(zoomOutBtn).toBeVisible();
+    await zoomOutBtn.click();
+
+    await expect(resetBtn).toBeVisible();
+    await resetBtn.click();
+
+    // Verifica barra inferior com EZ Debug LEDs
+    const debugLedContainer = page.locator('text=EZ Debug:');
+    await expect(debugLedContainer).toBeVisible();
+    await expect(page.locator('span:text-is("CPU")')).toBeVisible();
+    await expect(page.locator('span:text-is("DRAM")')).toBeVisible();
+    await expect(page.locator('span:text-is("VGA")')).toBeVisible();
+    await expect(page.locator('span:text-is("BOOT")')).toBeVisible();
+
+    // Salva screenshot do visual limpo da bancada
+    const workbench = page.locator('div:has-text("Bancada 3D Interativa")').locator('..').first();
+    await page.waitForTimeout(2000);
+    await workbench.screenshot({ path: 'workbench3d-clean.png' });
+  });
 });
