@@ -1,7 +1,7 @@
 # ADR-002: Motor de Interatividade, Estado de Montagem e Animações
 
 ## Status
-Aprovado
+Aprovado. **Atualizado na v2.1:** as transições manuais da máquina de estados foram substituídas por fases derivadas do estado ([ADR-008](./ADR-008-fases-derivadas-e-regras-de-montagem.md)), e o arrastar e soltar passou a usar Pointer Events nativos em vez de Framer Motion Drag Controls ([ADR-010](./ADR-010-cabeamento-e-arrastar-e-soltar.md)).
 
 ## Contexto
 A experiência de montagem do PC não é uma simples lista de verificação estática. Trata-se de uma **Máquina de Estados Finita (FSM)** com interdependências físicas reais:
