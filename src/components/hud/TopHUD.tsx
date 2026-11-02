@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Stethoscope,
   Camera,
+  School,
 } from 'lucide-react';
 
 const PHASES: { id: AssemblyPhase; label: string; number: number }[] = [
@@ -36,6 +37,7 @@ export const TopHUD: React.FC = () => {
     assembly,
     penaltiesCount,
     openVirtualRoomModal,
+    openTeacherDashboard,
   } = useAssemblyStore();
 
   useEffect(() => {
@@ -133,6 +135,16 @@ export const TopHUD: React.FC = () => {
 
         {/* Métricas: Orçamento e Cronômetro */}
         <div className="flex items-center gap-3">
+          {/* Botão de Abrir Painel do Professor */}
+          <button
+            onClick={openTeacherDashboard}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-indigo-700/60 text-indigo-300 text-xs font-bold transition-all cursor-pointer"
+            title="Painel do Professor, Leaderboard e Certificados"
+          >
+            <School className="w-3.5 h-3.5" />
+            <span>Professor</span>
+          </button>
+
           {/* Botão de Abrir Sala Virtual & Setup */}
           <button
             onClick={openVirtualRoomModal}

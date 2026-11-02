@@ -48,6 +48,7 @@ interface AssemblyStore {
   isFrontPanelModalOpen: boolean;
   isAcademyOSOpen: boolean;
   isVirtualRoomModalOpen: boolean;
+  isTeacherDashboardOpen: boolean;
   studentSetup: StudentSetupConfig;
   selectedRoomTheme: RoomThemeId;
   fPanelConnections: Record<FPanelConnectorId, [number, number] | null>;
@@ -73,6 +74,8 @@ interface AssemblyStore {
   closeAcademyOS: () => void;
   openVirtualRoomModal: () => void;
   closeVirtualRoomModal: () => void;
+  openTeacherDashboard: () => void;
+  closeTeacherDashboard: () => void;
   setStudentPeripheral: (category: keyof StudentSetupConfig, item: PeripheralItem) => void;
   setSelectedRoomTheme: (themeId: RoomThemeId) => void;
   connectFPanelJumper: (connectorId: FPanelConnectorId, pins: [number, number]) => { success: boolean; message: string };
@@ -148,6 +151,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   isFrontPanelModalOpen: false,
   isAcademyOSOpen: false,
   isVirtualRoomModalOpen: false,
+  isTeacherDashboardOpen: false,
   studentSetup: DEFAULT_STUDENT_SETUP,
   selectedRoomTheme: 'ROOM_GAMER',
   fPanelConnections: {
@@ -282,6 +286,10 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   openVirtualRoomModal: () => set({ isVirtualRoomModalOpen: true }),
 
   closeVirtualRoomModal: () => set({ isVirtualRoomModalOpen: false }),
+
+  openTeacherDashboard: () => set({ isTeacherDashboardOpen: true }),
+
+  closeTeacherDashboard: () => set({ isTeacherDashboardOpen: false }),
 
   setStudentPeripheral: (category, item) => {
     soundEngine.playSlotClick();

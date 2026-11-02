@@ -199,10 +199,10 @@
     "semantic_hash": "63a432e6492500548df9e90d2ee1060b"
   },
   "src/app/page.tsx": {
-    "mtime": 1793594883.0423205,
-    "seen": 1793594934.9546614,
-    "ast_hash": "4da398f21fdcc08f2c80af6934778e35",
-    "semantic_hash": "4da398f21fdcc08f2c80af6934778e35"
+    "mtime": 1793595145.7145638,
+    "seen": 1793595206.913387,
+    "ast_hash": "11c74755c4f001fc22c1ac8ea8514221",
+    "semantic_hash": "11c74755c4f001fc22c1ac8ea8514221"
   },
   "src/components/challenges/TeamChallengeBanner.tsx": {
     "mtime": 1793590852.6696975,
@@ -217,10 +217,10 @@
     "semantic_hash": "6e873cbcc602160e841ddc8bfd7a069c"
   },
   "src/components/hud/TopHUD.tsx": {
-    "mtime": 1793594864.4765012,
-    "seen": 1793594934.9556668,
-    "ast_hash": "a91365fac48e9ea974b515a59773eec7",
-    "semantic_hash": "a91365fac48e9ea974b515a59773eec7"
+    "mtime": 1793595124.538641,
+    "seen": 1793595206.9148922,
+    "ast_hash": "225427413fa40f04bf129cdf04b811b1",
+    "semantic_hash": "225427413fa40f04bf129cdf04b811b1"
   },
   "src/components/inventory/ComponentCard.tsx": {
     "mtime": 1793593638.0244644,
@@ -289,10 +289,10 @@
     "semantic_hash": "47e2bbb878c9b5c8689d93c0f397c0de"
   },
   "src/store/useAssemblyStore.ts": {
-    "mtime": 1793594754.8410125,
-    "seen": 1793594934.9616835,
-    "ast_hash": "bf6f607373b8ecaf424e9edaf88e7383",
-    "semantic_hash": "bf6f607373b8ecaf424e9edaf88e7383"
+    "mtime": 1793595033.515752,
+    "seen": 1793595206.9219036,
+    "ast_hash": "6e81e5ab97dd776c7c7fefc57d2b0bc3",
+    "semantic_hash": "6e81e5ab97dd776c7c7fefc57d2b0bc3"
   },
   "tsconfig.json": {
     "mtime": 1793590910.7074394,
@@ -395,5 +395,23 @@
     "seen": 1793594934.9616835,
     "ast_hash": "135683b402039b3f0cb8ceda870a05d1",
     "semantic_hash": "135683b402039b3f0cb8ceda870a05d1"
+  },
+  "src/components/teacher/TeacherDashboardModal.tsx": {
+    "mtime": 1793595074.1121292,
+    "seen": 1793595206.9168983,
+    "ast_hash": "3f69b6ad4857a35151c0dfdaeb6ef84e",
+    "semantic_hash": "3f69b6ad4857a35151c0dfdaeb6ef84e"
+  },
+  "src/engine/__tests__/teacher.test.ts": {
+    "mtime": 1793594993.5126467,
+    "seen": 1793595206.9188995,
+    "ast_hash": "ac5d31b7e2f13fa1f3ced5f79a4061f3",
+    "semantic_hash": "ac5d31b7e2f13fa1f3ced5f79a4061f3"
+  },
+  "src/engine/teacherDashboard.ts": {
+    "mtime": 1793594975.1079357,
+    "seen": 1793595206.920899,
+    "ast_hash": "ced8437b1f91b6b48d4defd15116e566",
+    "semantic_hash": "ced8437b1f91b6b48d4defd15116e566"
   }
 }
