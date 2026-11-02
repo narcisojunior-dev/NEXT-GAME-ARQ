@@ -199,10 +199,10 @@
     "semantic_hash": "63a432e6492500548df9e90d2ee1060b"
   },
   "src/app/page.tsx": {
-    "mtime": 1793592015.0273707,
-    "seen": 1793593775.3758078,
-    "ast_hash": "d73ef063e63573254250c9469abb8fc5",
-    "semantic_hash": "d73ef063e63573254250c9469abb8fc5"
+    "mtime": 1793594067.8560789,
+    "seen": 1793594113.220102,
+    "ast_hash": "603e5b3a952bf7f2f8bd6223cb488ae5",
+    "semantic_hash": "603e5b3a952bf7f2f8bd6223cb488ae5"
   },
   "src/components/challenges/TeamChallengeBanner.tsx": {
     "mtime": 1793590852.6696975,
@@ -217,10 +217,10 @@
     "semantic_hash": "6e873cbcc602160e841ddc8bfd7a069c"
   },
   "src/components/hud/TopHUD.tsx": {
-    "mtime": 1793590852.7533343,
-    "seen": 1793591874.1685636,
-    "ast_hash": "5c0f4cb34450abeab69957e3d4014a9a",
-    "semantic_hash": "5c0f4cb34450abeab69957e3d4014a9a"
+    "mtime": 1793594048.761345,
+    "seen": 1793594113.2211032,
+    "ast_hash": "7f81fd38e799321ad76770a9e748bc7a",
+    "semantic_hash": "7f81fd38e799321ad76770a9e748bc7a"
   },
   "src/components/inventory/ComponentCard.tsx": {
     "mtime": 1793593638.0244644,
@@ -289,10 +289,10 @@
     "semantic_hash": "47e2bbb878c9b5c8689d93c0f397c0de"
   },
   "src/store/useAssemblyStore.ts": {
-    "mtime": 1793593610.9290524,
-    "seen": 1793593775.3778088,
-    "ast_hash": "c9a8d5f811e1d084be4cc84c20a217a0",
-    "semantic_hash": "c9a8d5f811e1d084be4cc84c20a217a0"
+    "mtime": 1793594005.1382036,
+    "seen": 1793594113.224103,
+    "ast_hash": "37ddac97aeda9e97a14616a73d10c41d",
+    "semantic_hash": "37ddac97aeda9e97a14616a73d10c41d"
   },
   "tsconfig.json": {
     "mtime": 1793590910.7074394,
@@ -317,5 +317,23 @@
     "seen": 1793593775.3778088,
     "ast_hash": "ed13f286bca29fe19016afed65a6b4fb",
     "semantic_hash": "ed13f286bca29fe19016afed65a6b4fb"
+  },
+  "src/components/diagnostic/DiagnosticBench.tsx": {
+    "mtime": 1793594030.4453006,
+    "seen": 1793594113.220102,
+    "ast_hash": "7773a0ddb151a07afbf1a13cab89ad3a",
+    "semantic_hash": "7773a0ddb151a07afbf1a13cab89ad3a"
+  },
+  "src/engine/__tests__/diagnostic.test.ts": {
+    "mtime": 1793593889.4054859,
+    "seen": 1793594113.223103,
+    "ast_hash": "c7ca38e2e2eb03c90cd5323a22663e70",
+    "semantic_hash": "c7ca38e2e2eb03c90cd5323a22663e70"
+  },
+  "src/engine/diagnosticCases.ts": {
+    "mtime": 1793593878.0597973,
+    "seen": 1793594113.224103,
+    "ast_hash": "b0d0fad9fc7bb6666a67ae238aa73b4d",
+    "semantic_hash": "b0d0fad9fc7bb6666a67ae238aa73b4d"
   }
 }

@@ -10,6 +10,7 @@ import {
   Clock,
   Coins,
   AlertCircle,
+  Stethoscope,
 } from 'lucide-react';
 
 const PHASES: { id: AssemblyPhase; label: string; number: number }[] = [
@@ -112,6 +113,18 @@ export const TopHUD: React.FC = () => {
             >
               <Trophy className="w-3.5 h-3.5" />
               <span>Desafio Grupos</span>
+            </button>
+
+            <button
+              onClick={() => setGameMode('DIAGNOSTICO')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                gameMode === 'DIAGNOSTICO'
+                  ? 'bg-rose-500 text-slate-950 font-bold shadow-sm shadow-rose-500/20'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Stethoscope className="w-3.5 h-3.5" />
+              <span>Diagnóstico</span>
             </button>
           </div>
         </div>

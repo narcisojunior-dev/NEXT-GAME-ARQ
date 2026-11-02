@@ -14,10 +14,11 @@ import {
   GroupScore,
 } from '../engine/types';
 import { MOTHERBOARDS, CLIENT_MISSIONS } from '../engine/hardwareCatalog';
+import { DiagnosticScenario, DIAGNOSTIC_SCENARIOS } from '../engine/diagnosticCases';
 import { evaluatePostTest, PostResult, validateSocket, validateRamType } from '../engine/compatibility';
 import { soundEngine } from '../engine/audio/soundEngine';
 
-export type GameMode = 'OFICINA' | 'MISSAO' | 'DESAFIO';
+export type GameMode = 'OFICINA' | 'MISSAO' | 'DESAFIO' | 'DIAGNOSTICO';
 
 interface AssemblyStore {
   // Configurações Gerais
@@ -25,6 +26,8 @@ interface AssemblyStore {
   selectedMotherboard: MotherboardComponent | null;
   currentPhase: AssemblyPhase;
   activeMission: ClientMission | null;
+  activeDiagnosticScenario: DiagnosticScenario | null;
+  resolvedScenarioIds: string[];
   teamName: string;
   elapsedSeconds: number;
   isTimerRunning: boolean;
@@ -45,6 +48,8 @@ interface AssemblyStore {
   setGameMode: (mode: GameMode) => void;
   setTeamName: (name: string) => void;
   selectMission: (missionId: string) => void;
+  selectDiagnosticScenario: (scenarioId: string) => void;
+  checkDiagnosticResolution: () => boolean;
   selectMotherboard: (mb: MotherboardComponent | null) => void;
   installMotherboard: (mb: MotherboardComponent) => void;
   setCurrentPhase: (phase: AssemblyPhase) => void;
@@ -107,6 +112,8 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
   selectedMotherboard: null,
   currentPhase: 'PHASE_1_PREPARATION',
   activeMission: null,
+  activeDiagnosticScenario: null,
+  resolvedScenarioIds: [],
   teamName: 'Equipe Alfa',
   elapsedSeconds: 0,
   isTimerRunning: false,
@@ -126,6 +133,8 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
     get().resetAssembly();
     if (mode === 'MISSAO') {
       set({ activeMission: CLIENT_MISSIONS[0] });
+    } else if (mode === 'DIAGNOSTICO') {
+      get().selectDiagnosticScenario(DIAGNOSTIC_SCENARIOS[0].id);
     }
   },
 
@@ -135,6 +144,43 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
     const mission = CLIENT_MISSIONS.find((m) => m.id === missionId) || CLIENT_MISSIONS[0];
     set({ activeMission: mission });
     get().resetAssembly();
+  },
+
+  selectDiagnosticScenario: (scenarioId) => {
+    const scenario = DIAGNOSTIC_SCENARIOS.find((s) => s.id === scenarioId) || DIAGNOSTIC_SCENARIOS[0];
+    set({
+      activeDiagnosticScenario: scenario,
+      selectedMotherboard: scenario.motherboard,
+      assembly: { ...scenario.initialAssembly },
+      elapsedSeconds: 0,
+      postResult: null,
+      activeAlert: {
+        type: 'warning',
+        title: `Caso Ativo: ${scenario.title}`,
+        message: `${scenario.clientName} relata: "${scenario.clientStory}"`,
+      },
+    });
+  },
+
+  checkDiagnosticResolution: () => {
+    const { gameMode, activeDiagnosticScenario, assembly, selectedMotherboard, resolvedScenarioIds } = get();
+    if (gameMode !== 'DIAGNOSTICO' || !activeDiagnosticScenario || !selectedMotherboard) return false;
+
+    if (activeDiagnosticScenario.isResolved(assembly, selectedMotherboard)) {
+      if (!resolvedScenarioIds.includes(activeDiagnosticScenario.id)) {
+        soundEngine.playSuccessChime();
+        set((state) => ({
+          resolvedScenarioIds: [...state.resolvedScenarioIds, activeDiagnosticScenario.id],
+          activeAlert: {
+            type: 'success',
+            title: '🎯 DEFEITO RESOLVIDO COM SUCESSO!',
+            message: `Excelente diagnóstico! ${activeDiagnosticScenario.defectExplanation} (+${activeDiagnosticScenario.rewardPoints} XP)`,
+          },
+        }));
+        return true;
+      }
+    }
+    return false;
   },
 
   selectMotherboard: (mb) => {
@@ -287,6 +333,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
         message: 'Uma gota uniforme do tamanho de uma ervilha foi colocada no centro do processador.',
       },
     }));
+    get().checkDiagnosticResolution();
   },
 
   installCooler: (cooler) => {
@@ -364,6 +411,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
         message: 'As travas plásticas fecharam com firmeza nos dois lados do pente de memória.',
       },
     }));
+    get().checkDiagnosticResolution();
     return true;
   },
 
@@ -410,6 +458,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
         message: 'Os espaçadores de latão garantem que a placa-mãe não encoste no chassi metálico.',
       },
     }));
+    get().checkDiagnosticResolution();
   },
 
   installPsu: (psu) => {
@@ -457,6 +506,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
         message: 'A trava traseira do slot fechou. Parafuse a chapa traseira no gabinete.',
       },
     }));
+    get().checkDiagnosticResolution();
   },
 
   screwGpu: () => {
@@ -465,6 +515,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
       assembly: { ...state.assembly, gpuScrewed: true },
       currentPhase: 'PHASE_6_CABLING',
     }));
+    get().checkDiagnosticResolution();
   },
 
   connectCable: (cableType) => {
@@ -479,6 +530,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
       if (cableType === 'LEDS') updated.frontPanelLedsConnected = true;
       return { assembly: updated };
     });
+    get().checkDiagnosticResolution();
   },
 
   togglePsuSwitch: () => {
@@ -486,6 +538,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => ({
     set((state) => ({
       assembly: { ...state.assembly, psuSwitchOn: !state.assembly.psuSwitchOn },
     }));
+    get().checkDiagnosticResolution();
   },
 
   triggerPostBoot: () => {

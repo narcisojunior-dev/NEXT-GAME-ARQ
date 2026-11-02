@@ -5,6 +5,7 @@ import { TopHUD } from '@/components/hud/TopHUD';
 import { DidacticCompanion } from '@/components/hud/DidacticCompanion';
 import { MissionHeader } from '@/components/missions/MissionHeader';
 import { TeamChallengeBanner } from '@/components/challenges/TeamChallengeBanner';
+import { DiagnosticBench } from '@/components/diagnostic/DiagnosticBench';
 import { AssemblyChecklist } from '@/components/workbench/AssemblyChecklist';
 import { WorkbenchMat } from '@/components/workbench/WorkbenchMat';
 import { InventoryDrawer } from '@/components/inventory/InventoryDrawer';
@@ -23,6 +24,9 @@ export default function Home() {
 
         {/* Banner de Desafio Competitivo em Sala (se ativo) */}
         <TeamChallengeBanner />
+
+        {/* Laboratório de Diagnóstico e Assistência Técnica ("O que está quebrado?") */}
+        <DiagnosticBench />
 
         {/* Checklist Visual Interativo com Objetivo Atual & Barra de Progresso */}
         <AssemblyChecklist />
