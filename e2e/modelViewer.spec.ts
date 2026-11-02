@@ -23,8 +23,10 @@ test.describe('Visualizador 3D e Vitrine (Fase 1)', () => {
   });
 
   test('renderiza o Canvas 3D e permite alternar pontos de vista', async ({ page }) => {
-    // Abre a Vitrine 3D
-    await page.getByRole('button', { name: /Vitrine 3D/i }).click();
+    // Abre a Vitrine 3D com hidratação garantida
+    const vitrineBtn = page.getByRole('button', { name: /Vitrine 3D/i });
+    await expect(vitrineBtn).toBeVisible();
+    await vitrineBtn.click();
 
     const modal = page.locator('[role="dialog"]');
     await expect(modal).toBeVisible();

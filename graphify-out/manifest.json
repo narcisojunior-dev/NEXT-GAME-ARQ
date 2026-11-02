@@ -259,10 +259,10 @@
     "semantic_hash": "26cc09e72376306a22e949d6e45fbe2b"
   },
   "src/components/workbench/WorkbenchMat.tsx": {
-    "mtime": 1793626003.7416008,
-    "seen": 1793626326.774841,
-    "ast_hash": "fc8bfb4f8e6b8319d542b4008e3e06e0",
-    "semantic_hash": "fc8bfb4f8e6b8319d542b4008e3e06e0"
+    "mtime": 1793643630.1105497,
+    "seen": 1793644007.6178877,
+    "ast_hash": "13ad47231676603ae9f17b37c236d739",
+    "semantic_hash": "13ad47231676603ae9f17b37c236d739"
   },
   "src/engine/audio/soundEngine.ts": {
     "mtime": 1793590853.3302426,
@@ -592,10 +592,10 @@
     "semantic_hash": "06eb953009c0c8ba8c4525f1c503f73c"
   },
   "e2e/modelViewer.spec.ts": {
-    "mtime": 1793643048.852913,
-    "seen": 1793643100.0291827,
-    "ast_hash": "315ceddb0ec1533512f6ae811b573e8c",
-    "semantic_hash": "315ceddb0ec1533512f6ae811b573e8c"
+    "mtime": 1793643880.2893498,
+    "seen": 1793644007.6063716,
+    "ast_hash": "f0455b2a13e554cd32a16b8fd827f351",
+    "semantic_hash": "f0455b2a13e554cd32a16b8fd827f351"
   },
   "playwright.config.ts": {
     "mtime": 1793643048.8624265,
@@ -604,15 +604,33 @@
     "semantic_hash": "9b0cd743a0190cf9434419539755dcc2"
   },
   "src/engine/__tests__/catalog.test.ts": {
-    "mtime": 1793643048.8850982,
-    "seen": 1793643100.0604641,
-    "ast_hash": "5c7f1922bcc19fbab423328cdd364c91",
-    "semantic_hash": "5c7f1922bcc19fbab423328cdd364c91"
+    "mtime": 1793643629.1722338,
+    "seen": 1793644007.6198876,
+    "ast_hash": "4c7a6d1d71e5249695298d627f0ed776",
+    "semantic_hash": "4c7a6d1d71e5249695298d627f0ed776"
   },
   "vitest.config.ts": {
     "mtime": 1793643048.8921156,
     "seen": 1793643100.0786552,
     "ast_hash": "a7123669fe9c29145403b559a92595e6",
     "semantic_hash": "a7123669fe9c29145403b559a92595e6"
+  },
+  "e2e/workbench3d.spec.ts": {
+    "mtime": 1793643629.9117084,
+    "seen": 1793644007.6063716,
+    "ast_hash": "d738af46f58f88e488392e5287a0fb5e",
+    "semantic_hash": "d738af46f58f88e488392e5287a0fb5e"
+  },
+  "src/components/three/Workbench3D.tsx": {
+    "mtime": 1793643597.513631,
+    "seen": 1793644007.6158893,
+    "ast_hash": "239034ddf07cf62fa26c6657499ab964",
+    "semantic_hash": "239034ddf07cf62fa26c6657499ab964"
+  },
+  "src/components/three/webglDetect.ts": {
+    "mtime": 1793643598.2876432,
+    "seen": 1793644007.6168883,
+    "ast_hash": "41634bf085b646c879c37494fbd56fa4",
+    "semantic_hash": "41634bf085b646c879c37494fbd56fa4"
   }
 }

@@ -21,6 +21,21 @@ import {
 } from 'lucide-react';
 import { HardwareComponent } from '@/engine/types';
 import { HardwareImage } from '@/components/common/HardwareImage';
+import dynamic from 'next/dynamic';
+import { Box } from 'lucide-react';
+import { isWebGLAvailable } from '@/components/three/webglDetect';
+
+const Workbench3D = dynamic(() => import('@/components/three/Workbench3D'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[540px] rounded-2xl border border-slate-800 bg-slate-950 flex items-center justify-center font-mono text-xs text-cyan-300">
+      <div className="flex items-center gap-2">
+        <div className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+        <span>Carregando Bancada 3D…</span>
+      </div>
+    </div>
+  ),
+});
 
 /** Miniatura do compartimento: mostra a peça instalada ou o ícone do encaixe vazio */
 const SlotThumb: React.FC<{ component: HardwareComponent | null; icon: React.ReactNode }> = ({ component, icon }) => (
@@ -30,6 +45,11 @@ const SlotThumb: React.FC<{ component: HardwareComponent | null; icon: React.Rea
 );
 
 export const WorkbenchMat: React.FC = () => {
+  const [is3DMode, setIs3DMode] = React.useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return isWebGLAvailable();
+  });
+
   const {
     assembly,
     dischargeEsd,
@@ -176,6 +196,34 @@ export const WorkbenchMat: React.FC = () => {
             <span>LIGAR O PC (TESTE DE BOOT)</span>
           </button>
 
+          {/* Alternador 3D / 2D da Bancada */}
+          <div className="bg-slate-950/80 rounded-xl border border-slate-800 p-1 flex items-center gap-1">
+            <button
+              onClick={() => setIs3DMode(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
+                is3DMode
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+              title="Modo 3D da Bancada com placa-mãe interativa"
+            >
+              <Box className="w-3.5 h-3.5" />
+              <span>3D</span>
+            </button>
+            <button
+              onClick={() => setIs3DMode(false)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
+                !is3DMode
+                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+              }`}
+              title="Modo 2D Leve da Bancada (gráfico vetorial)"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>2D</span>
+            </button>
+          </div>
+
           <button
             onClick={resetAssembly}
             title="Reiniciar Montagem da Bancada"
@@ -188,7 +236,11 @@ export const WorkbenchMat: React.FC = () => {
 
       {/* Área Central da Bancada: placa-mãe e, ao lado, a bandeja de cabos (fixa ao rolar a página) */}
       <div className="relative z-10 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start">
-        <MotherboardSvg />
+        {is3DMode ? (
+          <Workbench3D onToggle2D={() => setIs3DMode(false)} />
+        ) : (
+          <MotherboardSvg />
+        )}
         <div className="xl:sticky xl:top-32 xl:max-h-[calc(100vh-9rem)] xl:overflow-y-auto">
           <CableTray />
         </div>
