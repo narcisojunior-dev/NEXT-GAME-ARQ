@@ -106,5 +106,41 @@ describe('Teste de Diagnóstico do POST (Power-On Self-Test)', () => {
     expect(result.bootSuccess).toBe(false);
     expect(result.issues.some((i) => i.title.includes('Nenhuma Placa-Mãe Instalada'))).toBe(true);
   });
+
+  it('deve permitir boot sem placa de vídeo dedicada se a CPU possuir gráfico integrado (Ryzen 5 4600G)', () => {
+    const r5_4600g = CPUS.find((c) => c.id === 'cpu-r5-4600g')!;
+    const am4Mb = MOTHERBOARDS.find((m) => m.socket === 'AM4')!;
+    const ddr4Ram = RAMS.find((r) => r.ramType === 'DDR4')!;
+
+    const stateWithIgpu: AssemblyState = {
+      ...validAssemblyState,
+      cpuInstalled: r5_4600g,
+      gpuInstalled: null,
+      gpuScrewed: false,
+      cableGpuPcieConnected: false,
+      ramInstalledSlot2: ddr4Ram,
+      ramInstalledSlot4: ddr4Ram,
+    };
+
+    const result = evaluatePostTest(stateWithIgpu, am4Mb);
+    expect(result.canPowerOn).toBe(true);
+    expect(result.bootSuccess).toBe(true);
+    expect(result.debugLed.vga).toBe('GREEN');
+  });
+
+  it('deve calcular corretamente o TDP total de um setup topo de linha com i9-14900K e RTX 4090', () => {
+    const i9Cpu = CPUS.find((c) => c.id === 'cpu-i9-14900k')!;
+    const rtx4090 = GPUS.find((g) => g.id === 'gpu-rtx-4090')!;
+    const highEndMb = MOTHERBOARDS.find((m) => m.id === 'mb-z790-max')!;
+
+    const highEndState: AssemblyState = {
+      ...validAssemblyState,
+      cpuInstalled: i9Cpu,
+      gpuInstalled: rtx4090,
+    };
+
+    const totalTdp = calculateTotalTdp(highEndState, highEndMb);
+    expect(totalTdp).toBeGreaterThan(600); // 125W CPU + 450W GPU + 50W MB + fans/dram/storage
+  });
 });
 

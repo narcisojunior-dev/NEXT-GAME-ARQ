@@ -277,10 +277,10 @@
     "semantic_hash": "2414bebd00c2903f95a6176dd0bd145b"
   },
   "src/engine/hardwareCatalog.ts": {
-    "mtime": 1793592015.248973,
-    "seen": 1793593775.3778088,
-    "ast_hash": "981d510fe5bacdf84550a7b89e7fb318",
-    "semantic_hash": "981d510fe5bacdf84550a7b89e7fb318"
+    "mtime": 1793596794.4002647,
+    "seen": 1793597046.9501312,
+    "ast_hash": "934a8cf17d4949ef16ed70f599cac1cc",
+    "semantic_hash": "934a8cf17d4949ef16ed70f599cac1cc"
   },
   "src/engine/types.ts": {
     "mtime": 1793590853.5202394,
@@ -301,10 +301,10 @@
     "semantic_hash": "9a359761868dad5dad749ba2a261301d"
   },
   "src/components/common/HardwareImage.tsx": {
-    "mtime": 1793591944.2454853,
-    "seen": 1793593775.3758078,
-    "ast_hash": "83710344bc4a0c8d224d6d46bd7ef156",
-    "semantic_hash": "83710344bc4a0c8d224d6d46bd7ef156"
+    "mtime": 1793596943.070486,
+    "seen": 1793597046.9421318,
+    "ast_hash": "5838e241d63d67fcedf07a8d1abe0daa",
+    "semantic_hash": "5838e241d63d67fcedf07a8d1abe0daa"
   },
   "src/components/workbench/AssemblyChecklist.tsx": {
     "mtime": 1793595577.629964,
@@ -313,10 +313,10 @@
     "semantic_hash": "9e7502263ffc0e3d7e31e0951607ff7a"
   },
   "src/engine/__tests__/compatibility.test.ts": {
-    "mtime": 1793593734.2678132,
-    "seen": 1793593775.3778088,
-    "ast_hash": "ed13f286bca29fe19016afed65a6b4fb",
-    "semantic_hash": "ed13f286bca29fe19016afed65a6b4fb"
+    "mtime": 1793596965.2453372,
+    "seen": 1793597046.9471314,
+    "ast_hash": "ee21be1514e8d6e08b4285c65c51ecc1",
+    "semantic_hash": "ee21be1514e8d6e08b4285c65c51ecc1"
   },
   "src/components/diagnostic/DiagnosticBench.tsx": {
     "mtime": 1793595424.9391289,
@@ -385,10 +385,10 @@
     "semantic_hash": "8f6a405cf1be591fa1989b9ab4e474f5"
   },
   "src/engine/peripheralsCatalog.ts": {
-    "mtime": 1793595426.7167842,
-    "seen": 1793596211.4887857,
-    "ast_hash": "ad053b8a48e36021695f7cdf28354659",
-    "semantic_hash": "ad053b8a48e36021695f7cdf28354659"
+    "mtime": 1793596866.9642136,
+    "seen": 1793597046.9501312,
+    "ast_hash": "9f769ffb7a7621a04aa7704b9d32628f",
+    "semantic_hash": "9f769ffb7a7621a04aa7704b9d32628f"
   },
   "src/engine/roomThemes.ts": {
     "mtime": 1793595426.767223,

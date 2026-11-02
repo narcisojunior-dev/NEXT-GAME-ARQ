@@ -4,7 +4,8 @@
 [![React 19](https://img.shields.io/badge/React-19.0.0-blue?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.2-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.0.9-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
-[![Vitest Tests](https://img.shields.io/badge/Vitest-35%2F35%20Passed-green?style=for-the-badge&logo=vitest)](https://vitest.dev/)
+[![Vitest Tests](https://img.shields.io/badge/Vitest-37%2F37%20Passed-green?style=for-the-badge&logo=vitest)](https://vitest.dev/)
+[![Hardware Catalog](https://img.shields.io/badge/Hardware-70%2B%20Real%20Components-blue?style=for-the-badge&logo=intel)](./src/engine/hardwareCatalog.ts)
 [![Web Audio API](https://img.shields.io/badge/Web_Audio-Procedural_Sound-purple?style=for-the-badge)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
 [![PWA Ready](https://img.shields.io/badge/PWA-100%25%20Offline-orange?style=for-the-badge&logo=pwa)](https://web.dev/progressive-web-apps/)
 [![License MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](./LICENSE)
@@ -72,7 +73,15 @@ mindmap
   * Parafusamento de SSDs M.2 NVMe com dissipadores térmicos.
   * Instalação de placas de vídeo no slot PCIe x16 com trava de retenção.
   * Conexão de cabos modulares (ATX 24 pinos, EPS 8 pinos, PCIe 8 pinos e SATA).
-* **Catálogo Amplo de Componentes:** Processadores (Ryzen 5 5600, Ryzen 7 7800X3D, Core i5-13400, Core i7-14700K), Memórias RAM (DDR4 3200MHz, DDR5 6000MHz), Placas de Vídeo (RTX 3060, RTX 4070 Super, RX 7600), Fontes de 500W a 850W 80 Plus Gold e Gabinetes diversos.
+* **Catálogo Amplo com Marcas e Modelos Reais (+70 Componentes Oficiais):**
+  * **Placas-Mãe:** ASUS (ROG Maximus Z790, ROG Strix B650E-F / B760-I ITX, TUF Gaming B550M / B650-Plus, Prime H610M), MSI (MAG Tomahawk B550 / Z790, MAG Mortar B650M / B760M, PRO B760M), Gigabyte (AORUS Elite B650M / B550M, DS3H), ASRock (Steel Legend).
+  * **Processadores:** Linha AMD Ryzen (3600, 4600G com iGPU Vega 7, 5600, 5700X3D com 3D V-Cache, 5900X 12C, 7600, 8600G com NPU Ryzen AI, 7700X, 7800X3D o campeão dos jogos, 7950X 16C) e Intel Core (i3-12100/F, i5-12400F, i5-13400F, i5-13600K, i7-13700K, i7-14700K, i9-14900K até 6.0 GHz).
+  * **Memórias RAM:** Kingston Fury (Beast, Renegade RGB até 64GB), Corsair (Vengeance LPX, Vengeance RGB, Dominator Titanium), G.Skill (Trident Z5 Neo RGB AMD EXPO, Ripjaws V), XPG (Spectrix D45G, Lancer Blade) em frequências de 3200MHz a 6400MHz.
+  * **Coolers & Pastas Térmicas:** DeepCool (AG400, LE520 240mm ARGB), Noctua (NH-D15 chromax.black silencioso), Thermalright (Peerless Assassin 120 SE), NZXT (Kraken Elite 360 LCD), Corsair (iCUE H100i), Arctic (MX-4, MX-6), Thermal Grizzly (Kryonaut Extreme), Noctua (NT-H1) e Implastec.
+  * **Placas de Vídeo:** Séries NVIDIA GeForce (GTX 1650, RTX 3050, RTX 3060 12GB, RTX 4060, RTX 4070 Super, RTX 4070 Ti Super, RTX 4090 24GB) e AMD Radeon (RX 6600, RX 6700 XT, RX 7600, RX 7800 XT 16GB, RX 7900 XTX 24GB) das marcas ASUS, MSI, Gigabyte, Sapphire, Galax, XFX.
+  * **Armazenamento:** NVMe PCIe 4.0/5.0 e SATA de alto desempenho das marcas Kingston (NV2, KC3000), Samsung (980 PRO, 990 PRO), Western Digital (WD_BLACK SN770, WD Blue), Crucial (P3 Plus, BX500), Corsair (MP700 PRO PCIe 5.0 a 12.400 MB/s), Seagate (BarraCuda 2TB).
+  * **Fontes:** Corsair (CV650, RM750e ATX 3.0, RM850x Gold), MSI (MAG A500DN, A650BN), XPG (Core Reactor 750W Tier A), ASUS (ROG Thor 1000W Platinum com display OLED), Cooler Master (MWE 550W).
+  * **Gabinetes:** Lian Li (O11 Dynamic EVO Aquário Duplo Vidro), Corsair (4000D Airflow Branco), NZXT (H6 Flow Dual Chamber), Montech (Air 100 ARGB), Pichau (Kazan 2 Mesh), TGT (Combat Slim Office).
 
 ### 2. 🎯 Missões com Orçamento & Arena Speedrun
 * **Missões Didáticas:** Montagens guiadas com limites de orçamento em Reais (R$) e requisitos específicos (ex: *PC Home Office R$ 2.500*, *PC Gamer Competitivo R$ 5.500*, *Estação de Render 3D R$ 12.000*).
@@ -275,3 +284,4 @@ Todas as alterações no repositório seguem estritamente a especificação [Con
 Este projeto é distribuído sob a licença **MIT**. Consulte o arquivo [LICENSE](./LICENSE) para obter mais informações.
 
 Desenvolvido para inspirar a próxima geração de engenheiros de computação e técnicos de tecnologia do Brasil! 🇧🇷⚡
+
