@@ -276,10 +276,10 @@
     "semantic_hash": "b1ab00d559ade6668dfe940ddaa7599c"
   },
   "src/store/useAssemblyStore.ts": {
-    "mtime": 1793737447.739232,
-    "seen": 1793737604.188867,
-    "ast_hash": "402ad616fb35fabc6f2b841dad2fa2cf",
-    "semantic_hash": "402ad616fb35fabc6f2b841dad2fa2cf"
+    "mtime": 1793741960.6568162,
+    "seen": 1793742685.102149,
+    "ast_hash": "bac6274dfdabf91aa0672ab835be594c",
+    "semantic_hash": "bac6274dfdabf91aa0672ab835be594c"
   },
   "tsconfig.json": {
     "mtime": 1793735056.790974,
@@ -648,10 +648,10 @@
     "semantic_hash": "bddcd3861cb86157a52ea35c33049cab"
   },
   "src/components/three/DeskSetup3D.tsx": {
-    "mtime": 1793740301.9220872,
-    "seen": 1793740883.965845,
-    "ast_hash": "fc9e09515398cb246f98696bc29541ef",
-    "semantic_hash": "fc9e09515398cb246f98696bc29541ef"
+    "mtime": 1793742245.275283,
+    "seen": 1793742685.101543,
+    "ast_hash": "77ff1072c4e79578319647d0f82b718c",
+    "semantic_hash": "77ff1072c4e79578319647d0f82b718c"
   },
   "src/components/workbench/WorkbenchSidebar.tsx": {
     "mtime": 1793735056.7874408,
@@ -660,16 +660,16 @@
     "semantic_hash": "711afc07d04ae4939d866fca3a8c327d"
   },
   "src/engine/__tests__/deskSetup.test.ts": {
-    "mtime": 1793737447.7371283,
-    "seen": 1793737604.188854,
-    "ast_hash": "31adcc56b3955bfc98f71337d3dd9797",
-    "semantic_hash": "31adcc56b3955bfc98f71337d3dd9797"
+    "mtime": 1793741960.6396563,
+    "seen": 1793742685.10182,
+    "ast_hash": "844a52234643bc7ae41a4e02b4e47b53",
+    "semantic_hash": "844a52234643bc7ae41a4e02b4e47b53"
   },
   "src/engine/__tests__/externalCabling.test.ts": {
-    "mtime": 1793737447.7373395,
-    "seen": 1793737604.188855,
-    "ast_hash": "fb1aed1084d225ccbdd1efea153ed415",
-    "semantic_hash": "fb1aed1084d225ccbdd1efea153ed415"
+    "mtime": 1793741984.776975,
+    "seen": 1793742685.101832,
+    "ast_hash": "9653ac1adae0ffe58c4327e1ba248f89",
+    "semantic_hash": "9653ac1adae0ffe58c4327e1ba248f89"
   },
   "src/engine/__tests__/fixtures/readyPc.ts": {
     "mtime": 1793737447.751842,
@@ -678,28 +678,28 @@
     "semantic_hash": "42394ea4a2c80cc4f23d7101e42e7027"
   },
   "src/engine/deskSetup.ts": {
-    "mtime": 1793739837.7044199,
-    "seen": 1793740883.9662888,
-    "ast_hash": "31c22ace13fb7eeb675468a8126ac3fe",
-    "semantic_hash": "31c22ace13fb7eeb675468a8126ac3fe"
+    "mtime": 1793741960.6565137,
+    "seen": 1793742685.1019971,
+    "ast_hash": "afbbc32b70ead3dedf0e9d741503b180",
+    "semantic_hash": "afbbc32b70ead3dedf0e9d741503b180"
   },
   "src/engine/externalCabling.ts": {
-    "mtime": 1793739823.1342077,
-    "seen": 1793740883.966301,
-    "ast_hash": "3afbc50b79601bd4e9c9eebe88043104",
-    "semantic_hash": "3afbc50b79601bd4e9c9eebe88043104"
+    "mtime": 1793741984.7801487,
+    "seen": 1793742685.102009,
+    "ast_hash": "c58507004d149349ff16976e61a00450",
+    "semantic_hash": "c58507004d149349ff16976e61a00450"
   },
   "src/store/__tests__/deskSetupStore.test.ts": {
-    "mtime": 1793737447.7384868,
-    "seen": 1793737604.1888661,
-    "ast_hash": "21dc0fef95ca2350dd6655fc77761e81",
-    "semantic_hash": "21dc0fef95ca2350dd6655fc77761e81"
+    "mtime": 1793741800.2923148,
+    "seen": 1793742685.102135,
+    "ast_hash": "47468b47afb9a9f914f5689b39a0ff5a",
+    "semantic_hash": "47468b47afb9a9f914f5689b39a0ff5a"
   },
   "src/store/__tests__/externalCablingStore.test.ts": {
-    "mtime": 1793737447.738724,
-    "seen": 1793737604.188867,
-    "ast_hash": "d80b1d34273e058a16f9707f2e7bc93d",
-    "semantic_hash": "d80b1d34273e058a16f9707f2e7bc93d"
+    "mtime": 1793741800.2922363,
+    "seen": 1793742685.1021361,
+    "ast_hash": "10cbb6693d936c0488a57435376915a4",
+    "semantic_hash": "10cbb6693d936c0488a57435376915a4"
   },
   "e2e/deskPlacement.spec.ts": {
     "mtime": 1793740670.251976,
@@ -708,39 +708,93 @@
     "semantic_hash": "3ed94c6bbbed5536f95d8ea7f7a8ebed"
   },
   "src/components/three/DeskStationScene.tsx": {
-    "mtime": 1793740625.7032602,
-    "seen": 1793740883.965846,
-    "ast_hash": "21956cf46ac9380e2ce67c22953bfff3",
-    "semantic_hash": "21956cf46ac9380e2ce67c22953bfff3"
+    "mtime": 1793742191.0835595,
+    "seen": 1793742685.101544,
+    "ast_hash": "ed5d97014930eb124e54315167d7f011",
+    "semantic_hash": "ed5d97014930eb124e54315167d7f011"
   },
   "src/components/three/FittedModel.tsx": {
-    "mtime": 1793739886.258171,
-    "seen": 1793740883.965846,
-    "ast_hash": "b689691f5fb1f89a3d516fdeba82da0e",
-    "semantic_hash": "b689691f5fb1f89a3d516fdeba82da0e"
+    "mtime": 1793742106.5339503,
+    "seen": 1793742685.1015449,
+    "ast_hash": "f69cf9c4d66e56084e861526498cfc0f",
+    "semantic_hash": "f69cf9c4d66e56084e861526498cfc0f"
   },
   "src/components/three/deskModels.ts": {
-    "mtime": 1793740343.5928352,
-    "seen": 1793740883.9658859,
-    "ast_hash": "ab848f24ee19a6afaa3488179e33f739",
-    "semantic_hash": "ab848f24ee19a6afaa3488179e33f739"
+    "mtime": 1793742106.5342197,
+    "seen": 1793742685.1015968,
+    "ast_hash": "744311874fc078292f0d74decaf8173a",
+    "semantic_hash": "744311874fc078292f0d74decaf8173a"
   },
   "src/components/three/deskPlacementStore.ts": {
-    "mtime": 1793740120.676965,
-    "seen": 1793740883.965887,
-    "ast_hash": "ab799506e366d92b4b3be3d313217185",
-    "semantic_hash": "ab799506e366d92b4b3be3d313217185"
+    "mtime": 1793742003.3761327,
+    "seen": 1793742685.1015968,
+    "ast_hash": "1fa352f66122822bdd5e93947f0d4c75",
+    "semantic_hash": "1fa352f66122822bdd5e93947f0d4c75"
   },
   "src/components/workbench/DeskInventoryPanel.tsx": {
-    "mtime": 1793740499.8257842,
-    "seen": 1793740883.965953,
-    "ast_hash": "3276bf94a972cafa724ec0998a930984",
-    "semantic_hash": "3276bf94a972cafa724ec0998a930984"
+    "mtime": 1793742245.2748663,
+    "seen": 1793742685.101662,
+    "ast_hash": "8231cc347a2545c6f652b77dd8013d52",
+    "semantic_hash": "8231cc347a2545c6f652b77dd8013d52"
   },
   "src/engine/__tests__/deskLayout.test.ts": {
     "mtime": 1793739739.2721505,
     "seen": 1793740883.9660852,
     "ast_hash": "f5661ee3a21092083a8588468d2f608a",
     "semantic_hash": "f5661ee3a21092083a8588468d2f608a"
+  },
+  "e2e/deskBootJourney.spec.ts": {
+    "mtime": 1793742372.3065171,
+    "seen": 1793742685.101161,
+    "ast_hash": "752ada25cd4edeb7c081945a6a6d0cd2",
+    "semantic_hash": "752ada25cd4edeb7c081945a6a6d0cd2"
+  },
+  "src/components/three/DeskCablesLayer.tsx": {
+    "mtime": 1793742146.176086,
+    "seen": 1793742685.101543,
+    "ast_hash": "046a0b38ec68a7c2dda785f3f4bc1bbe",
+    "semantic_hash": "046a0b38ec68a7c2dda785f3f4bc1bbe"
+  },
+  "src/components/three/MonitorView.tsx": {
+    "mtime": 1793742166.6812665,
+    "seen": 1793742685.101571,
+    "ast_hash": "564359cd42fa60cb69ce112b203ce643",
+    "semantic_hash": "564359cd42fa60cb69ce112b203ce643"
+  },
+  "src/components/three/monitorCanvas.ts": {
+    "mtime": 1793742166.6813858,
+    "seen": 1793742685.10161,
+    "ast_hash": "d92b40df224ec49cd142ac417c0efbb5",
+    "semantic_hash": "d92b40df224ec49cd142ac417c0efbb5"
+  },
+  "src/components/workbench/DeskCablingPanel.tsx": {
+    "mtime": 1793742226.8278499,
+    "seen": 1793742685.101661,
+    "ast_hash": "567e4665ed9da70f755993940ffefa4d",
+    "semantic_hash": "567e4665ed9da70f755993940ffefa4d"
+  },
+  "src/engine/__tests__/cableRouting.test.ts": {
+    "mtime": 1793741780.2001452,
+    "seen": 1793742685.101755,
+    "ast_hash": "31c81213da2843988778394c70bf39bc",
+    "semantic_hash": "31c81213da2843988778394c70bf39bc"
+  },
+  "src/engine/__tests__/monitorScreen.test.ts": {
+    "mtime": 1793741960.642014,
+    "seen": 1793742685.101888,
+    "ast_hash": "a256f7506b94d14e7073864605f42d62",
+    "semantic_hash": "a256f7506b94d14e7073864605f42d62"
+  },
+  "src/engine/cableRouting.ts": {
+    "mtime": 1793741871.6160645,
+    "seen": 1793742685.101962,
+    "ast_hash": "4254f2245fcec3d40a97ef6e41df8b2d",
+    "semantic_hash": "4254f2245fcec3d40a97ef6e41df8b2d"
+  },
+  "src/engine/monitorScreen.ts": {
+    "mtime": 1793741960.6566365,
+    "seen": 1793742685.102078,
+    "ast_hash": "ed24704825b64fafe489fce51fd002b5",
+    "semantic_hash": "ed24704825b64fafe489fce51fd002b5"
   }
 }
