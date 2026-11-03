@@ -16,6 +16,7 @@ import {
   School,
   Cpu,
   Box,
+  Monitor,
 } from 'lucide-react';
 import { hasAvailableModels } from '@/engine/models3dIndex';
 import { useModel3DStore } from '@/components/three/model3dStore';
@@ -44,6 +45,8 @@ export const TopHUD: React.FC = () => {
     penaltiesCount,
     openVirtualRoomModal,
     openTeacherDashboard,
+    activeWorkbenchView,
+    setActiveWorkbenchView,
   } = useAssemblyStore();
   const currentPhase = useAssemblyStore(selectCurrentPhase);
   const openGallery = useModel3DStore((s) => s.openGallery);
@@ -157,6 +160,19 @@ export const TopHUD: React.FC = () => {
             </button>
           )}
 
+          {/* Botão de Alternância: Bancada vs Mesa Battlestation 3D (Fase 4) */}
+          <button
+            onClick={() => setActiveWorkbenchView(activeWorkbenchView === 'desk' ? 'bench' : 'desk')}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+              activeWorkbenchView === 'desk'
+                ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-500/20'
+                : 'bg-slate-900 hover:bg-slate-800 border-purple-700/60 text-purple-300'
+            }`}
+            title="Alternar para a Mesa Battlestation 3D"
+          >
+            <Monitor className="w-3.5 h-3.5" />
+            <span>{activeWorkbenchView === 'desk' ? 'Bancada' : 'Mesa 3D'}</span>
+          </button>
           {/* Botão de Abrir Sala Virtual & Setup */}
           <button
             onClick={openVirtualRoomModal}

@@ -41,3 +41,6 @@ graphify-out/.graphify_analysis.json
 
 # downloads originais de modelos 3D (só a versão otimizada em public/models vai para o Git)
 /assets-src/
+
+# prompts e orquestracao de IA
+/docs/prompts/

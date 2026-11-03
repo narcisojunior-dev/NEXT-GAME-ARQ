@@ -83,3 +83,4 @@ Os monitores no espaço 3D utilizam uma **CanvasTexture** dinâmica do Three.js:
 - **Issue 04:** Sistema de Cabeamento Externo (DisplayPort para GPU, USBs e Força AC).
 - **Issue 05:** CanvasTexture Viva para Monitores 3D com AcademyOS e Sincronização RGB.
 - **Issue 06:** Testes Automatizados (Vitest TDD para regras de cabeamento externo + Playwright E2E).
+

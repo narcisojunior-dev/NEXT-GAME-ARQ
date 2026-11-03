@@ -174,6 +174,10 @@ interface AssemblyStore {
   togglePsuSwitch: () => void;
   triggerPostBoot: () => void;
   calculateFinalScore: () => GroupScore;
+  // Visualização Ativa (Bancada de Montagem ou Mesa Battlestation)
+  activeWorkbenchView: 'bench' | 'desk';
+  setActiveWorkbenchView: (view: 'bench' | 'desk') => void;
+
   // Setup da Mesa e Battlestation (Fase 4)
   deskSetup: DeskSetupState;
   placeDeskItem: (snapPointId: DeskSnapPointId, item: PlacedDeskItem) => boolean;
@@ -224,6 +228,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
 
   return {
   gameMode: 'OFICINA',
+  activeWorkbenchView: 'bench',
   selectedMotherboard: null,
   activeMission: null,
   activeDiagnosticScenario: null,
@@ -261,6 +266,8 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
       get().selectDiagnosticScenario(DIAGNOSTIC_SCENARIOS[0].id);
     }
   },
+
+  setActiveWorkbenchView: (view) => set({ activeWorkbenchView: view }),
 
   setTeamName: (name) => set({ teamName: name }),
 
@@ -1157,6 +1164,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
       activeAlert: null,
       selectedComponentForPlacement: null,
       inspectedComponent: null,
+      activeWorkbenchView: 'bench',
       deskSetup: createInitialDeskSetupState(),
       externalCabling: createInitialExternalCablesState(),
     });

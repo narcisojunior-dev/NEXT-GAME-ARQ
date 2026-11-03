@@ -26,6 +26,18 @@ import dynamic from 'next/dynamic';
 import { Box } from 'lucide-react';
 import { isWebGLAvailable } from '@/components/three/webglDetect';
 
+const DeskSetup3D = dynamic(() => import('@/components/three/DeskSetup3D'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[620px] rounded-2xl border border-slate-800 bg-slate-950 flex items-center justify-center font-mono text-xs text-cyan-300">
+      <div className="flex items-center gap-2">
+        <div className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+        <span>Carregando Battlestation 3D…</span>
+      </div>
+    </div>
+  ),
+});
+
 const Workbench3D = dynamic(() => import('@/components/three/Workbench3D'), {
   ssr: false,
   loading: () => (
@@ -67,6 +79,8 @@ export const WorkbenchMat: React.FC = () => {
     resetAssembly,
     openFrontPanelModal,
     selectedComponentForPlacement,
+    activeWorkbenchView,
+    setActiveWorkbenchView,
   } = useAssemblyStore();
 
   const handlePsuAreaClick = () => {
@@ -243,7 +257,9 @@ export const WorkbenchMat: React.FC = () => {
       {/* Área Central da Bancada: placa-mãe e, ao lado, o Menu Lateral de Escolha de Componentes & Cabeamento */}
       <div className="relative z-10 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_370px] xl:grid-cols-[minmax(0,1fr)_420px] items-start">
         <div className="min-w-0">
-          {is3DMode ? (
+          {activeWorkbenchView === 'desk' ? (
+            <DeskSetup3D onBackToWorkbench={() => setActiveWorkbenchView('bench')} />
+          ) : is3DMode ? (
             <Workbench3D onToggle2D={() => setIs3DMode(false)} />
           ) : (
             <MotherboardSvg />
