@@ -8,6 +8,7 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useCableDragStore } from '@/components/workbench/cableDragStore';
 import { CABLES, CableSpec, CableTargetId, cableTargetById } from '@/engine/cabling';
+import { MotherboardComponent } from '@/engine/types';
 import {
   Cpu,
   Layers,
@@ -28,6 +29,7 @@ import {
   Sparkles,
   Box,
   Layers as BoxLayers,
+  CircuitBoard,
 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -55,31 +57,31 @@ export interface MotherboardLayout {
 export const MOTHERBOARD_LAYOUTS: Record<'AMD_AM4_AM5' | 'INTEL_LGA1700', MotherboardLayout> = {
   // 1. AMD AM4 / AM5 (Baseado no modelo fiel ASRock B550M-HDV)
   AMD_AM4_AM5: {
-    CPU_SOCKET: [0.00, 0.22, 0.00],
-    CPU_FAN_HEADER: [0.30, 0.22, -2.30],
-    ATX12V_HEADER: [-2.80, 0.22, -3.10],
-    RAM_SLOT_2: [1.65, 0.22, 0.00],
-    RAM_SLOT_4: [2.05, 0.22, 0.00],
-    M2_SLOT: [-0.30, 0.22, 0.90],
-    PCIE_SLOT: [-0.50, 0.22, 1.65],
-    ATX24P_HEADER: [3.20, 0.22, -0.10],
-    FPANEL_HEADER: [2.90, 0.22, 3.10],
+    CPU_SOCKET: [-0.55, 0.22, -0.85],
+    CPU_FAN_HEADER: [-0.20, 0.22, -2.45],
+    ATX12V_HEADER: [-2.75, 0.22, -3.10],
+    RAM_SLOT_2: [1.35, 0.22, -0.85],
+    RAM_SLOT_4: [1.65, 0.22, -0.85],
+    M2_SLOT: [-0.50, 0.22, 0.25],
+    PCIE_SLOT: [-0.55, 0.22, 1.45],
+    ATX24P_HEADER: [3.10, 0.22, -0.60],
+    FPANEL_HEADER: [2.85, 0.22, 3.10],
     DEBUG_LEDS: [2.90, 0.22, -2.80],
-    GPU_POWER_HEADER: [1.30, 0.95, 1.40],
+    GPU_POWER_HEADER: [1.35, 0.95, 1.45],
   },
   // 2. Intel LGA1700 (Baseado no modelo fiel MSI MAG Z790 Tomahawk ATX)
   INTEL_LGA1700: {
-    CPU_SOCKET: [-0.35, 0.22, 0.05],
-    CPU_FAN_HEADER: [-0.35, 0.22, -2.20],
-    ATX12V_HEADER: [-2.30, 0.22, -3.20],
-    RAM_SLOT_2: [1.62, 0.22, 0.05],
-    RAM_SLOT_4: [2.08, 0.22, 0.05],
-    M2_SLOT: [-0.35, 0.22, 1.05],
-    PCIE_SLOT: [-0.65, 0.22, 1.85],
-    ATX24P_HEADER: [3.10, 0.22, 0.05],
+    CPU_SOCKET: [0.20, 0.22, -1.05],
+    CPU_FAN_HEADER: [0.45, 0.22, -2.85],
+    ATX12V_HEADER: [-1.90, 0.22, -3.20],
+    RAM_SLOT_2: [1.85, 0.22, -1.05],
+    RAM_SLOT_4: [2.25, 0.22, -1.05],
+    M2_SLOT: [-0.40, 0.22, 0.20],
+    PCIE_SLOT: [-0.50, 0.22, 1.35],
+    ATX24P_HEADER: [3.15, 0.22, -0.65],
     FPANEL_HEADER: [2.85, 0.22, 3.35],
-    DEBUG_LEDS: [2.80, 0.22, -2.80],
-    GPU_POWER_HEADER: [1.15, 0.95, 1.60],
+    DEBUG_LEDS: [2.95, 0.22, -2.90],
+    GPU_POWER_HEADER: [1.35, 0.95, 1.35],
   },
 };
 
@@ -164,27 +166,26 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
   const preparedScene = useMemo(() => {
     const clone = scene.clone(true);
 
-    // 1. Aplica a rotação pretendida internamente no clone ANTES de medir
-    clone.rotation.set(rotation[0], rotation[1], rotation[2]);
-    clone.updateMatrixWorld(true);
-
-    // 2. Calcula o bounding box real do objeto já devidamente rotacionado
+    // 1. Calcula o bounding box base do objeto sem rotação externa
     const box = new THREE.Box3().setFromObject(clone);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
 
-    // 3. Centraliza a base em X e Z e assenta a face inferior em Y=0
-    clone.position.x -= center.x;
-    clone.position.y -= box.min.y;
-    clone.position.z -= center.z;
+    // 2. Centraliza a base em X e Z e assenta a face inferior em Y=0
+    clone.position.set(-center.x, -box.min.y, -center.z);
 
-    // 4. Normaliza para o tamanho alvo na maior dimensão usando wrapper
+    // 3. Normaliza para o tamanho alvo na maior dimensão em grupo interno
     const maxDim = Math.max(size.x, size.y, size.z);
     const scaleFactor = targetSize / Math.max(0.001, maxDim);
 
+    const innerWrapper = new THREE.Group();
+    innerWrapper.add(clone);
+    innerWrapper.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+    // 4. Aplica a rotação pretendida no outerWrapper de forma limpa e despolarizada
     const wrapper = new THREE.Group();
-    wrapper.add(clone);
-    wrapper.scale.set(scaleFactor, scaleFactor, scaleFactor);
+    wrapper.add(innerWrapper);
+    wrapper.rotation.set(rotation[0], rotation[1], rotation[2]);
     wrapper.updateMatrixWorld(true);
 
     wrapper.traverse((child) => {
@@ -316,6 +317,7 @@ interface WorkbenchPinProps {
     text: string;
     onClick: () => void;
   };
+  visible?: boolean;
 }
 
 const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
@@ -329,28 +331,31 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
   dataCableTarget,
   badgeContent,
   secondaryAction,
+  visible = true,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+
+  if (!visible) return null;
 
   const isTargeted = status === 'targeted';
   const isInstalled = status === 'installed';
 
   return (
     <group position={position}>
-      <Html center distanceFactor={14} zIndexRange={[20, 0]}>
+      <Html center distanceFactor={9} zIndexRange={[25, 0]}>
         <div
           data-cable-target={dataCableTarget}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className="relative flex items-center justify-center select-none"
         >
-          {/* Botão circular tátil compacto (32x32px com hit-area de 44x44px) */}
+          {/* Botão circular tátil compacto (28x28px com hit-area de 44x44px) */}
           <button
             onClick={onAction}
             onFocus={() => setIsHovered(true)}
             onBlur={() => setIsHovered(false)}
             aria-label={`${label}: ${detailText}`}
-            className={`relative flex items-center justify-center w-8 h-8 rounded-full border shadow-xl backdrop-blur-md transition-all duration-200 cursor-pointer ${
+            className={`relative flex items-center justify-center w-7 h-7 rounded-full border shadow-lg backdrop-blur-md transition-all duration-200 cursor-pointer ${
               isTargeted
                 ? 'bg-amber-950/95 border-amber-400 text-amber-200 ring-4 ring-amber-400/50 animate-bounce scale-110 shadow-amber-500/50'
                 : isInstalled
@@ -364,7 +369,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
 
             {/* Micro-indicador de status no topo direito do pino */}
             <span
-              className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-950 ${
+              className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-slate-950 ${
                 isTargeted
                   ? 'bg-amber-400 animate-ping'
                   : isInstalled
@@ -378,9 +383,9 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
           {isHovered && (
             <div
               role="tooltip"
-              className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 min-w-[190px] max-w-[240px] p-2.5 rounded-xl bg-slate-950/95 border border-cyan-500/50 shadow-2xl backdrop-blur-lg text-left pointer-events-auto animate-in fade-in duration-150"
+              className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-50 min-w-[180px] max-w-[230px] p-2 rounded-xl bg-slate-950/95 border border-cyan-500/50 shadow-2xl backdrop-blur-lg text-left pointer-events-auto animate-in fade-in duration-150"
             >
-              <div className="flex items-center justify-between gap-1 pb-1 mb-1.5 border-b border-slate-800 font-mono text-[11px] font-bold text-cyan-300">
+              <div className="flex items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-800 font-mono text-[10px] font-bold text-cyan-300">
                 <span className="truncate">{label}</span>
                 {isInstalled && (
                   <span className="flex items-center gap-0.5 text-[9px] text-emerald-400 font-normal">
@@ -390,11 +395,11 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
                 )}
               </div>
 
-              <p className="text-[10px] font-mono text-slate-300 leading-tight mb-2">
+              <p className="text-[9px] font-mono text-slate-300 leading-tight mb-1.5">
                 {detailText}
               </p>
 
-              {badgeContent && <div className="mb-2">{badgeContent}</div>}
+              {badgeContent && <div className="mb-1.5">{badgeContent}</div>}
 
               {/* Botões de Ação Contextual dentro do Tooltip */}
               <div className="flex flex-col gap-1">
@@ -404,7 +409,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
                       e.stopPropagation();
                       onAction();
                     }}
-                    className={`w-full py-1 px-2 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                    className={`w-full py-1 px-2 rounded-lg text-[9px] font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                       isTargeted
                         ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md animate-pulse'
                         : isInstalled
@@ -422,7 +427,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
                       e.stopPropagation();
                       secondaryAction.onClick();
                     }}
-                    className="w-full py-0.5 px-2 rounded text-[9px] font-mono text-amber-300 hover:text-amber-200 hover:bg-amber-950/40 border border-amber-800/60 transition-all cursor-pointer"
+                    className="w-full py-0.5 px-2 rounded text-[8.5px] font-mono text-amber-300 hover:text-amber-200 hover:bg-amber-950/40 border border-amber-800/60 transition-all cursor-pointer"
                   >
                     {secondaryAction.text}
                   </button>
@@ -443,7 +448,8 @@ const CableTargetPin: React.FC<{
   targetId: CableTargetId;
   position: [number, number, number];
   name: string;
-}> = ({ targetId, position, name }) => {
+  visible?: boolean;
+}> = ({ targetId, position, name, visible }) => {
   const cableConnections = useAssemblyStore((s) => s.cableConnections);
   const { heldCableId, isDragging, hoverTargetId, tryConnect, setFeedback } = useCableDragStore(
     useShallow((s) => ({
@@ -478,9 +484,11 @@ const CableTargetPin: React.FC<{
   };
 
   const status = connectedCable ? 'installed' : showAffordance ? 'targeted' : 'empty';
+  const isPinVisible = visible ?? Boolean(heldCableId || isDragging || !connectedCable);
 
   return (
     <WorkbenchPin
+      visible={isPinVisible}
       position={position}
       dataCableTarget={targetId}
       icon={<Zap className="w-3.5 h-3.5" />}
@@ -519,7 +527,7 @@ const PRESET_VIEWS: Record<'iso' | 'top' | 'front', CameraTransitionTarget> = {
     target: new THREE.Vector3(0, 0, 0),
   },
   top: {
-    pos: new THREE.Vector3(0, 11.2, 0.001),
+    pos: new THREE.Vector3(0, 11.2, 0.7),
     target: new THREE.Vector3(0, 0, 0),
   },
   front: {
@@ -575,6 +583,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
 
   const {
     selectedMotherboard,
+    installMotherboard,
     assembly,
     postResult,
     selectedComponentForPlacement,
@@ -590,7 +599,13 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
   } = useAssemblyStore();
 
   // Seleciona o modelo 3D e layout físico fiel à plataforma de cada placa-mãe
-  const isIntel = selectedMotherboard?.socket === 'LGA1700';
+  const targetMb =
+    selectedMotherboard ??
+    (selectedComponentForPlacement?.category === 'MOTHERBOARD'
+      ? (selectedComponentForPlacement as MotherboardComponent)
+      : null);
+
+  const isIntel = targetMb?.socket === 'LGA1700';
 
   const mbModelUrl = isIntel
     ? '/models/mb-z790-atx.glb'
@@ -674,7 +689,11 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
           <span className="text-slate-200 font-bold">Bancada 3D Interativa</span>
           <span className="text-slate-600">/</span>
           <span className="text-cyan-300 font-semibold truncate max-w-[200px]">
-            {selectedMotherboard ? selectedMotherboard.name : 'Placa-Mãe ATX'}
+            {selectedMotherboard
+              ? selectedMotherboard.name
+              : selectedComponentForPlacement?.category === 'MOTHERBOARD'
+              ? `${selectedComponentForPlacement.name} (Pronta para assentar)`
+              : 'Bancada Vazia'}
           </span>
         </div>
 
@@ -829,7 +848,16 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
           <pointLight position={[0, 4, 0]} intensity={1.4} color="#38bdf8" distance={10} />
 
           {/* Tapete Antiestático Escuro com Grade Milimetrada Subtil */}
-          <mesh position={[0, -0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <mesh
+            position={[0, -0.01, 0]}
+            rotation={[-Math.PI / 2, 0, 0]}
+            receiveShadow
+            onClick={() => {
+              if (selectedComponentForPlacement?.category === 'MOTHERBOARD') {
+                installMotherboard(selectedComponentForPlacement as never);
+              }
+            }}
+          >
             <planeGeometry args={[20, 20]} />
             <meshStandardMaterial color="#0a101f" roughness={0.85} metalness={0.1} />
           </mesh>
@@ -858,8 +886,69 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               />
             )}
 
-            {/* 1. Placa-Mãe Auto-Normalizada */}
-            <AutoNormalizedMotherboard modelUrl={mbModelUrl} />
+            {/* Quando a Bancada ainda não possui placa-mãe assentada */}
+            {!selectedMotherboard ? (
+              <group position={[0, 0.02, 0]}>
+                {/* Holograma demarcador de área no tapete antiestático */}
+                <mesh
+                  rotation={[-Math.PI / 2, 0, 0]}
+                  onClick={() => {
+                    if (selectedComponentForPlacement?.category === 'MOTHERBOARD') {
+                      installMotherboard(selectedComponentForPlacement as never);
+                    }
+                  }}
+                >
+                  <planeGeometry args={[7.2, 7.2]} />
+                  <meshStandardMaterial
+                    color={selectedComponentForPlacement?.category === 'MOTHERBOARD' ? '#06b6d4' : '#334155'}
+                    transparent
+                    opacity={selectedComponentForPlacement?.category === 'MOTHERBOARD' ? 0.3 : 0.12}
+                    wireframe
+                  />
+                </mesh>
+
+                {/* Card Didático 3D Flutuante no centro da bancada */}
+                <Html center position={[0, 0.35, 0]} distanceFactor={9}>
+                  {selectedComponentForPlacement?.category === 'MOTHERBOARD' ? (
+                    <button
+                      onClick={() => installMotherboard(selectedComponentForPlacement as never)}
+                      className="px-5 py-3 rounded-2xl bg-cyan-950/95 border-2 border-cyan-400 text-cyan-200 font-mono shadow-2xl shadow-cyan-500/50 hover:bg-cyan-900 transition-all cursor-pointer animate-pulse flex flex-col items-center gap-1.5 min-w-[280px]"
+                    >
+                      <div className="flex items-center gap-2 text-sm font-bold text-white">
+                        <CircuitBoard className="w-5 h-5 text-cyan-400 animate-spin" />
+                        <span>CLIQUE PARA ASSENTAR NA BANCADA</span>
+                      </div>
+                      <span className="text-xs text-cyan-300 font-semibold">{selectedComponentForPlacement.name}</span>
+                      <span className="text-[10px] text-cyan-400/80">
+                        {(selectedComponentForPlacement as MotherboardComponent).socket} • {(selectedComponentForPlacement as MotherboardComponent).supportedRam} • {(selectedComponentForPlacement as MotherboardComponent).formFactor}
+                      </span>
+                    </button>
+                  ) : (
+                    <div className="px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 text-slate-300 font-mono text-xs shadow-xl flex items-center gap-2 pointer-events-none">
+                      <CircuitBoard className="w-4 h-4 text-cyan-400" />
+                      <span>Bancada Pronta: Selecione uma Placa-Mãe no menu lateral</span>
+                    </div>
+                  )}
+                </Html>
+              </group>
+            ) : (
+              <>
+                {/* 1. Placa-Mãe Auto-Normalizada (remount limpo com key) */}
+                <AutoNormalizedMotherboard key={mbModelUrl} modelUrl={mbModelUrl} />
+
+                {/* Botão de substituição rápida caso o usuário selecione outra placa no menu lateral */}
+                {selectedComponentForPlacement?.category === 'MOTHERBOARD' &&
+                  selectedComponentForPlacement.id !== selectedMotherboard.id && (
+                    <Html center position={[0, 1.4, 0]} distanceFactor={9}>
+                      <button
+                        onClick={() => installMotherboard(selectedComponentForPlacement as never)}
+                        className="px-4 py-2 rounded-xl bg-amber-950/95 border-2 border-amber-400 text-amber-200 font-mono shadow-xl hover:bg-amber-900 transition-all cursor-pointer flex items-center gap-2 text-xs font-bold"
+                      >
+                        <RotateCw className="w-4 h-4 text-amber-400 animate-spin" />
+                        <span>Substituir Placa por {selectedComponentForPlacement.name}</span>
+                      </button>
+                    </Html>
+                  )}
 
             {/* 2. Peças Físicas Instaladas */}
             {/* CPU Instalada no Soquete */}
@@ -918,7 +1007,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                 modelUrl="/models/ram-ddr4-crucial.glb"
                 targetSize={1.9}
                 position={layout.RAM_SLOT_2}
-                rotation={[-Math.PI / 2, 0, Math.PI / 2]}
+                rotation={[0, 0, 0]}
               />
             )}
             {assembly.ramInstalledSlot4 && (
@@ -926,7 +1015,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                 modelUrl="/models/ram-ddr4-crucial.glb"
                 targetSize={1.9}
                 position={layout.RAM_SLOT_4}
-                rotation={[-Math.PI / 2, 0, Math.PI / 2]}
+                rotation={[0, 0, 0]}
               />
             )}
 
@@ -940,26 +1029,31 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               />
             )}
 
-            {/* Placa de Vídeo (GPU) */}
-            {assembly.gpuInstalled && (
-              <AutoNormalizedPart
-                modelUrl="/models/gpu-rx-6700xt.glb"
-                targetSize={4.2}
-                position={layout.PCIE_SLOT}
-                rotation={[0, 0, 0]}
-                isSpinning={Boolean(postResult?.bootSuccess)}
-              />
+                {/* Placa de Vídeo (GPU) */}
+                {assembly.gpuInstalled && (
+                  <AutoNormalizedPart
+                    modelUrl="/models/gpu-rx-6700xt.glb"
+                    targetSize={4.2}
+                    position={layout.PCIE_SLOT}
+                    rotation={[0, 0, 0]}
+                    isSpinning={Boolean(postResult?.bootSuccess)}
+                  />
+                )}
+              </>
             )}
           </Suspense>
 
           {/* ==============================================================================
-           * HOTSPOTS TÁTEIS (PINS) NOS QUADRANTES FÍSICOS DA PLACA (Sempre ativos)
+           * HOTSPOTS TÁTEIS (PINS) NOS QUADRANTES FÍSICOS DA PLACA (Apenas com placa assentada)
            * ============================================================================== */}
-            {/* 1. Hotspot: Soquete CPU */}
-            <WorkbenchPin
+          {selectedMotherboard && (
+            <>
+              {/* 1. Hotspot: Soquete CPU */}
+              <WorkbenchPin
               position={layout.CPU_SOCKET}
               icon={<Cpu className="w-4 h-4" />}
               label="Soquete CPU"
+              visible={!assembly.coolerInstalled || isCpuTarget || isPasteTarget || isCoolerTarget}
               status={
                 assembly.coolerInstalled
                   ? 'installed'
@@ -1012,11 +1106,12 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               }
             />
 
-            {/* 2. Hotspots: Slots de Memória RAM */}
+            {/* 2. Hotspots: Slots de Memória RAM (Contextuais para zero sobreposição) */}
             <WorkbenchPin
               position={layout.RAM_SLOT_2}
               icon={<Layers className="w-3.5 h-3.5" />}
               label="DIMM A2 (Slot 2)"
+              visible={!assembly.ramInstalledSlot2 || isRamTarget}
               status={
                 assembly.ramInstalledSlot2 ? 'installed' : isRamTarget ? 'targeted' : 'empty'
               }
@@ -1041,6 +1136,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               position={layout.RAM_SLOT_4}
               icon={<Layers className="w-3.5 h-3.5" />}
               label="DIMM B2 (Slot 4)"
+              visible={(!assembly.ramInstalledSlot4 && Boolean(assembly.ramInstalledSlot2)) || isRamTarget}
               status={
                 assembly.ramInstalledSlot4 ? 'installed' : isRamTarget ? 'targeted' : 'empty'
               }
@@ -1066,6 +1162,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               position={layout.M2_SLOT}
               icon={<HardDrive className="w-3.5 h-3.5" />}
               label="Slot M.2 NVMe"
+              visible={!assembly.storageInstalled || isStorageTarget}
               status={
                 assembly.storageInstalled?.storageType.includes('M2')
                   ? 'installed'
@@ -1093,6 +1190,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               position={layout.PCIE_SLOT}
               icon={<Zap className="w-3.5 h-3.5" />}
               label="PCIe 4.0 x16"
+              visible={!assembly.gpuInstalled || isGpuTarget}
               status={assembly.gpuInstalled ? 'installed' : isGpuTarget ? 'targeted' : 'empty'}
               detailText={
                 assembly.gpuInstalled
@@ -1142,6 +1240,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               position={layout.FPANEL_HEADER}
               icon={<Power className="w-3.5 h-3.5" />}
               label="Painel Frontal"
+              visible={!assembly.frontPanelPowerSwConnected}
               status={assembly.frontPanelPowerSwConnected ? 'installed' : 'empty'}
               detailText={
                 assembly.frontPanelPowerSwConnected
@@ -1155,7 +1254,9 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               }
               onAction={openFrontPanelModal}
             />
-        </Canvas>
+          </>
+        )}
+      </Canvas>
       </div>
 
       {/* ==================================================================================
