@@ -126,6 +126,7 @@ interface AssemblyStore {
   setSelectedRoomTheme: (themeId: RoomThemeId) => void;
   connectFPanelJumper: (connectorId: FPanelConnectorId, pins: [number, number]) => ValidationResult;
   disconnectFPanelJumper: (connectorId: FPanelConnectorId) => void;
+  autoConnectAllFPanel: () => void;
   tickTimer: () => void;
 
   // Ações de Montagem (com regras e áudio)
@@ -407,6 +408,34 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
         assembly: updatedAssembly,
       };
     });
+  },
+
+  autoConnectAllFPanel: () => {
+    soundEngine.playSuccessChime();
+    set((state) => {
+      const nextConns: Record<FPanelConnectorId, [number, number]> = {
+        POWER_SW: [6, 8],
+        RESET_SW: [5, 7],
+        HDD_LED: [1, 3],
+        POWER_LED: [2, 4],
+      };
+      const updatedAssembly = {
+        ...state.assembly,
+        frontPanelPowerSwConnected: true,
+        frontPanelResetSwConnected: true,
+        frontPanelLedsConnected: true,
+      };
+      return {
+        fPanelConnections: nextConns,
+        assembly: updatedAssembly,
+        activeAlert: {
+          type: 'success',
+          title: 'Painel Frontal Conectado!',
+          message: 'Todos os 4 conectores (POWER SW, RESET SW, HDD LED, POWER LED) foram fixados nos pinos corretos.',
+        },
+      };
+    });
+    get().checkDiagnosticResolution();
   },
 
   tickTimer: () => {

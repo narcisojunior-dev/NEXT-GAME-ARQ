@@ -14,7 +14,7 @@ import {
   findNearestPinPair,
   getOccupiedPins,
 } from '@/engine/frontPanel';
-import { X, RotateCw, CheckCircle2, AlertTriangle, Hand, Plug, Eye, Info } from 'lucide-react';
+import { X, RotateCw, CheckCircle2, AlertTriangle, Hand, Plug, Eye, Info, Sparkles } from 'lucide-react';
 
 // Geometria do cabeçalho: cada pino ocupa uma célula de 44px (área mínima de toque) com 14px de espaço
 const CELL = 44;
@@ -77,7 +77,7 @@ const PlugBody: React.FC<{ connector: FPanelConnector; flipped: boolean; withWir
 };
 
 export const FrontPanelZoomModal: React.FC = () => {
-  const { isFrontPanelModalOpen, closeFrontPanelModal, fPanelConnections, connectFPanelJumper, disconnectFPanelJumper } =
+  const { isFrontPanelModalOpen, closeFrontPanelModal, fPanelConnections, connectFPanelJumper, disconnectFPanelJumper, autoConnectAllFPanel } =
     useAssemblyStore(
       useShallow((s) => ({
         isFrontPanelModalOpen: s.isFrontPanelModalOpen,
@@ -85,6 +85,7 @@ export const FrontPanelZoomModal: React.FC = () => {
         fPanelConnections: s.fPanelConnections,
         connectFPanelJumper: s.connectFPanelJumper,
         disconnectFPanelJumper: s.disconnectFPanelJumper,
+        autoConnectAllFPanel: s.autoConnectAllFPanel,
       }))
     );
 
@@ -300,7 +301,17 @@ export const FrontPanelZoomModal: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)] gap-5">
           {/* Cabos do gabinete */}
           <section aria-label="Cabos do gabinete">
-            <h3 className="text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-2">Cabos do gabinete</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[11px] font-mono uppercase tracking-wider text-slate-400">Cabos do gabinete</h3>
+              <button
+                onClick={autoConnectAllFPanel}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 text-[10px] font-mono font-bold transition-all cursor-pointer shadow-sm hover:scale-105"
+                title="Encaixar todos os 4 conectores de uma só vez usando o adaptador Q-Connector"
+              >
+                <Sparkles className="w-3 h-3 text-cyan-400" />
+                <span>Q-Connector Rápido</span>
+              </button>
+            </div>
             <ul className="space-y-2">
               {FPANEL_CONNECTORS.map((conn) => {
                 const pins = fPanelConnections[conn.id];
@@ -490,14 +501,29 @@ export const FrontPanelZoomModal: React.FC = () => {
               <span>{feedback?.text ?? 'Comece pelo POWER SW: sem ele, o botão de ligar do gabinete não funciona.'}</span>
             </div>
 
-            {isComplete && (
-              <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-emerald-950/70 border border-emerald-500/60 text-emerald-100">
-                <span className="text-sm font-semibold">Os 4 conectores estão no lugar. Botão de ligar, reset e LEDs vão funcionar.</span>
+            {/* Banner de Verificação e Conclusão do Painel Frontal */}
+            {(isComplete || fPanelConnections.POWER_SW) && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500/70 text-emerald-100 shadow-xl">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="block text-xs font-bold text-emerald-300">
+                      {isComplete
+                        ? 'Todos os 4 conectores do Painel Frontal ligados com perfeição!'
+                        : 'Botão Power (POWER SW) ligado com sucesso! O PC já pode ligar.'}
+                    </span>
+                    <span className="block text-[11px] text-emerald-200/80">
+                      {isComplete
+                        ? 'Botão Liga/Desliga, Reset e LEDs de diagnóstico estão funcionais.'
+                        : `${connectedCount}/4 conectados. Painel frontal verificado pelo sistema.`}
+                    </span>
+                  </div>
+                </div>
                 <button
                   onClick={closeFrontPanelModal}
-                  className="shrink-0 px-4 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-sm font-bold cursor-pointer"
+                  className="w-full sm:w-auto shrink-0 px-4 py-2 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-black cursor-pointer shadow-md shadow-emerald-500/25 transition-all active:scale-95"
                 >
-                  Concluir
+                  Concluir e Voltar à Bancada
                 </button>
               </div>
             )}

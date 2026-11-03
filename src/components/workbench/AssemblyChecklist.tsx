@@ -85,17 +85,24 @@ export const AssemblyChecklist: React.FC = () => {
         assembly.standoffsInstalled,
     },
     {
+      id: 'fpanel',
+      title: '10. Ligar Painel Frontal (F_PANEL)',
+      desc: assembly.frontPanelPowerSwConnected
+        ? 'Botão POWER SW conectado nos pinos da placa-mãe ✓'
+        : 'Ligue o conector POWER SW nos pinos F_PANEL da placa.',
+      isDone: assembly.frontPanelPowerSwConnected,
+    },
+    {
       id: 'psu',
-      title: '10. Instalar Fonte & Ligar Todos os Cabos',
-      desc: 'Arraste cada cabo da fonte, do gabinete e das peças até o conector certo, e ligue o painel frontal.',
+      title: '11. Instalar Fonte & Cabos de Energia',
+      desc: 'Ligue os cabos de alimentação da fonte (ATX 24P, CPU 8P e PCIe da GPU).',
       isDone:
         assembly.psuInstalled !== null &&
-        getRequiredCables(assembly).every((id) => cableConnections[id] === cableById(id).target) &&
-        assembly.frontPanelPowerSwConnected,
+        getRequiredCables(assembly).every((id) => cableConnections[id] === cableById(id).target),
     },
     {
       id: 'boot',
-      title: '11. Ligar o PC (Teste POST)',
+      title: '12. Ligar o PC (Teste POST)',
       desc: 'Ligue a chave da fonte [I] e pressione o botão Ligar!',
       isDone: assembly.psuSwitchOn,
     },

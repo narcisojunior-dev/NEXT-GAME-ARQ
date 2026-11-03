@@ -5,7 +5,7 @@ import { useAssemblyStore, selectCurrentPhase } from '@/store/useAssemblyStore';
 import { Bot, Lightbulb, Sparkles } from 'lucide-react';
 
 export const DidacticCompanion: React.FC = () => {
-  const { activeAlert, dismissAlert } = useAssemblyStore();
+  const { activeAlert, dismissAlert, assembly } = useAssemblyStore();
   const currentPhase = useAssemblyStore(selectCurrentPhase);
 
   const getPhaseAdvice = () => {
@@ -36,6 +36,12 @@ export const DidacticCompanion: React.FC = () => {
           text: 'Use sempre o slot PCIe superior mais próximo da CPU! Ele tem conexão elétrica direta de 16 pistas com o processador, garantindo a menor latência e maior taxa de quadros (FPS) para jogos.',
         };
       case 'PHASE_6_CABLING':
+        if (assembly.frontPanelPowerSwConnected) {
+          return {
+            title: 'Passo 6: Cabos de Força da Fonte',
+            text: 'Painel frontal (POWER SW) verificado e conectado com sucesso! Agora termine de ligar os cabos de alimentação da fonte: ATX 24 pinos para a placa-mãe, EPS de 8 pinos para a CPU e PCIe de 8 pinos para a placa de vídeo.',
+          };
+        }
         return {
           title: 'Passo 6: O Cabeamento',
           text: 'Não tenha medo do cabo do Painel Frontal (F_PANEL)! O botão POWER SW é apenas um contato momentâneo e não tem lado positivo/negativo. Já os LEDs (HDD LED, POWER LED) têm polaridade (+ e -).',

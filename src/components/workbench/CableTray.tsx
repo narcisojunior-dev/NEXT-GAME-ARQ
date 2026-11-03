@@ -244,20 +244,55 @@ export const CableTray: React.FC = () => {
                 })}
 
                 {group.source === 'CASE' && (
-                  <li className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 p-1.5">
-                    <span className="grid h-10 w-12 shrink-0 place-items-center text-amber-400">
-                      <Maximize2 className="w-4 h-4" />
+                  <li className={`flex items-center gap-2 rounded-xl border p-2 transition-all ${
+                    assembly.frontPanelPowerSwConnected
+                      ? 'border-emerald-800/80 bg-emerald-950/40 text-emerald-300'
+                      : 'border-slate-800 bg-slate-900'
+                  }`}>
+                    <span className={`grid h-9 w-10 shrink-0 place-items-center rounded-lg ${
+                      assembly.frontPanelPowerSwConnected
+                        ? 'bg-emerald-950 border border-emerald-600/60 text-emerald-400'
+                        : 'bg-amber-950/80 border border-amber-600/60 text-amber-400'
+                    }`}>
+                      {assembly.frontPanelPowerSwConnected ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      ) : (
+                        <Maximize2 className="w-4 h-4" />
+                      )}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-xs font-semibold text-white">Painel frontal</span>
-                      <span className="block text-[11px] font-mono text-slate-400">{fPanelCount}/4 fios no F_PANEL</span>
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-white">
+                        <span>Painel frontal</span>
+                        {assembly.frontPanelPowerSwConnected && (
+                          <span className="text-[9px] font-mono text-emerald-400 font-bold bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800">
+                            LIGADO ✓
+                          </span>
+                        )}
+                      </span>
+                      <span className={`block text-[11px] font-mono ${
+                        assembly.frontPanelPowerSwConnected ? 'text-emerald-400/90' : 'text-slate-400'
+                      }`}>
+                        {assembly.frontPanelPowerSwConnected
+                          ? `${fPanelCount}/4 fios · Verificado ✓`
+                          : `${fPanelCount}/4 fios no F_PANEL`}
+                      </span>
                     </span>
-                    <button
-                      onClick={openFrontPanelModal}
-                      className="shrink-0 rounded-lg bg-amber-500 px-2 py-1 text-[11px] font-bold text-slate-950 hover:bg-amber-400 cursor-pointer"
-                    >
-                      Ligar
-                    </button>
+                    {assembly.frontPanelPowerSwConnected ? (
+                      <button
+                        onClick={openFrontPanelModal}
+                        className="shrink-0 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-1 text-[10px] font-mono text-slate-300 hover:text-white cursor-pointer transition-colors"
+                        title="Ver pinos conectados"
+                      >
+                        Ver pinos
+                      </button>
+                    ) : (
+                      <button
+                        onClick={openFrontPanelModal}
+                        className="shrink-0 rounded-lg bg-amber-500 hover:bg-amber-400 px-2.5 py-1 text-[11px] font-bold text-slate-950 cursor-pointer shadow-md shadow-amber-500/20 animate-pulse"
+                      >
+                        Ligar
+                      </button>
+                    )}
                   </li>
                 )}
 

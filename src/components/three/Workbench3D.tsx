@@ -1145,10 +1145,14 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               status={assembly.frontPanelPowerSwConnected ? 'installed' : 'empty'}
               detailText={
                 assembly.frontPanelPowerSwConnected
-                  ? 'POWER SW e LEDs do gabinete devidamente conectados.'
+                  ? 'POWER SW e pinos do painel frontal devidamente conectados e verificados.'
                   : 'Conecte os pinos minúsculos do botão liga/desliga (POWER SW).'
               }
-              actionText="Abrir Zoom F_PANEL"
+              actionText={
+                assembly.frontPanelPowerSwConnected
+                  ? 'Painel Frontal Conectado ✓'
+                  : 'Ligar Painel Frontal (F_PANEL)'
+              }
               onAction={openFrontPanelModal}
             />
         </Canvas>

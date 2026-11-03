@@ -74,12 +74,12 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
     await resetBtn.click();
 
     // Verifica barra inferior com EZ Debug LEDs
-    const debugLedContainer = page.locator('text=EZ Debug:');
+    const debugLedContainer = page.locator('div:has-text("EZ Debug:")').last();
     await expect(debugLedContainer).toBeVisible();
-    await expect(page.locator('span:text-is("CPU")')).toBeVisible();
-    await expect(page.locator('span:text-is("DRAM")')).toBeVisible();
-    await expect(page.locator('span:text-is("VGA")')).toBeVisible();
-    await expect(page.locator('span:text-is("BOOT")')).toBeVisible();
+    await expect(debugLedContainer.locator('span:text-is("CPU")')).toBeVisible();
+    await expect(debugLedContainer.locator('span:text-is("DRAM")')).toBeVisible();
+    await expect(debugLedContainer.locator('span:text-is("VGA")')).toBeVisible();
+    await expect(debugLedContainer.locator('span:text-is("BOOT")')).toBeVisible();
 
     // Salva screenshot do visual limpo da bancada
     await page.waitForTimeout(1000);

@@ -10,7 +10,6 @@ import { TeamChallengeBanner } from '@/components/challenges/TeamChallengeBanner
 import { DiagnosticBench } from '@/components/diagnostic/DiagnosticBench';
 import { AssemblyChecklist } from '@/components/workbench/AssemblyChecklist';
 import { WorkbenchMat } from '@/components/workbench/WorkbenchMat';
-import { InventoryDrawer } from '@/components/inventory/InventoryDrawer';
 import { InspectModal } from '@/components/modals/InspectModal';
 import { BIOSSimulatorModal } from '@/components/modals/BIOSSimulatorModal';
 import { FrontPanelZoomModal } from '@/components/modals/FrontPanelZoomModal';
@@ -54,11 +53,8 @@ export default function Home() {
         {/* Mascote Didático (Byte) com Dicas Pedagógicas */}
         <DidacticCompanion />
 
-        {/* A Bancada de Montagem (Tapete Antiestático + Placa-Mãe SVG + Fonte) */}
+        {/* A Bancada de Montagem com Menu Lateral de Escolha de Componentes e Cabeamento */}
         <WorkbenchMat />
-
-        {/* Gaveta de Inventário com Componentes e Ilustrações Visuais de Hardware */}
-        <InventoryDrawer />
       </div>
 
       {/* Modais Flutuantes */}

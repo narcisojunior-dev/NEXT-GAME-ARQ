@@ -4,6 +4,7 @@ import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { MotherboardSvg } from './MotherboardSvg';
 import { CableTray } from './CableTray';
+import { WorkbenchSidebar } from './WorkbenchSidebar';
 import { CableTargetBox } from './CableTargets';
 import {
   ShieldAlert,
@@ -162,12 +163,16 @@ export const WorkbenchMat: React.FC = () => {
             onClick={openFrontPanelModal}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               assembly.frontPanelPowerSwConnected
-                ? 'bg-slate-800 text-emerald-400 border border-emerald-800/60'
+                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/60 shadow-sm'
                 : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-md shadow-amber-500/20 animate-pulse'
             }`}
           >
-            <Maximize2 className="w-4 h-4" />
-            <span>{assembly.frontPanelPowerSwConnected ? 'Painel Frontal F_PANEL [OK]' : 'Ligar Painel Frontal (F_PANEL)'}</span>
+            {assembly.frontPanelPowerSwConnected ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
+            <span>{assembly.frontPanelPowerSwConnected ? 'Painel Frontal Conectado ✓' : 'Ligar Painel Frontal (F_PANEL)'}</span>
           </button>
         </div>
 
@@ -235,15 +240,17 @@ export const WorkbenchMat: React.FC = () => {
         </div>
       </div>
 
-      {/* Área Central da Bancada: placa-mãe e, ao lado, a bandeja de cabos (fixa ao rolar a página) */}
-      <div className="relative z-10 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start">
-        {is3DMode ? (
-          <Workbench3D onToggle2D={() => setIs3DMode(false)} />
-        ) : (
-          <MotherboardSvg />
-        )}
-        <div className="xl:sticky xl:top-32 xl:max-h-[calc(100vh-9rem)] xl:overflow-y-auto">
-          <CableTray />
+      {/* Área Central da Bancada: placa-mãe e, ao lado, o Menu Lateral de Escolha de Componentes & Cabeamento */}
+      <div className="relative z-10 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_370px] xl:grid-cols-[minmax(0,1fr)_420px] items-start">
+        <div className="min-w-0">
+          {is3DMode ? (
+            <Workbench3D onToggle2D={() => setIs3DMode(false)} />
+          ) : (
+            <MotherboardSvg />
+          )}
+        </div>
+        <div className="w-full">
+          <WorkbenchSidebar />
         </div>
       </div>
 
