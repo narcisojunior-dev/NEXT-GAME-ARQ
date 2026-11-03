@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { validateSocket, validateRamType, evaluatePostTest, calculateTotalTdp, calculateTotalSpent } from '../compatibility';
+import { validateSocket, validateRamType, evaluatePostTest, calculateTotalTdp, calculateTotalSpent, validateCoolerPrerequisites } from '../compatibility';
 import { CPUS, MOTHERBOARDS, RAMS, COOLERS, PSUS, STORAGES, GPUS } from '../hardwareCatalog';
 import { AssemblyState } from '../types';
+import { INITIAL_ASSEMBLY_STATE } from '../assemblyState';
 
 describe('Motor de Compatibilidade de Hardware', () => {
   const intelCpu = CPUS.find((c) => c.socket === 'LGA1700')!;
@@ -188,4 +189,23 @@ describe('Teste de Diagnóstico do POST (Power-On Self-Test)', () => {
     });
   });
 
+});
+
+describe('Ordem didática CPU → Pasta Térmica → Cooler (validateCoolerPrerequisites)', () => {
+  const cpu = CPUS.find((c) => c.socket === 'AM5')!;
+  const base: AssemblyState = { ...INITIAL_ASSEMBLY_STATE, esdDischarged: true };
+
+  it('recusa cooler com o soquete vazio', () => {
+    expect(validateCoolerPrerequisites(base)?.title).toMatch(/Soquete Vazio/i);
+  });
+
+  it('recusa cooler sobre CPU sem pasta térmica', () => {
+    const issue = validateCoolerPrerequisites({ ...base, cpuInstalled: cpu });
+    expect(issue?.type).toBe('ERROR');
+    expect(issue?.title).toMatch(/Pasta Térmica/i);
+  });
+
+  it('libera o cooler depois da pasta térmica', () => {
+    expect(validateCoolerPrerequisites({ ...base, cpuInstalled: cpu, thermalPasteApplied: true })).toBeNull();
+  });
 });

@@ -1,5 +1,5 @@
 import { AssemblyState } from './types';
-import { DeskSnapPointId, PlacedDeskItem } from './deskSetup';
+import { DESK_SNAP_POINTS, DeskSnapPointId, PlacedDeskItem } from './deskSetup';
 
 export type ExternalCableId =
   | 'CABLE_POWER_AC'
@@ -27,13 +27,19 @@ export type ExternalPortId =
   | 'PC_ETHERNET_PORT'
   | 'WALL_OUTLET_1'
   | 'WALL_OUTLET_2'
-  | 'WALL_RJ45';
+  | 'WALL_RJ45'
+  // Pontas fixas (cabos cativos) dos periféricos: o cabo sai do próprio dispositivo
+  | 'KEYBOARD_USB'
+  | 'MOUSE_USB'
+  | 'HEADSET_P2';
+
+export type ExternalPortType = 'AC_POWER' | 'HDMI' | 'DP' | 'USB' | 'AUDIO_35MM' | 'RJ45';
 
 export interface ExternalPortSpec {
   id: ExternalPortId;
   name: string;
-  hostComponent: 'PC' | 'MONITOR' | 'WALL' | 'DESK';
-  portType: 'AC_POWER' | 'HDMI' | 'DP' | 'USB' | 'AUDIO_35MM' | 'RJ45';
+  hostComponent: 'PC' | 'MONITOR' | 'WALL' | 'DESK' | 'PERIPHERAL';
+  portType: ExternalPortType;
   relativePosition: [number, number, number];
 }
 
@@ -96,14 +102,14 @@ export const EXTERNAL_PORTS: Record<ExternalPortId, ExternalPortSpec> = {
   },
   PC_USB_1: {
     id: 'PC_USB_1',
-    name: 'USB Traseira 1 (Teclado)',
+    name: 'USB Traseira 1',
     hostComponent: 'PC',
     portType: 'USB',
     relativePosition: [1.35, 0.78, -0.32],
   },
   PC_USB_2: {
     id: 'PC_USB_2',
-    name: 'USB Traseira 2 (Mouse)',
+    name: 'USB Traseira 2',
     hostComponent: 'PC',
     portType: 'USB',
     relativePosition: [1.35, 0.76, -0.32],
@@ -127,14 +133,14 @@ export const EXTERNAL_PORTS: Record<ExternalPortId, ExternalPortSpec> = {
     name: 'Saída de Áudio Verde P2 (Line-Out)',
     hostComponent: 'PC',
     portType: 'AUDIO_35MM',
-    relativePosition: [1.35, 0.70, -0.32],
+    relativePosition: [1.35, 0.7, -0.32],
   },
   PC_ETHERNET_PORT: {
     id: 'PC_ETHERNET_PORT',
     name: 'Porta Gigabit Ethernet (RJ-45)',
     hostComponent: 'PC',
     portType: 'RJ45',
-    relativePosition: [1.35, 0.80, -0.32],
+    relativePosition: [1.35, 0.8, -0.32],
   },
   WALL_OUTLET_1: {
     id: 'WALL_OUTLET_1',
@@ -157,6 +163,27 @@ export const EXTERNAL_PORTS: Record<ExternalPortId, ExternalPortSpec> = {
     portType: 'RJ45',
     relativePosition: [1.5, 0.25, -0.9],
   },
+  KEYBOARD_USB: {
+    id: 'KEYBOARD_USB',
+    name: 'Conector USB-A do Teclado (cabo fixo)',
+    hostComponent: 'PERIPHERAL',
+    portType: 'USB',
+    relativePosition: [-0.15, 0.76, 0.12],
+  },
+  MOUSE_USB: {
+    id: 'MOUSE_USB',
+    name: 'Conector USB-A do Mouse (cabo fixo)',
+    hostComponent: 'PERIPHERAL',
+    portType: 'USB',
+    relativePosition: [0.45, 0.76, 0.14],
+  },
+  HEADSET_P2: {
+    id: 'HEADSET_P2',
+    name: 'Plugue P2 3,5 mm do Headset',
+    hostComponent: 'PERIPHERAL',
+    portType: 'AUDIO_35MM',
+    relativePosition: [-0.65, 0.78, -0.2],
+  },
 };
 
 export interface ExternalCableSpec {
@@ -166,8 +193,11 @@ export interface ExternalCableSpec {
   color: string;
   thickness: number;
   isRequiredForBoot: boolean;
+  /** Ponta de origem (equipamento que gera energia/sinal ou periférico com cabo fixo) */
   allowedSourcePorts: ExternalPortId[];
+  /** Ponta de destino. Nunca compartilha portas com a origem. */
   allowedDestinationPorts: ExternalPortId[];
+  /** Itens da mesa que precisam estar posicionados para o cabo existir */
   associatedSnapPoints: DeskSnapPointId[];
 }
 
@@ -212,7 +242,7 @@ export const EXTERNAL_CABLES: Record<ExternalCableId, ExternalCableSpec> = {
     color: '#334155',
     thickness: 0.009,
     isRequiredForBoot: true,
-    allowedSourcePorts: ['PC_USB_1', 'PC_USB_2', 'PC_USB_3', 'PC_USB_4'],
+    allowedSourcePorts: ['KEYBOARD_USB'],
     allowedDestinationPorts: ['PC_USB_1', 'PC_USB_2', 'PC_USB_3', 'PC_USB_4'],
     associatedSnapPoints: ['KEYBOARD', 'PC_TOWER'],
   },
@@ -223,7 +253,7 @@ export const EXTERNAL_CABLES: Record<ExternalCableId, ExternalCableSpec> = {
     color: '#334155',
     thickness: 0.008,
     isRequiredForBoot: true,
-    allowedSourcePorts: ['PC_USB_1', 'PC_USB_2', 'PC_USB_3', 'PC_USB_4'],
+    allowedSourcePorts: ['MOUSE_USB'],
     allowedDestinationPorts: ['PC_USB_1', 'PC_USB_2', 'PC_USB_3', 'PC_USB_4'],
     associatedSnapPoints: ['MOUSE', 'PC_TOWER'],
   },
@@ -234,7 +264,7 @@ export const EXTERNAL_CABLES: Record<ExternalCableId, ExternalCableSpec> = {
     color: '#10b981',
     thickness: 0.007,
     isRequiredForBoot: false,
-    allowedSourcePorts: ['PC_AUDIO_OUT'],
+    allowedSourcePorts: ['HEADSET_P2'],
     allowedDestinationPorts: ['PC_AUDIO_OUT'],
     associatedSnapPoints: ['HEADSET', 'PC_TOWER'],
   },
@@ -243,13 +273,27 @@ export const EXTERNAL_CABLES: Record<ExternalCableId, ExternalCableSpec> = {
     name: 'Cabo de Rede Ethernet Cat6 RJ-45',
     cableType: 'NETWORK',
     color: '#eab308',
-    thickness: 0.010,
+    thickness: 0.01,
     isRequiredForBoot: false,
     allowedSourcePorts: ['PC_ETHERNET_PORT'],
     allowedDestinationPorts: ['WALL_RJ45'],
     associatedSnapPoints: ['PC_TOWER', 'DESK_BASE'],
   },
 };
+
+/** Lista tipada dos 7 cabos canônicos (evita type-casting de Object.keys) */
+export const EXTERNAL_CABLE_IDS: readonly ExternalCableId[] = [
+  'CABLE_POWER_AC',
+  'CABLE_POWER_MONITOR',
+  'CABLE_DISPLAY',
+  'CABLE_USB_KEYBOARD',
+  'CABLE_USB_MOUSE',
+  'CABLE_AUDIO_JACK',
+  'CABLE_ETHERNET',
+];
+
+const GPU_VIDEO_PORTS: readonly ExternalPortId[] = ['GPU_HDMI_1', 'GPU_DP_1'];
+const MOTHERBOARD_VIDEO_PORTS: readonly ExternalPortId[] = ['MB_HDMI', 'MB_DP'];
 
 export interface ExternalCableConnection {
   sourcePort: ExternalPortId;
@@ -274,105 +318,164 @@ export function createInitialExternalCablesState(): ExternalCablingState {
   };
 }
 
+export type ExternalCableErrorType =
+  | 'GPU_BYPASS_NO_SIGNAL'
+  | 'NO_IGPU_NO_SIGNAL'
+  | 'INCOMPATIBLE_PORT'
+  | 'PORT_NOT_PRESENT'
+  | 'DEVICE_NOT_PLACED'
+  | 'PORT_OCCUPIED';
+
 export interface ExternalCableValidationResult {
   allowed: boolean;
   isPedagogicallyValid: boolean;
-  errorType?: 'GPU_BYPASS_NO_SIGNAL' | 'NO_IGPU_NO_SIGNAL' | 'INCOMPATIBLE_PORT';
+  errorType?: ExternalCableErrorType;
   title?: string;
   message?: string;
   penalty?: number;
+  /** Conexão normalizada (origem → destino) quando o aluno conecta pela ponta invertida */
+  connection?: ExternalCableConnection;
+}
+
+/**
+ * Contexto físico opcional da mesa. Quando informado, a validação também exige que os
+ * dispositivos das pontas estejam posicionados e que as portas estejam livres.
+ */
+export interface ExternalCableContext {
+  placedDeskItems?: Partial<Record<DeskSnapPointId, PlacedDeskItem>>;
+  cablingState?: ExternalCablingState;
+}
+
+const rejected = (
+  errorType: ExternalCableErrorType,
+  title: string,
+  message: string
+): ExternalCableValidationResult => ({ allowed: false, isPedagogicallyValid: false, errorType, title, message });
+
+/** Resolve a orientação das pontas: aceita origem→destino ou destino→origem */
+function normalizeConnection(
+  spec: ExternalCableSpec,
+  portA: ExternalPortId,
+  portB: ExternalPortId
+): ExternalCableConnection | null {
+  if (spec.allowedSourcePorts.includes(portA) && spec.allowedDestinationPorts.includes(portB)) {
+    return { sourcePort: portA, destPort: portB };
+  }
+  if (spec.allowedSourcePorts.includes(portB) && spec.allowedDestinationPorts.includes(portA)) {
+    return { sourcePort: portB, destPort: portA };
+  }
+  return null;
+}
+
+function findCableUsingPort(
+  cablingState: ExternalCablingState,
+  port: ExternalPortId,
+  ignoreCable: ExternalCableId
+): ExternalCableId | null {
+  const found = EXTERNAL_CABLE_IDS.find((id) => {
+    const conn = cablingState.connections[id];
+    return id !== ignoreCable && conn !== null && (conn.sourcePort === port || conn.destPort === port);
+  });
+  return found ?? null;
 }
 
 export function validateExternalCableConnection(
   cableId: ExternalCableId,
   sourcePort: ExternalPortId,
   destPort: ExternalPortId,
-  assembly: AssemblyState
+  assembly: AssemblyState,
+  context?: ExternalCableContext
 ): ExternalCableValidationResult {
   const spec = EXTERNAL_CABLES[cableId];
   if (!spec) {
-    return {
-      allowed: false,
-      isPedagogicallyValid: false,
-      message: 'Cabo externo inexistente.',
-    };
+    return { allowed: false, isPedagogicallyValid: false, message: 'Cabo externo inexistente.' };
   }
 
-  // Verifica compatibilidade de portas com o cabo
-  const isValidSource = spec.allowedSourcePorts.includes(sourcePort) || spec.allowedDestinationPorts.includes(sourcePort);
-  const isValidDest = spec.allowedDestinationPorts.includes(destPort) || spec.allowedSourcePorts.includes(destPort);
-
-  if (!isValidSource || !isValidDest) {
-    return {
-      allowed: false,
-      isPedagogicallyValid: false,
-      errorType: 'INCOMPATIBLE_PORT',
-      title: 'Porta Incompatível',
-      message: `O conector do cabo ${spec.name} não encaixa nesta porta.`,
-    };
+  // 1. As duas pontas precisam pertencer ao cabo (uma de origem e uma de destino, em qualquer ordem)
+  const connection = normalizeConnection(spec, sourcePort, destPort);
+  if (!connection) {
+    return rejected('INCOMPATIBLE_PORT', 'Porta Incompatível', `O conector do cabo ${spec.name} não encaixa nesta porta.`);
   }
 
-  // REGRA DE OURO DIDÁTICA DA GPU (Erro clássico número 1 de montadores iniciantes)
-  if (cableId === 'CABLE_DISPLAY') {
-    const isPluggedIntoMotherboard =
-      sourcePort === 'MB_HDMI' ||
-      sourcePort === 'MB_DP' ||
-      destPort === 'MB_HDMI' ||
-      destPort === 'MB_DP';
+  // 2. Conector físico idêntico nas duas pontas (um cabo HDMI não entra numa porta DisplayPort)
+  const srcSpec = EXTERNAL_PORTS[connection.sourcePort];
+  const dstSpec = EXTERNAL_PORTS[connection.destPort];
+  if (srcSpec.portType !== dstSpec.portType) {
+    return rejected(
+      'INCOMPATIBLE_PORT',
+      'Conectores Diferentes',
+      `${srcSpec.name} usa conector ${srcSpec.portType} e ${dstSpec.name} usa ${dstSpec.portType}. Use as duas pontas com o mesmo padrão (HDMI ↔ HDMI ou DisplayPort ↔ DisplayPort).`
+    );
+  }
 
-    if (isPluggedIntoMotherboard) {
-      if (assembly.gpuInstalled) {
-        // Fisicamente aceito, mas pedagogicamente incorreto! Sem sinal na tela!
-        return {
-          allowed: true,
-          isPedagogicallyValid: false,
-          errorType: 'GPU_BYPASS_NO_SIGNAL',
-          title: 'Tela Sem Sinal (Cabo no lugar errado!)',
-          message:
-            'Você conectou o monitor na saída de vídeo da placa-mãe, mas o computador possui uma placa de vídeo dedicada instalada. Conecte o cabo de vídeo diretamente nas saídas da GPU para ter sinal de vídeo!',
-          penalty: 100,
-        };
-      }
+  // 3. Saídas da GPU só existem se houver placa de vídeo dedicada instalada
+  if (GPU_VIDEO_PORTS.includes(connection.sourcePort) && !assembly.gpuInstalled) {
+    return rejected(
+      'PORT_NOT_PRESENT',
+      'Porta Inexistente',
+      'Este computador não tem placa de vídeo dedicada instalada, então as saídas HDMI/DisplayPort da GPU não existem no painel traseiro.'
+    );
+  }
 
-      // Se não há GPU dedicada instalada, verifica se o processador tem vídeo integrado
-      if (!assembly.cpuInstalled?.hasIntegratedGpu) {
-        return {
-          allowed: true,
-          isPedagogicallyValid: false,
-          errorType: 'NO_IGPU_NO_SIGNAL',
-          title: 'Processador Sem Vídeo Integrado',
-          message:
-            'O processador instalado não possui chip gráfico integrado (iGPU). É necessário instalar uma placa de vídeo dedicada para obter imagem na tela.',
-          penalty: 100,
-        };
-      }
-
-      // CPU com iGPU e sem GPU dedicada: 100% válido conectar na placa-mãe!
-      return {
-        allowed: true,
-        isPedagogicallyValid: true,
-      };
-    }
-
-    // Plugado nas saídas da GPU dedicada
-    const isPluggedIntoGpu =
-      sourcePort === 'GPU_HDMI_1' ||
-      sourcePort === 'GPU_DP_1' ||
-      destPort === 'GPU_HDMI_1' ||
-      destPort === 'GPU_DP_1';
-
-    if (isPluggedIntoGpu) {
-      return {
-        allowed: true,
-        isPedagogicallyValid: true,
-      };
+  // 4. Dispositivos das pontas precisam estar na mesa (sem cabos flutuando no vazio)
+  if (context?.placedDeskItems) {
+    const placed = context.placedDeskItems;
+    const missing = spec.associatedSnapPoints.filter((id) => !placed[id]);
+    if (missing.length > 0) {
+      const labels = missing.map((id) => DESK_SNAP_POINTS[id].label).join(', ');
+      return rejected(
+        'DEVICE_NOT_PLACED',
+        'Dispositivo Fora da Mesa',
+        `Posicione ${labels} na mesa antes de conectar o ${spec.name}.`
+      );
     }
   }
 
-  return {
-    allowed: true,
-    isPedagogicallyValid: true,
-  };
+  // 5. Uma porta física aceita um único conector
+  if (context?.cablingState) {
+    for (const port of [connection.sourcePort, connection.destPort]) {
+      const occupiedBy = findCableUsingPort(context.cablingState, port, cableId);
+      if (occupiedBy) {
+        return rejected(
+          'PORT_OCCUPIED',
+          'Porta Ocupada',
+          `${EXTERNAL_PORTS[port].name} já está em uso pelo ${EXTERNAL_CABLES[occupiedBy].name}. Escolha outra porta livre.`
+        );
+      }
+    }
+  }
+
+  // 6. REGRA DE OURO DIDÁTICA DA GPU (Erro clássico número 1 de montadores iniciantes)
+  if (cableId === 'CABLE_DISPLAY' && MOTHERBOARD_VIDEO_PORTS.includes(connection.sourcePort)) {
+    if (assembly.gpuInstalled) {
+      // Fisicamente aceito, mas pedagogicamente incorreto! Sem sinal na tela!
+      return {
+        allowed: true,
+        isPedagogicallyValid: false,
+        errorType: 'GPU_BYPASS_NO_SIGNAL',
+        title: 'Tela Sem Sinal (Cabo no lugar errado!)',
+        message:
+          'Você conectou o monitor na saída de vídeo da placa-mãe, mas o computador possui uma placa de vídeo dedicada instalada. Conecte o cabo de vídeo diretamente nas saídas da GPU para ter sinal de vídeo!',
+        penalty: 100,
+        connection,
+      };
+    }
+
+    if (!assembly.cpuInstalled?.hasIntegratedGpu) {
+      return {
+        allowed: true,
+        isPedagogicallyValid: false,
+        errorType: 'NO_IGPU_NO_SIGNAL',
+        title: 'Processador Sem Vídeo Integrado',
+        message:
+          'O processador instalado não possui chip gráfico integrado (iGPU). É necessário instalar uma placa de vídeo dedicada para obter imagem na tela.',
+        penalty: 100,
+        connection,
+      };
+    }
+  }
+
+  return { allowed: true, isPedagogicallyValid: true, connection };
 }
 
 export interface ExternalCablesStatus {
@@ -395,26 +498,17 @@ export function evaluateExternalCablesStatus(
   const displayConn = cablingState.connections.CABLE_DISPLAY;
   const hasDisplay = Boolean(displayConn);
 
+  // Revalida contra a montagem atual: se a GPU sair do PC depois, o cabo nela deixa de dar imagem
   let hasDisplayCorrect = false;
   if (displayConn) {
-    const val = validateExternalCableConnection(
-      'CABLE_DISPLAY',
-      displayConn.sourcePort,
-      displayConn.destPort,
-      assembly
-    );
-    hasDisplayCorrect = val.isPedagogicallyValid;
+    const val = validateExternalCableConnection('CABLE_DISPLAY', displayConn.sourcePort, displayConn.destPort, assembly);
+    hasDisplayCorrect = val.allowed && val.isPedagogicallyValid;
   }
 
   const hasKeyboard = Boolean(cablingState.connections.CABLE_USB_KEYBOARD);
   const hasMouse = Boolean(cablingState.connections.CABLE_USB_MOUSE);
 
-  const allRequiredConnected =
-    hasPowerAc &&
-    hasPowerMonitor &&
-    hasDisplayCorrect &&
-    hasKeyboard &&
-    hasMouse;
+  const allRequiredConnected = hasPowerAc && hasPowerMonitor && hasDisplayCorrect && hasKeyboard && hasMouse;
 
   return {
     hasPowerAc,
@@ -427,45 +521,22 @@ export function evaluateExternalCablesStatus(
   };
 }
 
+/**
+ * Poda automática: desconecta todo cabo cujo dispositivo de alguma ponta saiu da mesa.
+ * Derivado de `associatedSnapPoints`, fonte única das dependências de cada cabo.
+ */
 export function pruneExternalCables(
   cablingState: ExternalCablingState,
   placedDeskItems: Partial<Record<DeskSnapPointId, PlacedDeskItem>>
 ): ExternalCablingState {
   const nextConnections = { ...cablingState.connections };
 
-  // Se o PC não estiver na mesa, nenhum cabo ligado ao PC pode permanecer
-  if (!placedDeskItems.PC_TOWER) {
-    nextConnections.CABLE_POWER_AC = null;
-    nextConnections.CABLE_DISPLAY = null;
-    nextConnections.CABLE_USB_KEYBOARD = null;
-    nextConnections.CABLE_USB_MOUSE = null;
-    nextConnections.CABLE_AUDIO_JACK = null;
-    nextConnections.CABLE_ETHERNET = null;
-  }
+  EXTERNAL_CABLE_IDS.forEach((cableId) => {
+    const dependsOnMissingItem = EXTERNAL_CABLES[cableId].associatedSnapPoints.some((id) => !placedDeskItems[id]);
+    if (dependsOnMissingItem) {
+      nextConnections[cableId] = null;
+    }
+  });
 
-  // Se o monitor não estiver na mesa
-  if (!placedDeskItems.MONITOR_MAIN) {
-    nextConnections.CABLE_POWER_MONITOR = null;
-    nextConnections.CABLE_DISPLAY = null;
-  }
-
-  // Se o teclado não estiver na mesa
-  if (!placedDeskItems.KEYBOARD) {
-    nextConnections.CABLE_USB_KEYBOARD = null;
-  }
-
-  // Se o mouse não estiver na mesa
-  if (!placedDeskItems.MOUSE) {
-    nextConnections.CABLE_USB_MOUSE = null;
-  }
-
-  // Se o headset não estiver na mesa
-  if (!placedDeskItems.HEADSET) {
-    nextConnections.CABLE_AUDIO_JACK = null;
-  }
-
-  return {
-    connections: nextConnections,
-  };
+  return { connections: nextConnections };
 }
-

@@ -22,18 +22,11 @@ import {
   AUDIO_DEVICES,
   DEFAULT_STUDENT_SETUP,
 } from '../peripheralsCatalog';
-import {
-  CPUS,
-  MOTHERBOARDS,
-  COOLERS,
-  RAMS,
-  STORAGES,
-  GPUS,
-  CASES,
-  PSUS,
-} from '../hardwareCatalog';
 import { AssemblyState, MotherboardComponent } from '../types';
 import { INITIAL_ASSEMBLY_STATE } from '../assemblyState';
+import { derivePhase } from '../phases';
+import { isPcReadyForDesk } from '../deskSetup';
+import { READY_MB, REQUIRED_DESK_ITEMS, buildReadyAssembly } from './fixtures/readyPc';
 
 describe('1. Especificação de Snap Points da Mesa (DESK_SNAP_POINTS)', () => {
   const REQUIRED_SNAP_POINTS: DeskSnapPointId[] = [
@@ -131,6 +124,47 @@ describe('2. Validação de Posicionamento (canPlaceOnDesk)', () => {
     expect(res.allowed).toBe(false);
     expect(res.message).toMatch(/suporte articulado a gás/i);
   });
+
+  const deskOnly: Partial<Record<DeskSnapPointId, PlacedDeskItem>> = {
+    DESK_BASE: { snapPointId: 'DESK_BASE', itemId: DESKS[0].id, name: DESKS[0].name, category: 'DESK', price: DESKS[0].price },
+  };
+
+  it('rejeita sobrescrever um snap point já ocupado (os cabos do item antigo ficariam órfãos)', () => {
+    const items = {
+      ...deskOnly,
+      KEYBOARD: { snapPointId: 'KEYBOARD' as const, itemId: KEYBOARDS[0].id, name: KEYBOARDS[0].name, category: 'KEYBOARD', price: 0 },
+    };
+    const res = canPlaceOnDesk('KEYBOARD', KEYBOARDS[1], items, dummyContext);
+    expect(res.allowed).toBe(false);
+    expect(res.isErrorPenalty).toBe(false);
+    expect(res.message).toMatch(/já está ocupado/i);
+  });
+
+  it('rejeita estender o mousepad por baixo de teclado/mouse já posicionados (coerente com a regra de remoção)', () => {
+    const items = {
+      ...deskOnly,
+      MOUSE: { snapPointId: 'MOUSE' as const, itemId: MICE[0].id, name: MICE[0].name, category: 'MOUSE', price: 0 },
+    };
+    const res = canPlaceOnDesk('MOUSEPAD', MOUSEPADS[0], items, dummyContext);
+    expect(res.allowed).toBe(false);
+    expect(res.message).toMatch(/antes de estender o mousepad/i);
+  });
+
+  it('rejeita instalar o braço articulado com o monitor já apoiado na mesa', () => {
+    const items = {
+      ...deskOnly,
+      MONITOR_MAIN: { snapPointId: 'MONITOR_MAIN' as const, itemId: MONITORS[0].id, name: MONITORS[0].name, category: 'MONITOR', price: 0 },
+    };
+    const res = canPlaceOnDesk('MONITOR_ARM', MONITOR_STANDS[1], items, dummyContext);
+    expect(res.allowed).toBe(false);
+    expect(res.message).toMatch(/retire o monitor/i);
+  });
+
+  it('rejeita item sem categoria identificável', () => {
+    const res = canPlaceOnDesk('KEYBOARD', { name: 'Objeto misterioso' }, deskOnly, dummyContext);
+    expect(res.allowed).toBe(false);
+    expect(res.isErrorPenalty).toBe(false);
+  });
 });
 
 describe('3. Validação de Remoção Segura (canRemoveFromDesk)', () => {
@@ -171,22 +205,40 @@ describe('4. Máquina de Estados da Mesa (deriveDeskStage)', () => {
     esdDischarged: true,
   };
 
-  const dummyMb: MotherboardComponent = MOTHERBOARDS[0];
+  const dummyMb: MotherboardComponent = READY_MB;
 
-  const readyAssembly: AssemblyState = {
-    ...baseAssembly,
-    cpuInstalled: CPUS[0],
-    socketLeverLocked: true,
-    thermalPasteApplied: true,
-    coolerInstalled: COOLERS[0],
-    ramInstalledSlot2: RAMS[0],
-    storageInstalled: STORAGES[0],
-    gpuInstalled: GPUS[0],
-    gpuScrewed: true,
-    caseInstalled: CASES[0],
-    psuInstalled: PSUS[0],
-    motherboardScrewed: true,
-  };
+  // Montagem física completa (PHASE_7_BOOT_POST): inclui pasta, cabos 24/8 pinos e painel frontal
+  const readyAssembly: AssemblyState = buildReadyAssembly();
+
+  it('a fixture de PC completo realmente está em PHASE_7_BOOT_POST', () => {
+    expect(derivePhase(readyAssembly, dummyMb)).toBe('PHASE_7_BOOT_POST');
+    expect(isPcReadyForDesk(readyAssembly, dummyMb)).toBe(true);
+  });
+
+  it('retorna LOCKED se peças estão encaixadas mas os cabos internos (24/8 pinos) não foram ligados', () => {
+    // Regressão: a versão anterior liberava a mesa sem cabos internos, sem pasta e sem parafusar a placa
+    const noInternalCables: AssemblyState = {
+      ...readyAssembly,
+      cableAtx24PinConnected: false,
+      cableCpu8PinConnected: false,
+    };
+    expect(isPcReadyForDesk(noInternalCables, dummyMb)).toBe(false);
+    expect(
+      deriveDeskStage({
+        assembly: noInternalCables,
+        selectedMotherboard: dummyMb,
+        deskSetup: { ...createInitialDeskSetupState(), placedDeskItems: REQUIRED_DESK_ITEMS },
+      })
+    ).toBe('LOCKED');
+  });
+
+  it('retorna LOCKED se a pasta térmica não foi aplicada', () => {
+    expect(isPcReadyForDesk({ ...readyAssembly, thermalPasteApplied: false }, dummyMb)).toBe(false);
+  });
+
+  it('retorna LOCKED sem placa-mãe selecionada', () => {
+    expect(isPcReadyForDesk(readyAssembly, null)).toBe(false);
+  });
 
   it('retorna LOCKED se o PC ainda não estiver em PHASE_7_BOOT_POST', () => {
     const stage = deriveDeskStage({

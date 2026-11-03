@@ -1,15 +1,33 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useAssemblyStore, selectDeskStage } from '../useAssemblyStore';
-import { DESKS, KEYBOARDS, CHAIRS } from '../../engine/peripheralsCatalog';
+import { DESKS, KEYBOARDS } from '../../engine/peripheralsCatalog';
+import { READY_MB, buildReadyAssembly, deskItem } from '../../engine/__tests__/fixtures/readyPc';
+
+const store = () => useAssemblyStore.getState();
+
+const deskBase = {
+  snapPointId: 'DESK_BASE' as const,
+  itemId: DESKS[0].id,
+  name: DESKS[0].name,
+  category: 'DESK',
+  price: DESKS[0].price,
+};
+
+const keyboard = {
+  snapPointId: 'KEYBOARD' as const,
+  itemId: KEYBOARDS[0].id,
+  name: KEYBOARDS[0].name,
+  category: 'KEYBOARD',
+  price: KEYBOARDS[0].price,
+};
 
 describe('useAssemblyStore - Integração da Mesa de Setup (Fase 4)', () => {
   beforeEach(() => {
-    useAssemblyStore.getState().resetAssembly();
-    useAssemblyStore.getState().clearDeskSetup();
+    store().resetAssembly();
   });
 
   it('inicia com deskSetup vazio e câmera em setup-wide', () => {
-    const state = useAssemblyStore.getState();
+    const state = store();
     expect(state.deskSetup.placedDeskItems).toEqual({});
     expect(state.deskSetup.isDeskPoweredOn).toBe(false);
     expect(state.deskSetup.deskCameraPreset).toBe('setup-wide');
@@ -17,78 +35,89 @@ describe('useAssemblyStore - Integração da Mesa de Setup (Fase 4)', () => {
   });
 
   it('permite posicionar a mesa DESK_BASE e atualiza o estado imutavelmente', () => {
-    const store = useAssemblyStore.getState();
-    const ok = store.placeDeskItem('DESK_BASE', {
-      snapPointId: 'DESK_BASE',
-      itemId: DESKS[0].id,
-      name: DESKS[0].name,
-      category: 'DESK',
-      price: DESKS[0].price,
-    });
-    expect(ok).toBe(true);
+    const before = store().deskSetup;
+    expect(store().placeDeskItem('DESK_BASE', deskBase)).toBe(true);
 
-    const state = useAssemblyStore.getState();
-    expect(state.deskSetup.placedDeskItems.DESK_BASE).toBeDefined();
+    const state = store();
+    expect(state.deskSetup).not.toBe(before);
     expect(state.deskSetup.placedDeskItems.DESK_BASE?.itemId).toBe(DESKS[0].id);
   });
 
-  it('rejeita posicionar teclado sem mesa prévia e não altera o estado', () => {
-    const store = useAssemblyStore.getState();
-    const ok = store.placeDeskItem('KEYBOARD', {
-      snapPointId: 'KEYBOARD',
-      itemId: KEYBOARDS[0].id,
-      name: KEYBOARDS[0].name,
-      category: 'KEYBOARD',
-      price: KEYBOARDS[0].price,
-    });
-    expect(ok).toBe(false);
+  it('grava o item sempre sob o snap point de destino (snapPointId coerente)', () => {
+    store().placeDeskItem('DESK_BASE', deskBase);
+    store().placeDeskItem('KEYBOARD', { ...keyboard, snapPointId: 'MOUSE' });
+    expect(store().deskSetup.placedDeskItems.KEYBOARD?.snapPointId).toBe('KEYBOARD');
+  });
 
-    const state = useAssemblyStore.getState();
-    expect(state.deskSetup.placedDeskItems.KEYBOARD).toBeUndefined();
-    expect(state.activeAlert?.type).toBe('warning');
+  it('rejeita posicionar teclado sem mesa prévia e não altera o estado', () => {
+    expect(store().placeDeskItem('KEYBOARD', keyboard)).toBe(false);
+    expect(store().deskSetup.placedDeskItems.KEYBOARD).toBeUndefined();
+    expect(store().activeAlert?.type).toBe('warning');
+  });
+
+  it('rejeita levar à mesa um PC com peças encaixadas mas sem cabos internos', () => {
+    useAssemblyStore.setState({
+      assembly: { ...buildReadyAssembly(), cableAtx24PinConnected: false },
+      selectedMotherboard: READY_MB,
+    });
+    store().placeDeskItem('DESK_BASE', deskBase);
+    expect(store().placeDeskItem('PC_TOWER', deskItem('PC_TOWER', 'PC_TOWER'))).toBe(false);
+    expect(store().activeAlert?.message).toMatch(/Finalize a montagem/i);
   });
 
   it('rejeita remover a mesa se houver itens sobre ela', () => {
-    const store = useAssemblyStore.getState();
-    store.placeDeskItem('DESK_BASE', {
-      snapPointId: 'DESK_BASE',
-      itemId: DESKS[0].id,
-      name: DESKS[0].name,
-      category: 'DESK',
-      price: DESKS[0].price,
-    });
-    store.placeDeskItem('KEYBOARD', {
-      snapPointId: 'KEYBOARD',
-      itemId: KEYBOARDS[0].id,
-      name: KEYBOARDS[0].name,
-      category: 'KEYBOARD',
-      price: KEYBOARDS[0].price,
-    });
+    store().placeDeskItem('DESK_BASE', deskBase);
+    store().placeDeskItem('KEYBOARD', keyboard);
 
-    const removed = store.removeDeskItem('DESK_BASE');
-    expect(removed).toBe(false);
-    expect(useAssemblyStore.getState().deskSetup.placedDeskItems.DESK_BASE).toBeDefined();
+    expect(store().removeDeskItem('DESK_BASE')).toBe(false);
+    expect(store().deskSetup.placedDeskItems.DESK_BASE).toBeDefined();
 
     // Remove primeiro o teclado
-    const removedKb = store.removeDeskItem('KEYBOARD');
-    expect(removedKb).toBe(true);
-    expect(useAssemblyStore.getState().deskSetup.placedDeskItems.KEYBOARD).toBeUndefined();
+    expect(store().removeDeskItem('KEYBOARD')).toBe(true);
+    expect(store().deskSetup.placedDeskItems.KEYBOARD).toBeUndefined();
 
     // Agora consegue remover a mesa
-    const removedDesk = store.removeDeskItem('DESK_BASE');
-    expect(removedDesk).toBe(true);
-    expect(useAssemblyStore.getState().deskSetup.placedDeskItems.DESK_BASE).toBeUndefined();
+    expect(store().removeDeskItem('DESK_BASE')).toBe(true);
+    expect(store().deskSetup.placedDeskItems.DESK_BASE).toBeUndefined();
   });
 
-  it('permite ligar/desligar a energia da mesa e alterar presets de câmera', () => {
-    const store = useAssemblyStore.getState();
-    store.setDeskPower(true);
-    expect(useAssemblyStore.getState().deskSetup.isDeskPoweredOn).toBe(true);
+  it('não liga a energia da mesa antes de READY_TO_BOOT', () => {
+    expect(store().setDeskPower(true)).toBe(false);
+    expect(store().deskSetup.isDeskPoweredOn).toBe(false);
+    expect(store().activeAlert?.type).toBe('warning');
 
-    store.setDeskPower(false);
-    expect(useAssemblyStore.getState().deskSetup.isDeskPoweredOn).toBe(false);
+    // Desligar é sempre permitido
+    expect(store().setDeskPower(false)).toBe(true);
+  });
 
-    store.setDeskCameraPreset('setup-pc');
-    expect(useAssemblyStore.getState().deskSetup.deskCameraPreset).toBe('setup-pc');
+  it('altera presets de câmera', () => {
+    store().setDeskCameraPreset('setup-pc');
+    expect(store().deskSetup.deskCameraPreset).toBe('setup-pc');
+  });
+
+  it('clearDeskSetup também desconecta todos os cabos externos', () => {
+    useAssemblyStore.setState({ assembly: buildReadyAssembly(), selectedMotherboard: READY_MB });
+    store().placeDeskItem('DESK_BASE', deskBase);
+    store().placeDeskItem('PC_TOWER', deskItem('PC_TOWER', 'PC_TOWER'));
+    store().connectExternalCable('CABLE_POWER_AC', 'PC_AC_INLET', 'WALL_OUTLET_1');
+    expect(store().externalCabling.connections.CABLE_POWER_AC).not.toBeNull();
+
+    store().clearDeskSetup();
+    expect(store().deskSetup.placedDeskItems).toEqual({});
+    expect(store().externalCabling.connections.CABLE_POWER_AC).toBeNull();
+  });
+
+  it('alternar Bancada ⇄ Mesa preserva a montagem e a mesa', () => {
+    useAssemblyStore.setState({ assembly: buildReadyAssembly(), selectedMotherboard: READY_MB });
+    store().placeDeskItem('DESK_BASE', deskBase);
+    const assemblyBefore = store().assembly;
+
+    store().setActiveWorkbenchView('desk');
+    store().setActiveWorkbenchView('bench');
+    store().setActiveWorkbenchView('desk');
+
+    expect(store().assembly).toBe(assemblyBefore);
+    expect(store().deskSetup.placedDeskItems.DESK_BASE).toBeDefined();
+    expect(store().activeWorkbenchView).toBe('desk');
   });
 });

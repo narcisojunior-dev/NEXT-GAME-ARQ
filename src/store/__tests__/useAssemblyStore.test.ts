@@ -48,14 +48,25 @@ describe('Store de montagem: integração das regras', () => {
       expect(store().penaltiesCount).toBe(1);
     });
 
+    it('recusa cooler sem pasta térmica (regra válida na bancada 2D e 3D) sem penalizar', () => {
+      expect(store().installCooler(byId(COOLERS, 'cooler-deepcool-ag400'))).toBe(false);
+      expect(store().assembly.coolerInstalled).toBeNull();
+      expect(store().activeAlert?.title).toMatch(/Pasta Térmica/i);
+      expect(store().penaltiesCount).toBe(0);
+    });
+
     it('recusa pasta com o cooler já instalado e permite após remover o cooler', () => {
-      store().installCooler(byId(COOLERS, 'cooler-deepcool-ag400'));
-      store().connectCableTo('CPU_FAN_CABLE', 'CPU_FAN');
       store().applyThermalPaste();
-      expect(store().assembly.thermalPasteApplied).toBe(false);
+      expect(store().installCooler(byId(COOLERS, 'cooler-deepcool-ag400'))).toBe(true);
+      store().connectCableTo('CPU_FAN_CABLE', 'CPU_FAN');
+
+      // Segunda camada com o cooler parafusado por cima: impossível
+      store().applyThermalPaste();
       expect(store().activeAlert?.type).toBe('error');
+      expect(store().activeAlert?.title).toMatch(/Cooler Está no Caminho/i);
 
       store().removeCooler();
+      expect(store().assembly.thermalPasteApplied).toBe(false);
       expect(store().assembly.coolerInstalled).toBeNull();
       expect(store().assembly.coolerFanConnected).toBe(false);
 
