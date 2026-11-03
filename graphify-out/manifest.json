@@ -204,10 +204,10 @@
     "semantic_hash": "1b5185fae050383ab62af2ca63628210"
   },
   "src/components/hud/TopHUD.tsx": {
-    "mtime": 1793737447.7356179,
-    "seen": 1793737604.1888409,
-    "ast_hash": "0dce474023db85790a93607daef52d38",
-    "semantic_hash": "0dce474023db85790a93607daef52d38"
+    "mtime": 1793740195.4299433,
+    "seen": 1793740883.965708,
+    "ast_hash": "8a8307eb16069070cc2c03515d031937",
+    "semantic_hash": "8a8307eb16069070cc2c03515d031937"
   },
   "src/components/inventory/ComponentCard.tsx": {
     "mtime": 1793735056.7851913,
@@ -246,10 +246,10 @@
     "semantic_hash": "39559f7928a6698b9a2c9e4903e976aa"
   },
   "src/components/workbench/WorkbenchMat.tsx": {
-    "mtime": 1793737447.7366922,
-    "seen": 1793737604.18885,
-    "ast_hash": "613a5b16f41a8008e39a8d9dc7924f86",
-    "semantic_hash": "613a5b16f41a8008e39a8d9dc7924f86"
+    "mtime": 1793740186.702752,
+    "seen": 1793740883.965966,
+    "ast_hash": "ecdab01ab67f3ab916cc00ac06f6a6c9",
+    "semantic_hash": "ecdab01ab67f3ab916cc00ac06f6a6c9"
   },
   "src/engine/audio/soundEngine.ts": {
     "mtime": 1793735056.7889934,
@@ -498,10 +498,10 @@
     "semantic_hash": "85af1c16d12e8fcaadd0eaa826a0eed7"
   },
   "src/engine/phases.ts": {
-    "mtime": 1793735056.7902398,
-    "seen": 1793737604.188865,
-    "ast_hash": "9ab6ea7ad8278b98613a7176957db537",
-    "semantic_hash": "9ab6ea7ad8278b98613a7176957db537"
+    "mtime": 1793740186.7023404,
+    "seen": 1793740883.9663842,
+    "ast_hash": "7dbf3c24a246df55375b951cca9d5e5f",
+    "semantic_hash": "7dbf3c24a246df55375b951cca9d5e5f"
   },
   "src/store/__tests__/useAssemblyStore.test.ts": {
     "mtime": 1793737447.738918,
@@ -606,10 +606,10 @@
     "semantic_hash": "7d15fcfac8da51f540fad1fa0700b727"
   },
   "src/components/three/Workbench3D.tsx": {
-    "mtime": 1793737447.736325,
-    "seen": 1793737604.188847,
-    "ast_hash": "1cf5875f67085fe38dc81c81f2924ccc",
-    "semantic_hash": "1cf5875f67085fe38dc81c81f2924ccc"
+    "mtime": 1793739927.7911375,
+    "seen": 1793740883.9658859,
+    "ast_hash": "7703f5aabc38e0377a8da0a7692d948e",
+    "semantic_hash": "7703f5aabc38e0377a8da0a7692d948e"
   },
   "src/components/three/webglDetect.ts": {
     "mtime": 1793735056.7868378,
@@ -648,10 +648,10 @@
     "semantic_hash": "bddcd3861cb86157a52ea35c33049cab"
   },
   "src/components/three/DeskSetup3D.tsx": {
-    "mtime": 1793737447.735921,
-    "seen": 1793737604.188846,
-    "ast_hash": "bd074b1d5f6ab4bbdbc000c93a55d64f",
-    "semantic_hash": "bd074b1d5f6ab4bbdbc000c93a55d64f"
+    "mtime": 1793740301.9220872,
+    "seen": 1793740883.965845,
+    "ast_hash": "fc9e09515398cb246f98696bc29541ef",
+    "semantic_hash": "fc9e09515398cb246f98696bc29541ef"
   },
   "src/components/workbench/WorkbenchSidebar.tsx": {
     "mtime": 1793735056.7874408,
@@ -678,16 +678,16 @@
     "semantic_hash": "42394ea4a2c80cc4f23d7101e42e7027"
   },
   "src/engine/deskSetup.ts": {
-    "mtime": 1793737447.7378583,
-    "seen": 1793737604.188861,
-    "ast_hash": "c200db7de5ef6de37a79f8d79ab41818",
-    "semantic_hash": "c200db7de5ef6de37a79f8d79ab41818"
+    "mtime": 1793739837.7044199,
+    "seen": 1793740883.9662888,
+    "ast_hash": "31c22ace13fb7eeb675468a8126ac3fe",
+    "semantic_hash": "31c22ace13fb7eeb675468a8126ac3fe"
   },
   "src/engine/externalCabling.ts": {
-    "mtime": 1793737447.7380948,
-    "seen": 1793737604.188861,
-    "ast_hash": "a6ae1ac3e25789639c2c36855dedd1d1",
-    "semantic_hash": "a6ae1ac3e25789639c2c36855dedd1d1"
+    "mtime": 1793739823.1342077,
+    "seen": 1793740883.966301,
+    "ast_hash": "3afbc50b79601bd4e9c9eebe88043104",
+    "semantic_hash": "3afbc50b79601bd4e9c9eebe88043104"
   },
   "src/store/__tests__/deskSetupStore.test.ts": {
     "mtime": 1793737447.7384868,
@@ -700,5 +700,47 @@
     "seen": 1793737604.188867,
     "ast_hash": "d80b1d34273e058a16f9707f2e7bc93d",
     "semantic_hash": "d80b1d34273e058a16f9707f2e7bc93d"
+  },
+  "e2e/deskPlacement.spec.ts": {
+    "mtime": 1793740670.251976,
+    "seen": 1793740883.965467,
+    "ast_hash": "3ed94c6bbbed5536f95d8ea7f7a8ebed",
+    "semantic_hash": "3ed94c6bbbed5536f95d8ea7f7a8ebed"
+  },
+  "src/components/three/DeskStationScene.tsx": {
+    "mtime": 1793740625.7032602,
+    "seen": 1793740883.965846,
+    "ast_hash": "21956cf46ac9380e2ce67c22953bfff3",
+    "semantic_hash": "21956cf46ac9380e2ce67c22953bfff3"
+  },
+  "src/components/three/FittedModel.tsx": {
+    "mtime": 1793739886.258171,
+    "seen": 1793740883.965846,
+    "ast_hash": "b689691f5fb1f89a3d516fdeba82da0e",
+    "semantic_hash": "b689691f5fb1f89a3d516fdeba82da0e"
+  },
+  "src/components/three/deskModels.ts": {
+    "mtime": 1793740343.5928352,
+    "seen": 1793740883.9658859,
+    "ast_hash": "ab848f24ee19a6afaa3488179e33f739",
+    "semantic_hash": "ab848f24ee19a6afaa3488179e33f739"
+  },
+  "src/components/three/deskPlacementStore.ts": {
+    "mtime": 1793740120.676965,
+    "seen": 1793740883.965887,
+    "ast_hash": "ab799506e366d92b4b3be3d313217185",
+    "semantic_hash": "ab799506e366d92b4b3be3d313217185"
+  },
+  "src/components/workbench/DeskInventoryPanel.tsx": {
+    "mtime": 1793740499.8257842,
+    "seen": 1793740883.965953,
+    "ast_hash": "3276bf94a972cafa724ec0998a930984",
+    "semantic_hash": "3276bf94a972cafa724ec0998a930984"
+  },
+  "src/engine/__tests__/deskLayout.test.ts": {
+    "mtime": 1793739739.2721505,
+    "seen": 1793740883.9660852,
+    "ast_hash": "f5661ee3a21092083a8588468d2f608a",
+    "semantic_hash": "f5661ee3a21092083a8588468d2f608a"
   }
 }
