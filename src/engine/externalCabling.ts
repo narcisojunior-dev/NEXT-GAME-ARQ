@@ -1,5 +1,5 @@
 import { AssemblyState } from './types';
-import { DESK_SNAP_POINTS, DeskSnapPointId, PlacedDeskItem } from './deskSetup';
+import { DESK_SNAP_POINTS, DeskSnapPointId, PlacedDeskItem, REFERENCE_DESK_WIDTH, getSnapPointPosition } from './deskSetup';
 
 export type ExternalCableId =
   | 'CABLE_POWER_AC'
@@ -39,152 +39,196 @@ export interface ExternalPortSpec {
   id: ExternalPortId;
   name: string;
   hostComponent: 'PC' | 'MONITOR' | 'WALL' | 'DESK' | 'PERIPHERAL';
+  /** Dispositivo da mesa onde a porta fica; 'WALL' = parede do laboratório */
+  hostSnapPoint: DeskSnapPointId | 'WALL';
   portType: ExternalPortType;
+  /**
+   * Metros. Para portas de dispositivos: deslocamento em relação ao snap point do dispositivo
+   * (as portas acompanham o PC/monitor quando a mesa muda de largura). Para a parede: posição no mundo.
+   */
   relativePosition: [number, number, number];
 }
+
+/** Plano da parede atrás da mesa (m), onde ficam as tomadas e o ponto de rede */
+export const WALL_Z = -0.55;
+/** Painel traseiro do gabinete: metade da profundidade da torre (0,47 m) */
+const PC_REAR = -0.235;
+/** Traseira do painel do monitor em relação ao centro da base */
+const MONITOR_REAR = -0.04;
 
 export const EXTERNAL_PORTS: Record<ExternalPortId, ExternalPortSpec> = {
   PC_AC_INLET: {
     id: 'PC_AC_INLET',
     name: 'Entrada de Energia da Fonte (AC C14)',
     hostComponent: 'PC',
+    hostSnapPoint: 'PC_TOWER',
     portType: 'AC_POWER',
-    relativePosition: [1.35, 0.45, -0.32],
+    relativePosition: [0.05, 0.06, PC_REAR],
   },
   MONITOR_AC_INLET: {
     id: 'MONITOR_AC_INLET',
     name: 'Entrada de Energia do Monitor (AC)',
     hostComponent: 'MONITOR',
+    hostSnapPoint: 'MONITOR_MAIN',
     portType: 'AC_POWER',
-    relativePosition: [-0.15, 0.95, -0.42],
+    relativePosition: [-0.08, 0.15, MONITOR_REAR],
   },
   GPU_DP_1: {
     id: 'GPU_DP_1',
     name: 'DisplayPort 1 (Placa de Vídeo Dedicada)',
     hostComponent: 'PC',
+    hostSnapPoint: 'PC_TOWER',
     portType: 'DP',
-    relativePosition: [1.35, 0.65, -0.32],
+    relativePosition: [-0.02, 0.2, PC_REAR],
   },
   GPU_HDMI_1: {
     id: 'GPU_HDMI_1',
     name: 'HDMI 1 (Placa de Vídeo Dedicada)',
     hostComponent: 'PC',
+    hostSnapPoint: 'PC_TOWER',
     portType: 'HDMI',
-    relativePosition: [1.35, 0.62, -0.32],
+    relativePosition: [-0.05, 0.2, PC_REAR],
   },
   MB_HDMI: {
     id: 'MB_HDMI',
     name: 'HDMI Onboard (Painel Traseiro da Placa-Mãe)',
     hostComponent: 'PC',
+    hostSnapPoint: 'PC_TOWER',
     portType: 'HDMI',
-    relativePosition: [1.35, 0.82, -0.32],
+    relativePosition: [-0.07, 0.36, PC_REAR],
   },
   MB_DP: {
     id: 'MB_DP',
     name: 'DisplayPort Onboard (Painel Traseiro da Placa-Mãe)',
     hostComponent: 'PC',
+    hostSnapPoint: 'PC_TOWER',
     portType: 'DP',
-    relativePosition: [1.35, 0.85, -0.32],
+    relativePosition: [-0.04, 0.36, PC_REAR],
   },
   MONITOR_DP_IN: {
     id: 'MONITOR_DP_IN',
     name: 'DisplayPort IN (Monitor)',
     hostComponent: 'MONITOR',
+    hostSnapPoint: 'MONITOR_MAIN',
     portType: 'DP',
-    relativePosition: [0.05, 0.95, -0.42],
+    relativePosition: [0.02, 0.15, MONITOR_REAR],
   },
   MONITOR_HDMI_IN: {
     id: 'MONITOR_HDMI_IN',
     name: 'HDMI IN (Monitor)',
     hostComponent: 'MONITOR',
+    hostSnapPoint: 'MONITOR_MAIN',
     portType: 'HDMI',
-    relativePosition: [0.15, 0.95, -0.42],
+    relativePosition: [0.06, 0.15, MONITOR_REAR],
   },
   PC_USB_1: {
     id: 'PC_USB_1',
     name: 'USB Traseira 1',
     hostComponent: 'PC',
+    hostSnapPoint: 'PC_TOWER',
     portType: 'USB',
-    relativePosition: [1.35, 0.78, -0.32],
+    relativePosition: [-0.07, 0.4, PC_REAR],
   },
   PC_USB_2: {
     id: 'PC_USB_2',
     name: 'USB Traseira 2',
     hostComponent: 'PC',
+    hostSnapPoint: 'PC_TOWER',
     portType: 'USB',
-    relativePosition: [1.35, 0.76, -0.32],
+    relativePosition: [-0.04, 0.4, PC_REAR],
   },
   PC_USB_3: {
     id: 'PC_USB_3',
     name: 'USB Traseira 3',
     hostComponent: 'PC',
+    hostSnapPoint: 'PC_TOWER',
     portType: 'USB',
-    relativePosition: [1.35, 0.74, -0.32],
+    relativePosition: [-0.07, 0.42, PC_REAR],
   },
   PC_USB_4: {
     id: 'PC_USB_4',
     name: 'USB Traseira 4',
     hostComponent: 'PC',
+    hostSnapPoint: 'PC_TOWER',
     portType: 'USB',
-    relativePosition: [1.35, 0.72, -0.32],
+    relativePosition: [-0.04, 0.42, PC_REAR],
   },
   PC_AUDIO_OUT: {
     id: 'PC_AUDIO_OUT',
     name: 'Saída de Áudio Verde P2 (Line-Out)',
     hostComponent: 'PC',
+    hostSnapPoint: 'PC_TOWER',
     portType: 'AUDIO_35MM',
-    relativePosition: [1.35, 0.7, -0.32],
+    relativePosition: [-0.055, 0.32, PC_REAR],
   },
   PC_ETHERNET_PORT: {
     id: 'PC_ETHERNET_PORT',
     name: 'Porta Gigabit Ethernet (RJ-45)',
     hostComponent: 'PC',
+    hostSnapPoint: 'PC_TOWER',
     portType: 'RJ45',
-    relativePosition: [1.35, 0.8, -0.32],
+    relativePosition: [-0.055, 0.385, PC_REAR],
   },
   WALL_OUTLET_1: {
     id: 'WALL_OUTLET_1',
     name: 'Tomada da Parede / Filtro 1 (PC)',
     hostComponent: 'WALL',
+    hostSnapPoint: 'WALL',
     portType: 'AC_POWER',
-    relativePosition: [1.2, 0.15, -0.9],
+    relativePosition: [0.25, 0.3, WALL_Z],
   },
   WALL_OUTLET_2: {
     id: 'WALL_OUTLET_2',
     name: 'Tomada da Parede / Filtro 2 (Monitor)',
     hostComponent: 'WALL',
+    hostSnapPoint: 'WALL',
     portType: 'AC_POWER',
-    relativePosition: [0.8, 0.15, -0.9],
+    relativePosition: [0.4, 0.3, WALL_Z],
   },
   WALL_RJ45: {
     id: 'WALL_RJ45',
     name: 'Tomada de Rede RJ-45 da Sala',
     hostComponent: 'WALL',
+    hostSnapPoint: 'WALL',
     portType: 'RJ45',
-    relativePosition: [1.5, 0.25, -0.9],
+    relativePosition: [0.65, 0.3, WALL_Z],
   },
   KEYBOARD_USB: {
     id: 'KEYBOARD_USB',
     name: 'Conector USB-A do Teclado (cabo fixo)',
     hostComponent: 'PERIPHERAL',
+    hostSnapPoint: 'KEYBOARD',
     portType: 'USB',
-    relativePosition: [-0.15, 0.76, 0.12],
+    relativePosition: [0, 0.01, -0.065],
   },
   MOUSE_USB: {
     id: 'MOUSE_USB',
     name: 'Conector USB-A do Mouse (cabo fixo)',
     hostComponent: 'PERIPHERAL',
+    hostSnapPoint: 'MOUSE',
     portType: 'USB',
-    relativePosition: [0.45, 0.76, 0.14],
+    relativePosition: [0, 0.01, -0.06],
   },
   HEADSET_P2: {
     id: 'HEADSET_P2',
     name: 'Plugue P2 3,5 mm do Headset',
     hostComponent: 'PERIPHERAL',
+    hostSnapPoint: 'HEADSET',
     portType: 'AUDIO_35MM',
-    relativePosition: [-0.65, 0.78, -0.2],
+    relativePosition: [0, 0.02, 0],
   },
 };
+
+/** Posição da porta no mundo (m), para a mesa de largura `deskWidth` */
+export function getExternalPortWorldPosition(
+  portId: ExternalPortId,
+  deskWidth: number = REFERENCE_DESK_WIDTH
+): [number, number, number] {
+  const { hostSnapPoint, relativePosition } = EXTERNAL_PORTS[portId];
+  if (hostSnapPoint === 'WALL') return relativePosition;
+  const [hx, hy, hz] = getSnapPointPosition(hostSnapPoint, deskWidth);
+  return [hx + relativePosition[0], hy + relativePosition[1], hz + relativePosition[2]];
+}
 
 export interface ExternalCableSpec {
   id: ExternalCableId;

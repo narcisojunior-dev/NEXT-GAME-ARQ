@@ -1,5 +1,16 @@
 import { AssemblyPhase, AssemblyState, MotherboardComponent } from './types';
 
+/** Rótulos curtos das 7 fases canônicas (HUD e inventário da mesa) */
+export const PHASE_LABELS: { id: AssemblyPhase; label: string; number: number }[] = [
+  { id: 'PHASE_1_PREPARATION', label: '1. Bancada & ESD', number: 1 },
+  { id: 'PHASE_2_BENCH_ASSEMBLY', label: '2. Pré-Gabinete', number: 2 },
+  { id: 'PHASE_3_CASE_PREPARATION', label: '3. Gabinete & Fonte', number: 3 },
+  { id: 'PHASE_4_MOTHERBOARD_INSTALL', label: '4. Fixar Placa', number: 4 },
+  { id: 'PHASE_5_GPU_EXPANSION', label: '5. Placa de Vídeo', number: 5 },
+  { id: 'PHASE_6_CABLING', label: '6. Cabeamento', number: 6 },
+  { id: 'PHASE_7_BOOT_POST', label: '7. Teste de Boot', number: 7 },
+];
+
 /**
  * Deriva a fase canônica atual a partir do estado físico da montagem.
  * Retorna a primeira fase cujos requisitos ainda não foram cumpridos.

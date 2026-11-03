@@ -1,6 +1,6 @@
 import { AssemblyState, MotherboardComponent } from './types';
 import { derivePhase } from './phases';
-import { StudentSetupConfig } from './peripheralsCatalog';
+import { CHAIRS, DESKS, MOUSEPADS, PeripheralItem, StudentSetupConfig } from './peripheralsCatalog';
 
 export type DeskSnapPointId =
   | 'DESK_BASE'
@@ -23,8 +23,15 @@ export type DeskStage =
 export interface DeskSnapPointSpec {
   id: DeskSnapPointId;
   label: string;
+  /**
+   * Posição nominal em metros (1 unidade de mundo = 1 m) na mesa de referência de 140 cm.
+   * Use getSnapPointPosition() para a posição na largura da mesa realmente posicionada.
+   */
   nominalPosition: [number, number, number];
+  /** Rotação em Y (radianos): frente do item voltada para o aluno (+Z) por padrão */
   nominalRotation?: [number, number, number];
+  /** Área ocupada no plano [largura em X, profundidade em Z], em metros (hologramas e colisões) */
+  footprint: [number, number];
   isRequiredForBoot: boolean;
   allowedCategories: string[];
   parentSnapPoint?: DeskSnapPointId;
@@ -44,20 +51,38 @@ export interface DeskSetupState {
   deskCameraPreset: 'setup-wide' | 'setup-top' | 'setup-pc' | 'setup-seat';
 }
 
+/* ------------------------------------------------------------------------------------
+ * Geometria da estação (metros). A mesa fica centrada na origem, frente voltada para +Z
+ * (lado do aluno), tampo a 75 cm do chão (altura ergonômica padrão).
+ * ------------------------------------------------------------------------------------ */
+export const DESK_TOP_HEIGHT = 0.75;
+export const DESK_DEPTH = 0.6;
+/** Largura da mesa de referência usada nas posições nominais */
+export const REFERENCE_DESK_WIDTH = 1.4;
+
+/** Largura (m) de cada mesa do catálogo */
+export const DESK_WIDTH_BY_ID: Record<string, number> = {
+  'desk-gamer-carbon': 1.4,
+  'desk-wood-minimal': 1.2,
+};
+
 export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   DESK_BASE: {
     id: 'DESK_BASE',
     label: 'Mesa de Trabalho',
     nominalPosition: [0, 0, 0],
     nominalRotation: [0, 0, 0],
+    footprint: [REFERENCE_DESK_WIDTH, DESK_DEPTH],
     isRequiredForBoot: true,
     allowedCategories: ['DESK'],
   },
   PC_TOWER: {
     id: 'PC_TOWER',
     label: 'Gabinete do PC (Torre)',
-    nominalPosition: [1.35, 0.75, -0.1],
-    nominalRotation: [0, -Math.PI / 2, 0],
+    // Lado direito do tampo, painel traseiro (portas) voltado para a parede
+    nominalPosition: [0.55, DESK_TOP_HEIGHT, -0.03],
+    nominalRotation: [0, 0, 0],
+    footprint: [0.23, 0.47],
     isRequiredForBoot: true,
     allowedCategories: ['PC_TOWER', 'CASE'],
     parentSnapPoint: 'DESK_BASE',
@@ -65,8 +90,9 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   MONITOR_MAIN: {
     id: 'MONITOR_MAIN',
     label: 'Monitor Principal',
-    nominalPosition: [0, 0.75, -0.4],
+    nominalPosition: [-0.1, DESK_TOP_HEIGHT, -0.17],
     nominalRotation: [0, 0, 0],
+    footprint: [0.3, 0.22],
     isRequiredForBoot: true,
     allowedCategories: ['MONITOR'],
     parentSnapPoint: 'DESK_BASE',
@@ -74,8 +100,10 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   MONITOR_ARM: {
     id: 'MONITOR_ARM',
     label: 'Braço Articulado do Monitor',
-    nominalPosition: [0, 0.75, -0.58],
+    // Grampo preso na borda traseira do tampo
+    nominalPosition: [-0.1, DESK_TOP_HEIGHT, -0.25],
     nominalRotation: [0, 0, 0],
+    footprint: [0.12, 0.1],
     isRequiredForBoot: false,
     allowedCategories: ['STAND'],
     parentSnapPoint: 'DESK_BASE',
@@ -83,8 +111,9 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   MOUSEPAD: {
     id: 'MOUSEPAD',
     label: 'Mousepad Gamer / Deskmat',
-    nominalPosition: [0.1, 0.752, 0.15],
+    nominalPosition: [-0.13, DESK_TOP_HEIGHT, 0.095],
     nominalRotation: [0, 0, 0],
+    footprint: [0.9, 0.4],
     isRequiredForBoot: false,
     allowedCategories: ['MOUSEPAD'],
     parentSnapPoint: 'DESK_BASE',
@@ -92,8 +121,9 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   KEYBOARD: {
     id: 'KEYBOARD',
     label: 'Teclado',
-    nominalPosition: [-0.15, 0.76, 0.2],
+    nominalPosition: [-0.2, DESK_TOP_HEIGHT + 0.004, 0.12],
     nominalRotation: [0, 0, 0],
+    footprint: [0.36, 0.13],
     isRequiredForBoot: true,
     allowedCategories: ['KEYBOARD'],
     parentSnapPoint: 'DESK_BASE',
@@ -101,8 +131,9 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   MOUSE: {
     id: 'MOUSE',
     label: 'Mouse',
-    nominalPosition: [0.45, 0.76, 0.2],
+    nominalPosition: [0.2, DESK_TOP_HEIGHT + 0.004, 0.13],
     nominalRotation: [0, 0, 0],
+    footprint: [0.07, 0.12],
     isRequiredForBoot: true,
     allowedCategories: ['MOUSE'],
     parentSnapPoint: 'DESK_BASE',
@@ -110,8 +141,9 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   HEADSET: {
     id: 'HEADSET',
     label: 'Headset / Áudio',
-    nominalPosition: [-0.65, 0.75, -0.2],
+    nominalPosition: [-0.58, DESK_TOP_HEIGHT, -0.12],
     nominalRotation: [0, 0.3, 0],
+    footprint: [0.19, 0.1],
     isRequiredForBoot: false,
     allowedCategories: ['AUDIO'],
     parentSnapPoint: 'DESK_BASE',
@@ -119,12 +151,31 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   CHAIR: {
     id: 'CHAIR',
     label: 'Cadeira do Aluno',
-    nominalPosition: [0, 0, 0.95],
+    nominalPosition: [-0.1, 0, 0.75],
     nominalRotation: [0, Math.PI, 0],
+    footprint: [0.65, 0.65],
     isRequiredForBoot: false,
     allowedCategories: ['CHAIR'],
   },
 };
+
+/** Largura da mesa posicionada (ou a de referência, se ainda não houver mesa) */
+export function getDeskWidth(placedItems: Partial<Record<DeskSnapPointId, PlacedDeskItem>>): number {
+  const deskId = placedItems.DESK_BASE?.itemId;
+  return (deskId && DESK_WIDTH_BY_ID[deskId]) || REFERENCE_DESK_WIDTH;
+}
+
+/**
+ * Posição do snap point na mesa de largura `deskWidth`: as posições em X acompanham
+ * proporcionalmente a largura do tampo (uma mesa de 120 cm aproxima o PC do centro).
+ */
+export function getSnapPointPosition(
+  snapPointId: DeskSnapPointId,
+  deskWidth: number = REFERENCE_DESK_WIDTH
+): [number, number, number] {
+  const [x, y, z] = DESK_SNAP_POINTS[snapPointId].nominalPosition;
+  return [x * (deskWidth / REFERENCE_DESK_WIDTH), y, z];
+}
 
 export function createInitialDeskSetupState(): DeskSetupState {
   return {
@@ -363,4 +414,112 @@ export function deriveDeskStage(params: DeriveDeskStageParams): DeskStage {
   }
 
   return 'READY_TO_BOOT';
+}
+
+/* ------------------------------------------------------------------------------------
+ * Hologramas de encaixe (Issue 03): estado de cada snap point para o item em mãos
+ * ------------------------------------------------------------------------------------ */
+export type DeskSnapPointStatus =
+  /** Nenhum item em mãos e espaço livre */
+  | 'EMPTY'
+  /** O item em mãos pode ser posicionado aqui agora */
+  | 'AVAILABLE'
+  /** O item é deste espaço, mas falta um pré-requisito (mensagem explica qual) */
+  | 'BLOCKED'
+  /** O item em mãos não pertence a este espaço */
+  | 'INCOMPATIBLE'
+  /** Já existe um item posicionado */
+  | 'OCCUPIED';
+
+export interface DeskSnapPointState {
+  snapPointId: DeskSnapPointId;
+  status: DeskSnapPointStatus;
+  message?: string;
+}
+
+export const DESK_SNAP_POINT_IDS: readonly DeskSnapPointId[] = [
+  'DESK_BASE',
+  'PC_TOWER',
+  'MONITOR_ARM',
+  'MONITOR_MAIN',
+  'MOUSEPAD',
+  'KEYBOARD',
+  'MOUSE',
+  'HEADSET',
+  'CHAIR',
+];
+
+export function evaluateDeskSnapPoints(
+  item: unknown | null,
+  placedItems: Partial<Record<DeskSnapPointId, PlacedDeskItem>>,
+  context?: PlaceOnDeskContext
+): Record<DeskSnapPointId, DeskSnapPointState> {
+  const category = item === null ? '' : getItemCategory(item);
+  const evaluate = (id: DeskSnapPointId): DeskSnapPointState => {
+    const occupant = placedItems[id];
+    if (occupant) return { snapPointId: id, status: 'OCCUPIED', message: `Ocupado por ${occupant.name}.` };
+    if (item === null) return { snapPointId: id, status: 'EMPTY' };
+    if (!DESK_SNAP_POINTS[id].allowedCategories.includes(category)) return { snapPointId: id, status: 'INCOMPATIBLE' };
+    const validation = canPlaceOnDesk(id, item, placedItems, context);
+    return validation.allowed
+      ? { snapPointId: id, status: 'AVAILABLE' }
+      : { snapPointId: id, status: 'BLOCKED', message: validation.message };
+  };
+  return {
+    DESK_BASE: evaluate('DESK_BASE'),
+    PC_TOWER: evaluate('PC_TOWER'),
+    MONITOR_ARM: evaluate('MONITOR_ARM'),
+    MONITOR_MAIN: evaluate('MONITOR_MAIN'),
+    MOUSEPAD: evaluate('MOUSEPAD'),
+    KEYBOARD: evaluate('KEYBOARD'),
+    MOUSE: evaluate('MOUSE'),
+    HEADSET: evaluate('HEADSET'),
+    CHAIR: evaluate('CHAIR'),
+  };
+}
+
+/* ------------------------------------------------------------------------------------
+ * Inventário da mesa: itens do setup do aluno a posicionar, na ordem física de montagem
+ * ------------------------------------------------------------------------------------ */
+export interface DeskInventoryEntry {
+  targetSnapPoint: DeskSnapPointId;
+  item: PlacedDeskItem;
+}
+
+/** Id fixo do PC que o aluno montou na bancada */
+export const STUDENT_PC_ITEM_ID = 'student-pc';
+
+const toPlaced = (snapPointId: DeskSnapPointId, item: PeripheralItem): PlacedDeskItem => ({
+  snapPointId,
+  itemId: item.id,
+  name: item.name,
+  category: item.category,
+  price: item.price,
+});
+
+export function buildDeskInventory(setup: StudentSetupConfig): DeskInventoryEntry[] {
+  const entries: DeskInventoryEntry[] = [];
+  const add = (snapPointId: DeskSnapPointId, item: PeripheralItem) =>
+    entries.push({ targetSnapPoint: snapPointId, item: toPlaced(snapPointId, item) });
+
+  add('DESK_BASE', setup.desk ?? DESKS[0]);
+  add('CHAIR', setup.chair ?? CHAIRS[0]);
+  entries.push({
+    targetSnapPoint: 'PC_TOWER',
+    item: {
+      snapPointId: 'PC_TOWER',
+      itemId: STUDENT_PC_ITEM_ID,
+      name: 'Seu PC (montado na bancada)',
+      category: 'PC_TOWER',
+      price: 0,
+    },
+  });
+  // O suporte de mesa padrão é a própria base do monitor: só o braço a gás é um item separado
+  if (setup.stand.id === 'stand-gas-arm') add('MONITOR_ARM', setup.stand);
+  add('MONITOR_MAIN', setup.monitor);
+  add('MOUSEPAD', setup.mousepad ?? MOUSEPADS[0]);
+  add('KEYBOARD', setup.keyboard);
+  add('MOUSE', setup.mouse);
+  add('HEADSET', setup.audio);
+  return entries;
 }
