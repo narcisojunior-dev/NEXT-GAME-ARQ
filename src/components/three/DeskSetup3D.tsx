@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useAssemblyStore, selectDeskStage } from '@/store/useAssemblyStore';
 import { DESK_SNAP_POINTS } from '@/engine/deskSetup';
+import { EXTERNAL_CABLES } from '@/engine/externalCabling';
 import { DeskStationScene } from './DeskStationScene';
 import { useDeskPlacementStore } from './deskPlacementStore';
 import { Eye, ArrowUpFromLine, Monitor, User, ZoomIn, ZoomOut, RotateCw, Wrench } from 'lucide-react';
@@ -128,6 +129,10 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
   const isDragging = useDeskPlacementStore((s) => s.isDragging);
   const heldItem = useDeskPlacementStore((s) => s.heldItem);
   const holdItem = useDeskPlacementStore((s) => s.holdItem);
+  const heldCable = useDeskPlacementStore((s) => s.heldCable);
+  const holdCable = useDeskPlacementStore((s) => s.holdCable);
+  const isPoweredOn = useAssemblyStore((s) => s.deskSetup.isDeskPoweredOn);
+  const postFailed = isPoweredOn && deskStage === 'READY_TO_BOOT';
   const inspectedSnap = useDeskPlacementStore((s) => s.inspectedSnap);
   const inspect = useDeskPlacementStore((s) => s.inspect);
   const inspectedItem = useAssemblyStore((s) => (inspectedSnap ? s.deskSetup.placedDeskItems[inspectedSnap] : undefined));
@@ -139,6 +144,13 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
     setDeskCameraPreset(preset);
     setCameraRequestId((id) => id + 1);
   };
+
+  // Com um cabo em mãos, a câmera vai para a traseira do PC, onde ficam as portas
+  const heldCableId = heldCable?.cableId ?? null;
+  useEffect(() => {
+    if (heldCableId && activePreset !== 'setup-pc') applyPreset('setup-pc');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reage só a pegar um cabo novo
+  }, [heldCableId]);
 
   const handleZoom = (factor: number) => {
     const controls = controlsRef.current;
@@ -204,6 +216,10 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
           >
             {deskStage === 'RUNNING'
               ? 'AcademyOS em Execução ✓'
+              : postFailed
+              ? 'Falha no POST'
+              : isPoweredOn
+              ? 'Ligado — verifique os cabos'
               : deskStage === 'READY_TO_BOOT'
               ? 'Pronto para o Boot'
               : deskStage === 'CABLING'
@@ -353,6 +369,28 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
             <button
               type="button"
               onClick={() => holdItem(null)}
+              className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+
+        {/* Cabo em mãos: instrução de conexão */}
+        {heldCable && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 z-40 px-3.5 py-2 rounded-xl bg-slate-950/90 border border-cyan-500/60 text-xs font-mono text-cyan-200 shadow-xl backdrop-blur-md flex items-center gap-3"
+          >
+            <span>
+              Cabo em mãos: <b className="text-white">{EXTERNAL_CABLES[heldCable.cableId].name}</b> —{' '}
+              {heldCable.firstPort ? 'clique na porta de destino.' : 'clique na primeira ponta.'}{' '}
+              <kbd className="px-1 rounded bg-slate-800">Esc</kbd> cancela.
+            </span>
+            <button
+              type="button"
+              onClick={() => holdCable(null)}
               className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer"
             >
               Cancelar

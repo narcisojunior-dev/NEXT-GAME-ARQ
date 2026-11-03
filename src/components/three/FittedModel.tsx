@@ -6,6 +6,42 @@ import * as THREE from 'three';
 
 export type FitAxis = 'x' | 'y' | 'z' | 'max';
 
+/** Malha da tela do monitor que recebe a textura viva (Issue 05) */
+export interface ScreenSurface {
+  /** Nome do material da tela no GLB */
+  materialName: string;
+  /** Eixo local da malha que corresponde à largura da tela (da esquerda para a direita do aluno) */
+  uAxis: 'x' | 'z';
+  texture: THREE.Texture | null;
+}
+
+/**
+ * UVs planares geradas a partir da própria geometria: a largura (uAxis) vira U e a altura (Y)
+ * vira V. Funciona em telas planas e curvas e não depende das UVs originais do modelo.
+ */
+function withPlanarScreenUvs(geometry: THREE.BufferGeometry, uAxis: 'x' | 'z'): THREE.BufferGeometry {
+  const g = geometry.clone();
+  const pos = g.getAttribute('position');
+  const readU = (i: number) => (uAxis === 'x' ? pos.getX(i) : pos.getZ(i));
+  let uMin = Infinity;
+  let uMax = -Infinity;
+  let vMin = Infinity;
+  let vMax = -Infinity;
+  for (let i = 0; i < pos.count; i++) {
+    uMin = Math.min(uMin, readU(i));
+    uMax = Math.max(uMax, readU(i));
+    vMin = Math.min(vMin, pos.getY(i));
+    vMax = Math.max(vMax, pos.getY(i));
+  }
+  const uv = new Float32Array(pos.count * 2);
+  for (let i = 0; i < pos.count; i++) {
+    uv[i * 2] = (readU(i) - uMin) / Math.max(1e-9, uMax - uMin);
+    uv[i * 2 + 1] = (pos.getY(i) - vMin) / Math.max(1e-9, vMax - vMin);
+  }
+  g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  return g;
+}
+
 interface FittedModelProps {
   url: string;
   /** Eixo (após a rotação) que deve medir exatamente `size` metros */
@@ -15,6 +51,7 @@ interface FittedModelProps {
   rotation?: [number, number, number];
   castShadow?: boolean;
   opacity?: number;
+  screen?: ScreenSurface;
 }
 
 const NO_ROTATION: [number, number, number] = [0, 0, 0];
@@ -31,9 +68,13 @@ export const FittedModel: React.FC<FittedModelProps> = ({
   rotation = NO_ROTATION,
   castShadow = true,
   opacity = 1,
+  screen,
 }) => {
   const { scene } = useGLTF(url);
   const [rx, ry, rz] = rotation;
+  const screenMaterialName = screen?.materialName;
+  const screenUAxis = screen?.uAxis;
+  const screenTexture = screen?.texture ?? null;
 
   const prepared = useMemo(() => {
     const clone = scene.clone(true);
@@ -56,6 +97,18 @@ export const FittedModel: React.FC<FittedModelProps> = ({
       if (!(child instanceof THREE.Mesh)) return;
       child.castShadow = castShadow;
       child.receiveShadow = true;
+      if (
+        screenMaterialName &&
+        screenUAxis &&
+        !Array.isArray(child.material) &&
+        child.material.name === screenMaterialName
+      ) {
+        child.geometry = withPlanarScreenUvs(child.geometry, screenUAxis);
+        // Tela emissiva: sem iluminação nem tone mapping, como um painel real
+        child.material = new THREE.MeshBasicMaterial({ map: screenTexture, color: screenTexture ? '#ffffff' : '#020305', toneMapped: false });
+        child.castShadow = false;
+        return;
+      }
       if (opacity < 1) {
         // Materiais clonados: o fantasma não pode alterar o material compartilhado do cache do GLTF
         const toGhost = (m: THREE.Material) => {
@@ -69,7 +122,7 @@ export const FittedModel: React.FC<FittedModelProps> = ({
       }
     });
     return wrapper;
-  }, [scene, fitAxis, size, rx, ry, rz, castShadow, opacity]);
+  }, [scene, fitAxis, size, rx, ry, rz, castShadow, opacity, screenMaterialName, screenUAxis, screenTexture]);
 
   return <primitive object={prepared} />;
 };

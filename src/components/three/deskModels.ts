@@ -14,7 +14,11 @@ export interface DeskModelSpec {
   rotation?: [number, number, number];
   /** Cópias extras com deslocamento em X (ex.: par de caixas de som) */
   copiesX?: number[];
+  /** Monitores: malha da tela que recebe a CanvasTexture e a proporção do painel */
+  screen?: { materialName: string; uAxis: 'x' | 'z'; aspect: number };
 }
+
+const OFFICE_SCREEN = { materialName: 'Display', uAxis: 'x' as const, aspect: 16 / 9 };
 
 /** Gabinete do aluno: mesma regra visual da bancada 3D (Micro-ATX/ITX → compacto) */
 export function caseModelUrlFor(caseInstalled: CaseComponent | null): string {
@@ -25,10 +29,17 @@ export function caseModelUrlFor(caseInstalled: CaseComponent | null): string {
 
 const MODELS_BY_ITEM_ID: Record<string, DeskModelSpec> = {
   // Monitores (largura do painel)
-  'mon-24-75hz': { url: '/models/monitor-24-office.glb', fitAxis: 'x', size: 0.54 },
+  'mon-24-75hz': { url: '/models/monitor-24-office.glb', fitAxis: 'x', size: 0.54, screen: OFFICE_SCREEN },
   // monitor-27-gamer.glb contém DOIS monitores (curvo + plano): usa o modelo de monitor único
-  'mon-27-180hz': { url: '/models/monitor-24-office.glb', fitAxis: 'x', size: 0.61 },
-  'mon-34-ultrawide': { url: '/models/monitor-ultrawide.glb', fitAxis: 'x', size: 0.81, rotation: [0, Math.PI / 2, 0] },
+  'mon-27-180hz': { url: '/models/monitor-24-office.glb', fitAxis: 'x', size: 0.61, screen: OFFICE_SCREEN },
+  'mon-34-ultrawide': {
+    url: '/models/monitor-ultrawide.glb',
+    fitAxis: 'x',
+    size: 0.81,
+    rotation: [0, Math.PI / 2, 0],
+    // Tela curva com a largura no eixo Z do modelo
+    screen: { materialName: 'Material.003', uAxis: 'z', aspect: 21 / 9 },
+  },
   // Teclados (largura)
   'kb-membrane-office': { url: '/models/teclado-membrana.glb', fitAxis: 'x', size: 0.44 },
   // teclado-mecanico.glb inclui um cabo enrolado que distorce o encaixe: usa o modelo compacto

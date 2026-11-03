@@ -15,6 +15,7 @@ import {
 } from '@/engine/deskSetup';
 import { PHASE_LABELS } from '@/engine/phases';
 import { placeHeldItem, useDeskPlacementStore } from '@/components/three/deskPlacementStore';
+import { DeskCablingPanel } from './DeskCablingPanel';
 
 const ICONS: Record<DeskSnapPointId, React.ComponentType<{ className?: string }>> = {
   DESK_BASE: PanelTop,
@@ -236,6 +237,9 @@ export const DeskInventoryPanel: React.FC = () => {
           );
         })}
       </ul>
+
+      {/* Cabeamento externo e energia: liberados quando o PC está na mesa (Issue 04) */}
+      {placedDeskItems.PC_TOWER && <DeskCablingPanel />}
     </aside>
   );
 };

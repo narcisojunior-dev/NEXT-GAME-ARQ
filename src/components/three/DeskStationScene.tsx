@@ -25,6 +25,8 @@ import { EXTERNAL_PORTS, ExternalPortId, WALL_Z, getExternalPortWorldPosition } 
 import { FittedModel } from './FittedModel';
 import { caseModelUrlFor, deskModelFor, towerHeightFor } from './deskModels';
 import { placeHeldItem, useDeskPlacementStore } from './deskPlacementStore';
+import { DeskCablesLayer } from './DeskCablesLayer';
+import { MonitorView } from './MonitorView';
 
 /* ====================================================================================
  * Constantes de interação (metros)
@@ -98,11 +100,34 @@ const LaboratoryRoom: React.FC = () => (
   </group>
 );
 
+/** Sincronização RGB: com o sistema em execução, as fitas de LED percorrem o espectro */
+function useRgbSync(materialRef: React.RefObject<THREE.MeshStandardMaterial | THREE.LineBasicMaterial | null>, isRunning: boolean) {
+  const color = useMemo(() => new THREE.Color(), []);
+  useFrame(({ clock }) => {
+    const m = materialRef.current;
+    if (!m) return;
+    if (isRunning) color.setHSL((clock.elapsedTime * 0.08) % 1, 0.85, 0.55);
+    else color.set('#0e7490');
+    m.color.copy(color);
+    if (m instanceof THREE.MeshStandardMaterial) {
+      m.emissive.copy(color);
+      m.emissiveIntensity = isRunning ? 1.6 : 0.6;
+    }
+  });
+}
+
 /* ====================================================================================
  * Mesa procedural (as dimensões vêm do catálogo; o GLB mesa-gamer traz periféricos embutidos)
  * ==================================================================================== */
-const ProceduralDesk: React.FC<{ itemId: string; width: number; ghost?: boolean }> = ({ itemId, width, ghost }) => {
+const ProceduralDesk: React.FC<{ itemId: string; width: number; ghost?: boolean; isRunning?: boolean }> = ({
+  itemId,
+  width,
+  ghost,
+  isRunning = false,
+}) => {
   const isWood = itemId === 'desk-wood-minimal';
+  const ledRef = useRef<THREE.MeshStandardMaterial>(null);
+  useRgbSync(ledRef, isRunning);
   const legInsetX = width / 2 - 0.06;
   const legInsetZ = DESK_DEPTH / 2 - 0.06;
   const opacity = ghost ? 0.4 : 1;
@@ -142,14 +167,20 @@ const ProceduralDesk: React.FC<{ itemId: string; width: number; ghost?: boolean 
       {!isWood && !ghost && (
         <mesh position={[0, DESK_TOP_HEIGHT - 0.034, DESK_DEPTH / 2 - 0.01]}>
           <boxGeometry args={[width - 0.04, 0.004, 0.006]} />
-          <meshStandardMaterial color="#22d3ee" emissive="#0891b2" emissiveIntensity={1.4} />
+          <meshStandardMaterial ref={ledRef} color="#22d3ee" emissive="#0891b2" emissiveIntensity={1.4} />
         </mesh>
       )}
     </group>
   );
 };
 
-const ProceduralMousepad: React.FC<{ itemId: string; ghost?: boolean }> = ({ itemId, ghost }) => {
+const ProceduralMousepad: React.FC<{ itemId: string; ghost?: boolean; isRunning?: boolean }> = ({
+  itemId,
+  ghost,
+  isRunning = false,
+}) => {
+  const stitchRef = useRef<THREE.LineBasicMaterial>(null);
+  useRgbSync(stitchRef, isRunning);
   const isFelt = itemId === 'mousepad-control-desk';
   const [w, d] = isFelt ? [0.8, 0.3] : [0.9, 0.4];
   const thickness = isFelt ? 0.003 : 0.004;
@@ -165,7 +196,7 @@ const ProceduralMousepad: React.FC<{ itemId: string; ghost?: boolean }> = ({ ite
       {/* Costura iluminada da borda (deskmat gamer) */}
       {!isFelt && !ghost && (
         <lineSegments position={[0, thickness + 0.0008, 0]} geometry={stitch}>
-          <lineBasicMaterial color="#22d3ee" />
+          <lineBasicMaterial ref={stitchRef} color="#22d3ee" />
         </lineSegments>
       )}
     </group>
@@ -198,11 +229,20 @@ interface PlacedItemViewProps {
   item: PlacedDeskItem;
   deskWidth: number;
   isRunning: boolean;
+  poweredAt: number | null;
   monitorZ: number;
   onSelect: (snap: DeskSnapPointId) => void;
 }
 
-const PlacedItemView: React.FC<PlacedItemViewProps> = ({ snapPointId, item, deskWidth, isRunning, monitorZ, onSelect }) => {
+const PlacedItemView: React.FC<PlacedItemViewProps> = ({
+  snapPointId,
+  item,
+  deskWidth,
+  isRunning,
+  poweredAt,
+  monitorZ,
+  onSelect,
+}) => {
   const groupRef = useRef<THREE.Group>(null);
   const spring = useRef({ y: 0, v: 0 });
   const lastPlaced = useDeskPlacementStore((s) => s.lastPlaced);
@@ -236,9 +276,11 @@ const PlacedItemView: React.FC<PlacedItemViewProps> = ({ snapPointId, item, desk
 
   let content: React.ReactNode;
   if (snapPointId === 'DESK_BASE') {
-    content = <ProceduralDesk itemId={item.itemId} width={deskWidth} />;
+    content = <ProceduralDesk itemId={item.itemId} width={deskWidth} isRunning={isRunning} />;
   } else if (snapPointId === 'MOUSEPAD') {
-    content = <ProceduralMousepad itemId={item.itemId} />;
+    content = <ProceduralMousepad itemId={item.itemId} isRunning={isRunning} />;
+  } else if (snapPointId === 'MONITOR_MAIN' && model?.screen) {
+    content = <MonitorView model={model} poweredAt={poweredAt} />;
   } else if (snapPointId === 'MONITOR_ARM') {
     content = <MonitorArm monitorOffsetZ={monitorZ - z} />;
   } else if (snapPointId === 'PC_TOWER') {
@@ -249,9 +291,9 @@ const PlacedItemView: React.FC<PlacedItemViewProps> = ({ snapPointId, item, desk
         <mesh position={[0.07, towerHeightFor(caseInstalled) - 0.03, 0.236]}>
           <sphereGeometry args={[0.006, 10, 10]} />
           <meshStandardMaterial
-            color={isRunning ? '#34d399' : '#475569'}
-            emissive={isRunning ? '#10b981' : '#000000'}
-            emissiveIntensity={isRunning ? 2 : 0}
+            color={poweredAt !== null ? '#34d399' : '#475569'}
+            emissive={poweredAt !== null ? '#10b981' : '#000000'}
+            emissiveIntensity={poweredAt !== null ? 2 : 0}
           />
         </mesh>
       </group>
@@ -425,7 +467,18 @@ export interface DeskStationSceneProps {
   isRunning: boolean;
 }
 
+/** Instante (performance.now) em que a estação foi ligada: base da linha do tempo do boot na tela */
+function usePoweredAt(isOn: boolean): number | null {
+  const [poweredAt, setPoweredAt] = useState<number | null>(null);
+  useEffect(() => {
+    setPoweredAt(isOn ? performance.now() : null);
+  }, [isOn]);
+  return poweredAt;
+}
+
 export const DeskStationScene: React.FC<DeskStationSceneProps> = ({ isRunning }) => {
+  const isPoweredOn = useAssemblyStore((s) => s.deskSetup.isDeskPoweredOn);
+  const poweredAt = usePoweredAt(isPoweredOn);
   const { placedDeskItems, studentSetup, assembly, selectedMotherboard } = useAssemblyStore(
     useShallow((s) => ({
       placedDeskItems: s.deskSetup.placedDeskItems,
@@ -528,11 +581,14 @@ export const DeskStationScene: React.FC<DeskStationSceneProps> = ({ isRunning })
             item={item}
             deskWidth={deskWidth}
             isRunning={isRunning}
+            poweredAt={poweredAt}
             monitorZ={monitorZ}
             onSelect={(snap) => (heldItem ? undefined : inspect(snap))}
           />
         ) : null;
       })}
+
+      <DeskCablesLayer deskWidth={deskWidth} />
 
       {heldItem &&
         DESK_SNAP_POINT_IDS.map((id) => {
