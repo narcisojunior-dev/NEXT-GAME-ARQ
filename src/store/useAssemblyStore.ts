@@ -50,6 +50,17 @@ import {
   PlacementValidationResult,
   RemovalValidationResult,
 } from '../engine/deskSetup';
+import {
+  ExternalCableId,
+  ExternalPortId,
+  ExternalCablingState,
+  ExternalCableValidationResult,
+  createInitialExternalCablesState,
+  validateExternalCableConnection,
+  evaluateExternalCablesStatus,
+  pruneExternalCables,
+} from '../engine/externalCabling';
+
 
 import {
   CableId,
@@ -172,18 +183,26 @@ interface AssemblyStore {
   setDeskCameraPreset: (preset: 'setup-wide' | 'setup-top' | 'setup-pc' | 'setup-seat') => void;
   canPlaceOnDeskSnapPoint: (snapPointId: DeskSnapPointId, item: unknown) => PlacementValidationResult;
   canRemoveDeskSnapPoint: (snapPointId: DeskSnapPointId) => RemovalValidationResult;
+  // Cabeamento Externo (Fase 4)
+  externalCabling: ExternalCablingState;
+  connectExternalCable: (cableId: ExternalCableId, sourcePort: ExternalPortId, destPort: ExternalPortId) => ExternalCableValidationResult;
+  disconnectExternalCable: (cableId: ExternalCableId) => void;
+  clearExternalCables: () => void;
   resetAssembly: () => void;
 }
 
 /**
  * Fase canônica atual, derivada do estado físico da montagem
  */
-export const selectDeskStage = (state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard' | 'deskSetup'>): DeskStage =>
+export const selectDeskStage = (
+  state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard' | 'deskSetup' | 'externalCabling'>
+): DeskStage =>
   deriveDeskStage({
     assembly: state.assembly,
     selectedMotherboard: state.selectedMotherboard,
     deskSetup: state.deskSetup,
     isDeskPoweredOn: state.deskSetup.isDeskPoweredOn,
+    externalCablesStatus: evaluateExternalCablesStatus(state.externalCabling, state.assembly),
   });
 
 export const selectCurrentPhase = (state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard'>): AssemblyPhase =>
@@ -216,6 +235,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
 
   assembly: INITIAL_ASSEMBLY_STATE,
   deskSetup: createInitialDeskSetupState(),
+  externalCabling: createInitialExternalCablesState(),
 
   inspectedComponent: null,
   selectedComponentForPlacement: null,
@@ -994,11 +1014,13 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
     set((st) => {
       const nextItems = { ...st.deskSetup.placedDeskItems };
       delete nextItems[snapPointId];
+      const pruned = pruneExternalCables(st.externalCabling, nextItems);
       return {
         deskSetup: {
           ...st.deskSetup,
           placedDeskItems: nextItems,
         },
+        externalCabling: pruned,
       };
     });
     return true;
@@ -1058,6 +1080,68 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
     return canRemoveFromDesk(snapPointId, deskSetup.placedDeskItems);
   },
 
+  connectExternalCable: (cableId, sourcePort, destPort) => {
+    const { assembly } = get();
+    const validation = validateExternalCableConnection(cableId, sourcePort, destPort, assembly);
+
+    if (!validation.allowed) {
+      soundEngine.playErrorBuzz();
+      set({
+        activeAlert: {
+          type: 'error',
+          title: validation.title ?? 'Conexão Impossível!',
+          message: validation.message ?? 'Porta incompatível com este cabo.',
+        },
+      });
+      return validation;
+    }
+
+    if (!validation.isPedagogicallyValid) {
+      soundEngine.playErrorBuzz();
+      set((st) => ({
+        penaltiesCount: validation.penalty ? st.penaltiesCount + 1 : st.penaltiesCount,
+        activeAlert: {
+          type: 'warning',
+          title: validation.title ?? 'Alerta Pedagógico',
+          message: validation.message ?? 'Conexão realizada, mas não haverá sinal de vídeo.',
+        },
+      }));
+    } else {
+      soundEngine.playSlotClick();
+    }
+
+    set((st) => ({
+      externalCabling: {
+        ...st.externalCabling,
+        connections: {
+          ...st.externalCabling.connections,
+          [cableId]: { sourcePort, destPort },
+        },
+      },
+    }));
+
+    return validation;
+  },
+
+  disconnectExternalCable: (cableId) => {
+    soundEngine.playLeverRelease();
+    set((st) => ({
+      externalCabling: {
+        ...st.externalCabling,
+        connections: {
+          ...st.externalCabling.connections,
+          [cableId]: null,
+        },
+      },
+    }));
+  },
+
+  clearExternalCables: () => {
+    set({
+      externalCabling: createInitialExternalCablesState(),
+    });
+  },
+
   resetAssembly: () => {
     set({
       selectedMotherboard: null,
@@ -1074,6 +1158,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
       selectedComponentForPlacement: null,
       inspectedComponent: null,
       deskSetup: createInitialDeskSetupState(),
+      externalCabling: createInitialExternalCablesState(),
     });
   },
   };
