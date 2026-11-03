@@ -25,6 +25,7 @@ import { HardwareImage } from '@/components/common/HardwareImage';
 import dynamic from 'next/dynamic';
 import { Box } from 'lucide-react';
 import { isWebGLAvailable } from '@/components/three/webglDetect';
+import { DeskInventoryPanel } from '@/components/workbench/DeskInventoryPanel';
 
 const DeskSetup3D = dynamic(() => import('@/components/three/DeskSetup3D'), {
   ssr: false,
@@ -298,7 +299,8 @@ export const WorkbenchMat: React.FC = () => {
           )}
         </div>
         <div className="w-full">
-          <WorkbenchSidebar />
+          {/* Na mesa, a gaveta lateral vira o inventário de móveis e periféricos */}
+          {activeWorkbenchView === 'desk' ? <DeskInventoryPanel /> : <WorkbenchSidebar />}
         </div>
       </div>
 

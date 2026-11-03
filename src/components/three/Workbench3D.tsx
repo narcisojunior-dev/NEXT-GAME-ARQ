@@ -34,6 +34,7 @@ import {
 import { useShallow } from 'zustand/react/shallow';
 
 import { isWebGLAvailable } from './webglDetect';
+import { caseModelUrlFor } from './deskModels';
 export { isWebGLAvailable };
 
 /* ====================================================================================
@@ -977,11 +978,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             {/* 0. Gabinete 3D Envolvente (Quando em modo No Gabinete) */}
             {viewMode === 'case' && (
               <CaseEnclosure
-                modelUrl={
-                  assembly.caseInstalled && !assembly.caseInstalled.supportedFormFactors.includes('ATX')
-                    ? '/models/case-compacto.glb'
-                    : '/models/case-corsair-4000d.glb'
-                }
+                modelUrl={caseModelUrlFor(assembly.caseInstalled)}
                 isGlassOpen={isGlassOpen}
                 isSpinning={Boolean(postResult?.bootSuccess)}
               />

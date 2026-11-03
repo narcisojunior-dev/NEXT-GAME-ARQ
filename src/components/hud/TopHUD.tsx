@@ -2,7 +2,6 @@
 
 import React, { useEffect } from 'react';
 import { useAssemblyStore, GameMode, selectCurrentPhase } from '@/store/useAssemblyStore';
-import { AssemblyPhase } from '@/engine/types';
 import { calculateTotalSpent } from '@/engine/compatibility';
 import {
   GraduationCap,
@@ -19,19 +18,12 @@ import {
   Monitor,
 } from 'lucide-react';
 import { hasAvailableModels } from '@/engine/models3dIndex';
+import { PHASE_LABELS } from '@/engine/phases';
 import { useModel3DStore } from '@/components/three/model3dStore';
 
 const HAS_3D_MODELS = hasAvailableModels();
+const PHASES = PHASE_LABELS;
 
-const PHASES: { id: AssemblyPhase; label: string; number: number }[] = [
-  { id: 'PHASE_1_PREPARATION', label: '1. Bancada & ESD', number: 1 },
-  { id: 'PHASE_2_BENCH_ASSEMBLY', label: '2. Pré-Gabinete', number: 2 },
-  { id: 'PHASE_3_CASE_PREPARATION', label: '3. Gabinete & Fonte', number: 3 },
-  { id: 'PHASE_4_MOTHERBOARD_INSTALL', label: '4. Fixar Placa', number: 4 },
-  { id: 'PHASE_5_GPU_EXPANSION', label: '5. Placa de Vídeo', number: 5 },
-  { id: 'PHASE_6_CABLING', label: '6. Cabeamento', number: 6 },
-  { id: 'PHASE_7_BOOT_POST', label: '7. Teste de Boot', number: 7 },
-];
 
 export const TopHUD: React.FC = () => {
   const {
