@@ -11,6 +11,9 @@ import {
   pruneExternalCables,
   createInitialExternalCablesState,
   ExternalCablingState,
+  getCableEndCandidates,
+  getFixedCableEnd,
+  getPortStatus,
 } from '../externalCabling';
 import { AssemblyState } from '../types';
 import { INITIAL_ASSEMBLY_STATE } from '../assemblyState';
@@ -340,5 +343,34 @@ describe('6. Pureza do Motor de Cabeamento Externo', () => {
       const importRegex = new RegExp(`from ['"]${pkg}['"]|require\\(['"]${pkg}['"]\\)`, 'g');
       expect(content).not.toMatch(importRegex);
     });
+  });
+});
+
+describe('7. Escolha das pontas do cabo (getCableEndCandidates / getPortStatus)', () => {
+  const assemblyWithGpu: AssemblyState = { ...INITIAL_ASSEMBLY_STATE, cpuInstalled: CPU_NO_IGPU, gpuInstalled: READY_GPU };
+  const assemblyNoGpu: AssemblyState = { ...INITIAL_ASSEMBLY_STATE, cpuInstalled: CPU_WITH_IGPU, gpuInstalled: null };
+
+  it('sem ponta escolhida, oferece as portas das duas pontas; depois, só as do lado oposto', () => {
+    expect(getCableEndCandidates('CABLE_DISPLAY', null)).toEqual([
+      'GPU_HDMI_1', 'GPU_DP_1', 'MB_HDMI', 'MB_DP', 'MONITOR_HDMI_IN', 'MONITOR_DP_IN',
+    ]);
+    expect(getCableEndCandidates('CABLE_DISPLAY', 'GPU_DP_1')).toEqual(['MONITOR_HDMI_IN', 'MONITOR_DP_IN']);
+    expect(getCableEndCandidates('CABLE_DISPLAY', 'MONITOR_DP_IN')).toEqual(['GPU_HDMI_1', 'GPU_DP_1', 'MB_HDMI', 'MB_DP']);
+  });
+
+  it('cabos com ponta fixa (periféricos, força) já começam pela ponta do dispositivo', () => {
+    expect(getFixedCableEnd('CABLE_USB_KEYBOARD')).toBe('KEYBOARD_USB');
+    expect(getFixedCableEnd('CABLE_POWER_AC')).toBe('PC_AC_INLET');
+    expect(getFixedCableEnd('CABLE_DISPLAY')).toBeNull();
+  });
+
+  it('porta ocupada por outro cabo e saídas inexistentes da GPU', () => {
+    const cabling: ExternalCablingState = {
+      connections: { ...createInitialExternalCablesState().connections, CABLE_USB_KEYBOARD: { sourcePort: 'KEYBOARD_USB', destPort: 'PC_USB_1' } },
+    };
+    expect(getPortStatus('PC_USB_1', 'CABLE_USB_MOUSE', assemblyWithGpu, cabling)).toEqual({ status: 'OCCUPIED', occupiedBy: 'CABLE_USB_KEYBOARD' });
+    expect(getPortStatus('PC_USB_1', 'CABLE_USB_KEYBOARD', assemblyWithGpu, cabling).status).toBe('FREE');
+    expect(getPortStatus('GPU_HDMI_1', 'CABLE_DISPLAY', assemblyNoGpu, cabling).status).toBe('NOT_PRESENT');
+    expect(getPortStatus('GPU_HDMI_1', 'CABLE_DISPLAY', assemblyWithGpu, cabling).status).toBe('FREE');
   });
 });

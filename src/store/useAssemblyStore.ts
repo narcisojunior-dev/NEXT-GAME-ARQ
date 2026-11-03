@@ -39,6 +39,7 @@ import {
 import { INITIAL_ASSEMBLY_STATE } from '../engine/assemblyState';
 import { derivePhase } from '../engine/phases';
 import { soundEngine } from '../engine/audio/soundEngine';
+import { MonitorScreenInfo, deriveMonitorScreen } from '../engine/monitorScreen';
 import {
   DeskSnapPointId,
   DeskStage,
@@ -49,6 +50,7 @@ import {
   canRemoveFromDesk,
   deriveDeskStage,
   isPcReadyForDesk,
+  canPowerOnDesk,
   PlacementValidationResult,
   RemovalValidationResult,
 } from '../engine/deskSetup';
@@ -203,14 +205,42 @@ interface AssemblyStore {
  */
 export const selectDeskStage = (
   state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard' | 'deskSetup' | 'externalCabling'>
-): DeskStage =>
-  deriveDeskStage({
+): DeskStage => deriveDeskStage(deskStageParams(state));
+
+/** POST do PC montado, como se a chave da fonte estivesse ligada (a mesa liga o PC pelo botão) */
+const evaluateDeskPost = (state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard'>) =>
+  evaluatePostTest({ ...state.assembly, psuSwitchOn: true }, state.selectedMotherboard);
+
+const deskStageParams = (
+  state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard' | 'deskSetup' | 'externalCabling'>
+) => ({
+  assembly: state.assembly,
+  selectedMotherboard: state.selectedMotherboard,
+  deskSetup: state.deskSetup,
+  isDeskPoweredOn: state.deskSetup.isDeskPoweredOn,
+  externalCablesStatus: evaluateExternalCablesStatus(state.externalCabling, state.assembly),
+  postBootSuccess: evaluateDeskPost(state).bootSuccess,
+});
+
+/** Pode ligar a estação? (PC montado, itens obrigatórios na mesa e cabo de força na tomada) */
+export const selectCanPowerOnDesk = (
+  state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard' | 'deskSetup' | 'externalCabling'>
+) => canPowerOnDesk(deskStageParams(state));
+
+/** O que a tela do monitor 3D mostra agora (Issue 05) */
+export const selectMonitorScreen = (
+  state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard' | 'deskSetup' | 'externalCabling'>
+): MonitorScreenInfo => {
+  const post = state.deskSetup.isDeskPoweredOn ? evaluateDeskPost(state) : null;
+  const firstError = post && !post.bootSuccess ? post.issues.find((i) => i.type === 'ERROR') : undefined;
+  return deriveMonitorScreen({
+    placedDeskItems: state.deskSetup.placedDeskItems,
+    externalCabling: state.externalCabling,
     assembly: state.assembly,
-    selectedMotherboard: state.selectedMotherboard,
-    deskSetup: state.deskSetup,
-    isDeskPoweredOn: state.deskSetup.isDeskPoweredOn,
-    externalCablesStatus: evaluateExternalCablesStatus(state.externalCabling, state.assembly),
+    isPcPoweredOn: state.deskSetup.isDeskPoweredOn,
+    postFailure: firstError ? { title: firstError.title, message: firstError.message } : null,
   });
+};
 
 export const selectCurrentPhase = (state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard'>): AssemblyPhase =>
   derivePhase(state.assembly, state.selectedMotherboard);
@@ -1039,24 +1069,23 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
 
   setDeskPower: (on) => {
     if (on) {
-      const stage = selectDeskStage(get());
-      if (stage !== 'READY_TO_BOOT' && stage !== 'RUNNING') {
+      const power = selectCanPowerOnDesk(get());
+      if (!power.allowed) {
         soundEngine.playErrorBuzz();
         set({
           activeAlert: {
             type: 'warning',
-            title: 'Estação Ainda Não Está Pronta',
-            message:
-              stage === 'LOCKED'
-                ? 'Finalize a montagem do PC na bancada antes de ligá-lo na mesa.'
-                : stage === 'FURNISHING'
-                ? 'Posicione mesa, gabinete, monitor, teclado e mouse antes de ligar o computador.'
-                : 'Conecte os cabos de força, de vídeo (na saída correta) e os USBs de teclado e mouse antes de ligar.',
+            title: 'Não Foi Possível Ligar',
+            message: power.message ?? 'A estação ainda não está pronta para ligar.',
           },
         });
         return false;
       }
-      soundEngine.playBootChime();
+      // Chave da fonte + ventoinhas acelerando; o bip de POST toca quando a imagem aparece
+      soundEngine.playPowerSwitch();
+      soundEngine.playFanSpinUp();
+    } else if (get().deskSetup.isDeskPoweredOn) {
+      soundEngine.playPowerSwitch();
     }
     set((st) => ({
       deskSetup: {
@@ -1189,14 +1218,15 @@ if (typeof window !== 'undefined') {
  */
 useAssemblyStore.subscribe((state) => {
   if (!state.deskSetup.isDeskPoweredOn) return;
-  if (selectDeskStage(state) === 'RUNNING') return;
+  // Vídeo errado/desconectado não desliga o PC (o monitor mostra SEM SINAL); falta de energia sim
+  if (selectCanPowerOnDesk(state).allowed) return;
   useAssemblyStore.setState({
     deskSetup: { ...state.deskSetup, isDeskPoweredOn: false },
     activeAlert: {
       type: 'warning',
       title: 'Computador Desligado',
       message:
-        'A estação perdeu um requisito de funcionamento (cabo, periférico ou peça) e desligou. Corrija a conexão e ligue novamente.',
+        'A estação perdeu a energia ou um item essencial (cabo de força, gabinete, periférico ou peça) e desligou. Corrija e ligue novamente.',
     },
   });
 });

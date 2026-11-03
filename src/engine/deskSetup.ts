@@ -369,6 +369,48 @@ export interface DeriveDeskStageParams {
     hasPowerAc: boolean;
     hasDisplayCorrect: boolean;
   };
+  /** Resultado do POST do PC montado (false = travou no POST e não carrega o sistema) */
+  postBootSuccess?: boolean;
+}
+
+/** Itens que precisam estar na mesa para o computador ser usado */
+export const REQUIRED_BOOT_SNAP_POINTS: readonly DeskSnapPointId[] = [
+  'DESK_BASE',
+  'PC_TOWER',
+  'MONITOR_MAIN',
+  'KEYBOARD',
+  'MOUSE',
+];
+
+export function hasRequiredDeskItems(placedItems: Partial<Record<DeskSnapPointId, PlacedDeskItem>>): boolean {
+  return REQUIRED_BOOT_SNAP_POINTS.every((id) => Boolean(placedItems[id]));
+}
+
+export interface PowerOnValidationResult {
+  allowed: boolean;
+  message?: string;
+}
+
+/**
+ * O PC liga quando está montado, na mesa e com o cabo de força na tomada — mesmo com o cabo de
+ * vídeo errado ou ausente. É exatamente assim que o aluno descobre o "SEM SINAL" no monitor.
+ * "Em execução" (RUNNING) continua exigindo todo o cabeamento correto (deriveDeskStage).
+ */
+export function canPowerOnDesk(params: DeriveDeskStageParams): PowerOnValidationResult {
+  const { assembly, selectedMotherboard, deskSetup, externalCablesStatus } = params;
+  if (!isPcReadyForDesk(assembly, selectedMotherboard)) {
+    return { allowed: false, message: 'Finalize a montagem do PC na bancada antes de ligá-lo na mesa.' };
+  }
+  if (!hasRequiredDeskItems(deskSetup.placedDeskItems)) {
+    return { allowed: false, message: 'Posicione mesa, gabinete, monitor, teclado e mouse antes de ligar o computador.' };
+  }
+  if (!externalCablesStatus?.hasPowerAc) {
+    return {
+      allowed: false,
+      message: 'O computador está sem energia: conecte o cabo de força da fonte (C13/C14) na tomada da parede.',
+    };
+  }
+  return { allowed: true };
 }
 
 export function deriveDeskStage(params: DeriveDeskStageParams): DeskStage {
@@ -380,17 +422,7 @@ export function deriveDeskStage(params: DeriveDeskStageParams): DeskStage {
   }
 
   // 2. FURNISHING: PC está pronto, mas faltam itens obrigatórios na mesa para uso
-  const REQUIRED_BOOT_SNAP_POINTS: DeskSnapPointId[] = [
-    'DESK_BASE',
-    'PC_TOWER',
-    'MONITOR_MAIN',
-    'KEYBOARD',
-    'MOUSE',
-  ];
-
-  const hasAllRequiredItems = REQUIRED_BOOT_SNAP_POINTS.every(
-    (id) => Boolean(deskSetup.placedDeskItems[id])
-  );
+  const hasAllRequiredItems = hasRequiredDeskItems(deskSetup.placedDeskItems);
 
   if (!hasAllRequiredItems) {
     return 'FURNISHING';
@@ -410,7 +442,8 @@ export function deriveDeskStage(params: DeriveDeskStageParams): DeskStage {
   // 4. READY_TO_BOOT ou RUNNING
   const isPowered = isDeskPoweredOn ?? deskSetup.isDeskPoweredOn;
   if (isPowered) {
-    return 'RUNNING';
+    // Ligado, mas travado no POST: o sistema não carrega (a tela mostra o erro do POST)
+    return params.postBootSuccess === false ? 'READY_TO_BOOT' : 'RUNNING';
   }
 
   return 'READY_TO_BOOT';

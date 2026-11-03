@@ -81,7 +81,7 @@ describe('useAssemblyStore - Integração da Mesa de Setup (Fase 4)', () => {
     expect(store().deskSetup.placedDeskItems.DESK_BASE).toBeUndefined();
   });
 
-  it('não liga a energia da mesa antes de READY_TO_BOOT', () => {
+  it('não liga a energia sem o PC montado na mesa e o cabo de força', () => {
     expect(store().setDeskPower(true)).toBe(false);
     expect(store().deskSetup.isDeskPoweredOn).toBe(false);
     expect(store().activeAlert?.type).toBe('warning');

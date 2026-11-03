@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useAssemblyStore, selectDeskStage } from '../useAssemblyStore';
+import { useAssemblyStore, selectDeskStage, selectMonitorScreen } from '../useAssemblyStore';
 import { DeskSnapPointId, PlacedDeskItem } from '../../engine/deskSetup';
 import { READY_MB, REQUIRED_DESK_ITEMS, buildReadyAssembly, deskItem } from '../../engine/__tests__/fixtures/readyPc';
 
@@ -120,5 +120,33 @@ describe('useAssemblyStore - Cabeamento Externo e Validação Didática (Fase 4)
     // Religar o cabo não deve pular direto para RUNNING sem apertar o botão de novo
     store().connectExternalCable('CABLE_POWER_AC', 'PC_AC_INLET', 'WALL_OUTLET_1');
     expect(selectDeskStage(store())).toBe('READY_TO_BOOT');
+  });
+
+  it('liga com o vídeo na placa-mãe (SEM SINAL) e a imagem aparece ao mover o cabo para a GPU com o PC ligado', () => {
+    setupReadyDesk({ withGpu: true });
+    store().connectExternalCable('CABLE_POWER_AC', 'PC_AC_INLET', 'WALL_OUTLET_1');
+    store().connectExternalCable('CABLE_POWER_MONITOR', 'MONITOR_AC_INLET', 'WALL_OUTLET_2');
+    store().connectExternalCable('CABLE_USB_KEYBOARD', 'KEYBOARD_USB', 'PC_USB_1');
+    store().connectExternalCable('CABLE_USB_MOUSE', 'MOUSE_USB', 'PC_USB_2');
+    store().connectExternalCable('CABLE_DISPLAY', 'MB_HDMI', 'MONITOR_HDMI_IN');
+
+    expect(store().setDeskPower(true)).toBe(true);
+    expect(store().deskSetup.isDeskPoweredOn).toBe(true);
+    expect(selectDeskStage(store())).toBe('CABLING');
+    expect(selectMonitorScreen(store()).state).toBe('NO_SIGNAL');
+    expect(selectMonitorScreen(store()).reason).toBe('GPU_BYPASS_NO_SIGNAL');
+
+    // Hot-plug: o PC continua ligado e o vídeo aparece na saída da GPU
+    store().connectExternalCable('CABLE_DISPLAY', 'GPU_HDMI_1', 'MONITOR_HDMI_IN');
+    expect(store().deskSetup.isDeskPoweredOn).toBe(true);
+    expect(selectDeskStage(store())).toBe('RUNNING');
+    expect(selectMonitorScreen(store()).state).toBe('SIGNAL');
+  });
+
+  it('desconectar um cabo libera a porta para outro cabo', () => {
+    setupReadyDesk();
+    store().connectExternalCable('CABLE_USB_KEYBOARD', 'KEYBOARD_USB', 'PC_USB_1');
+    store().disconnectExternalCable('CABLE_USB_KEYBOARD');
+    expect(store().connectExternalCable('CABLE_USB_MOUSE', 'MOUSE_USB', 'PC_USB_1').allowed).toBe(true);
   });
 });

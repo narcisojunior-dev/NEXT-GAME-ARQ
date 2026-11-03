@@ -25,7 +25,7 @@ import {
 import { AssemblyState, MotherboardComponent } from '../types';
 import { INITIAL_ASSEMBLY_STATE } from '../assemblyState';
 import { derivePhase } from '../phases';
-import { isPcReadyForDesk } from '../deskSetup';
+import { canPowerOnDesk, isPcReadyForDesk } from '../deskSetup';
 import { READY_MB, REQUIRED_DESK_ITEMS, buildReadyAssembly } from './fixtures/readyPc';
 
 describe('1. Especificação de Snap Points da Mesa (DESK_SNAP_POINTS)', () => {
@@ -383,5 +383,57 @@ describe('5. Pureza do Motor de Regras (src/engine/)', () => {
       const importRegex = new RegExp(`from ['"]${pkg}['"]|require\\(['"]${pkg}['"]\\)`, 'g');
       expect(content).not.toMatch(importRegex);
     });
+  });
+});
+
+describe('6. Energia da estação (canPowerOnDesk)', () => {
+  const ready = buildReadyAssembly();
+  const desk: DeskSetupState = { ...createInitialDeskSetupState(), placedDeskItems: REQUIRED_DESK_ITEMS };
+  const withAc = { allRequiredConnected: false, hasPowerAc: true, hasDisplayCorrect: false };
+
+  it('não liga um PC que ainda não foi montado na bancada', () => {
+    const res = canPowerOnDesk({ assembly: { ...ready, cableAtx24PinConnected: false }, selectedMotherboard: READY_MB, deskSetup: desk, externalCablesStatus: withAc });
+    expect(res.allowed).toBe(false);
+    expect(res.message).toMatch(/montagem/i);
+  });
+
+  it('não liga sem os itens obrigatórios na mesa', () => {
+    const res = canPowerOnDesk({ assembly: ready, selectedMotherboard: READY_MB, deskSetup: createInitialDeskSetupState(), externalCablesStatus: withAc });
+    expect(res.allowed).toBe(false);
+  });
+
+  it('não liga sem o cabo de força da fonte na tomada', () => {
+    const res = canPowerOnDesk({
+      assembly: ready,
+      selectedMotherboard: READY_MB,
+      deskSetup: desk,
+      externalCablesStatus: { allRequiredConnected: false, hasPowerAc: false, hasDisplayCorrect: false },
+    });
+    expect(res.allowed).toBe(false);
+    expect(res.message).toMatch(/cabo de força/i);
+  });
+
+  it('liga com energia mesmo com o vídeo errado: é assim que o aluno vê o SEM SINAL', () => {
+    const res = canPowerOnDesk({ assembly: ready, selectedMotherboard: READY_MB, deskSetup: desk, externalCablesStatus: withAc });
+    expect(res.allowed).toBe(true);
+    // Ligado com vídeo incorreto não é "em execução"
+    expect(
+      deriveDeskStage({ assembly: ready, selectedMotherboard: READY_MB, deskSetup: desk, isDeskPoweredOn: true, externalCablesStatus: withAc })
+    ).toBe('CABLING');
+  });
+});
+
+describe('7. Falha no POST na mesa', () => {
+  const ready = buildReadyAssembly();
+  const desk: DeskSetupState = { ...createInitialDeskSetupState(), placedDeskItems: REQUIRED_DESK_ITEMS };
+  const allOk = { allRequiredConnected: true, hasPowerAc: true, hasDisplayCorrect: true };
+
+  it('ligado com cabeamento correto mas POST reprovado não é "em execução"', () => {
+    expect(
+      deriveDeskStage({ assembly: ready, selectedMotherboard: READY_MB, deskSetup: desk, isDeskPoweredOn: true, externalCablesStatus: allOk, postBootSuccess: false })
+    ).toBe('READY_TO_BOOT');
+    expect(
+      deriveDeskStage({ assembly: ready, selectedMotherboard: READY_MB, deskSetup: desk, isDeskPoweredOn: true, externalCablesStatus: allOk, postBootSuccess: true })
+    ).toBe('RUNNING');
   });
 });

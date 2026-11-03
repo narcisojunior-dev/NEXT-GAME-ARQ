@@ -584,3 +584,42 @@ export function pruneExternalCables(
 
   return { connections: nextConnections };
 }
+
+/* ------------------------------------------------------------------------------------
+ * Escolha das pontas na interface (Issue 04)
+ * ------------------------------------------------------------------------------------ */
+
+/** Ponta que não tem escolha (cabo cativo do periférico ou entrada única do aparelho) */
+export function getFixedCableEnd(cableId: ExternalCableId): ExternalPortId | null {
+  const spec = EXTERNAL_CABLES[cableId];
+  return spec.allowedSourcePorts.length === 1 ? spec.allowedSourcePorts[0] : null;
+}
+
+/**
+ * Portas que o aluno pode escolher agora: sem ponta escolhida, as das duas pontas;
+ * com uma ponta escolhida, apenas as do lado oposto do cabo.
+ */
+export function getCableEndCandidates(cableId: ExternalCableId, chosenPort: ExternalPortId | null): ExternalPortId[] {
+  const spec = EXTERNAL_CABLES[cableId];
+  if (!chosenPort) return [...spec.allowedSourcePorts, ...spec.allowedDestinationPorts];
+  if (spec.allowedSourcePorts.includes(chosenPort)) return [...spec.allowedDestinationPorts];
+  if (spec.allowedDestinationPorts.includes(chosenPort)) return [...spec.allowedSourcePorts];
+  return [];
+}
+
+export type ExternalPortStatus =
+  | { status: 'FREE' }
+  | { status: 'OCCUPIED'; occupiedBy: ExternalCableId }
+  | { status: 'NOT_PRESENT' };
+
+/** Estado físico da porta para o cabo em mãos (o próprio cabo não ocupa a porta) */
+export function getPortStatus(
+  port: ExternalPortId,
+  cableId: ExternalCableId,
+  assembly: AssemblyState,
+  cablingState: ExternalCablingState
+): ExternalPortStatus {
+  if (GPU_VIDEO_PORTS.includes(port) && !assembly.gpuInstalled) return { status: 'NOT_PRESENT' };
+  const occupiedBy = findCableUsingPort(cablingState, port, cableId);
+  return occupiedBy ? { status: 'OCCUPIED', occupiedBy } : { status: 'FREE' };
+}
