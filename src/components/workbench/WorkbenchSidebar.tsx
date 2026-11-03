@@ -28,6 +28,8 @@ import {
   Cpu,
   Layers,
   ThermometerSnowflake,
+  Fan,
+  Droplet,
   Tv,
   HardDrive,
   Zap,
@@ -75,7 +77,8 @@ const CATEGORIES: CategoryItem[] = [
   { id: 'MOTHERBOARD', label: 'Placa-Mãe', shortLabel: 'Placa', icon: <CircuitBoard className="w-3.5 h-3.5" /> },
   { id: 'CPU', label: 'Processador', shortLabel: 'CPU', icon: <Cpu className="w-3.5 h-3.5" /> },
   { id: 'RAM', label: 'Memória RAM', shortLabel: 'RAM', icon: <Layers className="w-3.5 h-3.5" /> },
-  { id: 'COOLER', label: 'Cooler & Pasta', shortLabel: 'Cooler', icon: <ThermometerSnowflake className="w-3.5 h-3.5" /> },
+  { id: 'COOLER', label: 'Cooler', shortLabel: 'Cooler', icon: <Fan className="w-3.5 h-3.5" /> },
+  { id: 'PASTE', label: 'Pasta Térmica', shortLabel: 'Pasta', icon: <Droplet className="w-3.5 h-3.5" /> },
   { id: 'GPU', label: 'Placa de Vídeo', shortLabel: 'GPU', icon: <Tv className="w-3.5 h-3.5" /> },
   { id: 'STORAGE', label: 'Armazenamento', shortLabel: 'SSD/HD', icon: <HardDrive className="w-3.5 h-3.5" /> },
   { id: 'PSU', label: 'Fonte (PSU)', shortLabel: 'Fonte', icon: <Zap className="w-3.5 h-3.5" /> },
@@ -243,12 +246,8 @@ export const WorkbenchSidebar: React.FC<WorkbenchSidebarProps> = ({ className = 
   const filteredComponents = useMemo(() => {
     return ALL_COMPONENTS.filter((comp) => {
       // 1. Filtro por Categoria
-      if (activeCategory !== 'ALL') {
-        if (activeCategory === 'COOLER') {
-          if (comp.category !== 'COOLER' && comp.category !== 'PASTE') return false;
-        } else if (comp.category !== activeCategory) {
-          return false;
-        }
+      if (activeCategory !== 'ALL' && comp.category !== activeCategory) {
+        return false;
       }
 
       // 2. Filtro por Busca de Texto
@@ -449,3 +448,4 @@ export const WorkbenchSidebar: React.FC<WorkbenchSidebarProps> = ({ className = 
     </aside>
   );
 };
+

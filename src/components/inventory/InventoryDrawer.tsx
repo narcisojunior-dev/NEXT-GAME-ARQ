@@ -19,6 +19,8 @@ import {
   Cpu,
   Layers,
   ThermometerSnowflake,
+  Fan,
+  Droplet,
   Tv,
   HardDrive,
   Zap,
@@ -51,7 +53,8 @@ export const InventoryDrawer: React.FC = () => {
     { id: 'MOTHERBOARD', label: 'Placa-Mãe', icon: <CircuitBoard className="w-3.5 h-3.5" /> },
     { id: 'CPU', label: 'Processador', icon: <Cpu className="w-3.5 h-3.5" /> },
     { id: 'RAM', label: 'Memória RAM', icon: <Layers className="w-3.5 h-3.5" /> },
-    { id: 'COOLER', label: 'Cooler & Pasta', icon: <ThermometerSnowflake className="w-3.5 h-3.5" /> },
+    { id: 'COOLER', label: 'Cooler', icon: <Fan className="w-3.5 h-3.5" /> },
+    { id: 'PASTE', label: 'Pasta Térmica', icon: <Droplet className="w-3.5 h-3.5" /> },
     { id: 'GPU', label: 'Placa de Vídeo', icon: <Tv className="w-3.5 h-3.5" /> },
     { id: 'STORAGE', label: 'Armazenamento', icon: <HardDrive className="w-3.5 h-3.5" /> },
     { id: 'PSU', label: 'Fonte (PSU)', icon: <Zap className="w-3.5 h-3.5" /> },
@@ -60,9 +63,6 @@ export const InventoryDrawer: React.FC = () => {
 
   const filtered = ALL_COMPONENTS.filter((comp) => {
     if (activeCategory === 'ALL') return true;
-    if (activeCategory === 'COOLER') {
-      return comp.category === 'COOLER' || comp.category === 'PASTE';
-    }
     return comp.category === activeCategory;
   });
 

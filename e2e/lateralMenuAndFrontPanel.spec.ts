@@ -47,6 +47,29 @@ test.describe('Menu Lateral de Escolha de Componentes e Verificação do Painel 
     await expect(naMaoBanner).not.toBeVisible();
   });
 
+  test('separa coolers e pastas térmicas em categorias distintas no menu lateral', async ({ page }) => {
+    const lateralMenu = page.locator('aside[aria-label="Menu Lateral de Escolha de Componentes e Cabeamento"]');
+    await expect(lateralMenu).toBeVisible();
+
+    // 1. Chip de Cooler deve estar presente e separado
+    const coolerChip = lateralMenu.getByRole('button', { name: 'Cooler', exact: true });
+    await expect(coolerChip).toBeVisible();
+
+    // 2. Chip de Pasta Térmica deve estar presente e separado
+    const pastaChip = lateralMenu.getByRole('button', { name: 'Pasta', exact: true });
+    await expect(pastaChip).toBeVisible();
+
+    // 3. Ao clicar em Cooler, deve exibir Coolers e NÃO pasta térmica
+    await coolerChip.click();
+    await expect(lateralMenu.getByText(/Cooler|Water Cooler|DeepCool/i).first()).toBeVisible();
+    await expect(lateralMenu.getByText('Thermal Silver').first()).not.toBeVisible();
+
+    // 4. Ao clicar em Pasta, deve exibir as pastas térmicas e NÃO coolers
+    await pastaChip.click();
+    await expect(lateralMenu.getByText(/Thermal Silver|Kryonaut|Arctic MX/i).first()).toBeVisible();
+    await expect(lateralMenu.getByText('DeepCool AK400').first()).not.toBeVisible();
+  });
+
   test('conecta o painel frontal via Q-Connector, verifica conexão e não solicita ligação novamente', async ({ page }) => {
     // 1. Abre o minigame de Zoom do Painel Frontal (F_PANEL)
     const fPanelBtn = page.getByRole('button', { name: /Ligar Painel Frontal \(F_PANEL\)/i });
