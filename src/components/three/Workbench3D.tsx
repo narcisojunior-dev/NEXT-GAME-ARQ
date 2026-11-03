@@ -8,7 +8,7 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useCableDragStore } from '@/components/workbench/cableDragStore';
 import { CABLES, CableSpec, CableTargetId, cableTargetById } from '@/engine/cabling';
-import { MotherboardComponent } from '@/engine/types';
+import { CpuSocket, MotherboardComponent, RamType } from '@/engine/types';
 import {
   Cpu,
   Layers,
@@ -41,6 +41,7 @@ export { isWebGLAvailable };
  * Cada placa-mãe possui coordenadas dedicadas para alinhamento fidedigno de peças e pinos
  * ==================================================================================== */
 export interface MotherboardLayout {
+  /** Centro do soquete; Y = altura onde a base da CPU assenta */
   CPU_SOCKET: [number, number, number];
   CPU_FAN_HEADER: [number, number, number];
   ATX12V_HEADER: [number, number, number];
@@ -52,16 +53,26 @@ export interface MotherboardLayout {
   FPANEL_HEADER: [number, number, number];
   DEBUG_LEDS: [number, number, number];
   GPU_POWER_HEADER: [number, number, number];
+  /** Comprimento do pente DIMM (133 mm) na escala desta placa, para assentar entre as travas */
+  RAM_STICK_LENGTH: number;
 }
 
+/*
+ * CALIBRAÇÃO MEDIDA (não estimada): soquete e slots DIMM foram localizados por um mapa de altura
+ * (vista superior) gerado a partir da geometria dos GLBs, já com a mesma normalização de
+ * AutoNormalizedMotherboard (largura 7.2, base em Y=0, rotação Z-up → Y-up quando necessário).
+ * Validação cruzada: nas duas placas o centro dos slots DIMM coincide em Z com o centro do soquete,
+ * como nas placas reais. Y dos slots = fundo do canal do DIMM (o pente "entra" no slot).
+ */
 export const MOTHERBOARD_LAYOUTS: Record<'AMD_AM4_AM5' | 'INTEL_LGA1700', MotherboardLayout> = {
-  // 1. AMD AM4 / AM5 (Baseado no modelo fiel ASRock B550M-HDV)
+  // 1. AMD AM4 / AM5 (mb-b550m.glb): soquete AM4 x∈[-0.28, 1.12] com alavanca à direita; 2 slots DIMM
   AMD_AM4_AM5: {
-    CPU_SOCKET: [-0.25, 0.22, -0.85],
+    CPU_SOCKET: [0.42, 0.22, -1.13],
     CPU_FAN_HEADER: [-0.20, 0.22, -2.45],
     ATX12V_HEADER: [-2.75, 0.22, -3.10],
-    RAM_SLOT_2: [1.65, 0.22, -1.10],
-    RAM_SLOT_4: [1.95, 0.22, -1.10],
+    RAM_SLOT_2: [2.38, 0.19, -1.12],
+    RAM_SLOT_4: [2.72, 0.19, -1.12],
+    RAM_STICK_LENGTH: 3.7,
     M2_SLOT: [-0.50, 0.22, 0.25],
     PCIE_SLOT: [-0.55, 0.22, 1.45],
     ATX24P_HEADER: [3.10, 0.22, -0.60],
@@ -69,13 +80,15 @@ export const MOTHERBOARD_LAYOUTS: Record<'AMD_AM4_AM5' | 'INTEL_LGA1700', Mother
     DEBUG_LEDS: [2.90, 0.22, -2.80],
     GPU_POWER_HEADER: [1.35, 0.95, 1.45],
   },
-  // 2. Intel LGA1700 (Baseado no modelo fiel MSI MAG Z790 Tomahawk ATX)
+  // 2. Intel LGA1700 (mb-z790-atx.glb): ILM x∈[-0.40, 1.00] z∈[-2.70, -0.68]; 4 slots DIMM
+  //    (A1 1.875 | A2 2.125 | B1 2.388 | B2 2.65). Dual channel = A2 + B2.
   INTEL_LGA1700: {
-    CPU_SOCKET: [0.15, 0.22, -1.55],
+    CPU_SOCKET: [0.30, 0.25, -1.69],
     CPU_FAN_HEADER: [0.45, 0.22, -2.85],
     ATX12V_HEADER: [-1.90, 0.22, -3.20],
-    RAM_SLOT_2: [1.95, 0.22, -1.55],
-    RAM_SLOT_4: [2.55, 0.22, -1.55],
+    RAM_SLOT_2: [2.125, 0.18, -1.66],
+    RAM_SLOT_4: [2.65, 0.18, -1.66],
+    RAM_STICK_LENGTH: 3.85,
     M2_SLOT: [-0.40, 0.22, 0.20],
     PCIE_SLOT: [-0.50, 0.22, 1.35],
     ATX24P_HEADER: [3.15, 0.22, -0.65],
@@ -141,6 +154,35 @@ const AutoNormalizedMotherboard: React.FC<{ modelUrl: string }> = ({ modelUrl })
   return <primitive object={normalizedScene} />;
 };
 
+const NO_ROTATION: [number, number, number] = [0, 0, 0];
+
+/** Tamanho (maior dimensão) da CPU no soquete: ~39 mm na escala das placas */
+const CPU_TARGET_SIZE = 1.15;
+
+/**
+ * Modelo de CPU por soquete. `height` = espessura após normalizar para CPU_TARGET_SIZE,
+ * medida das bounding boxes dos GLBs; usada para assentar a pasta e o cooler sobre o IHS.
+ * AM5 tem modelo próprio (LGA, sem pinos): o modelo AM4 é PGA e o Intel não representa a Ryzen.
+ */
+const CPU_MODELS: Record<CpuSocket, { url: string; height: number }> = {
+  AM4: { url: '/models/cpu-ryzen-am4.glb', height: 0.114 },
+  AM5: { url: '/models/cpu-ryzen-am5.glb', height: 0.075 },
+  LGA1700: { url: '/models/cpu-intel-lga1700.glb', height: 0.104 },
+};
+
+/** Espessura da camada de pasta espalhada pela pressão do cooler */
+const PASTE_LAYER = 0.01;
+
+/**
+ * Modelo de RAM por geração, com a rotação que deixa o pente EM PÉ e ao longo do slot (eixo Z):
+ * - ram-ddr4-crucial: comprimento em X, espessura em Y, altura em Z (contatos em -Z) → [-π/2, 0, π/2]
+ * - ram-ddr5-corsair: altura em X (contatos em -X), espessura em Y, comprimento em Z → [0, 0, π/2]
+ */
+const RAM_MODELS: Record<RamType, { url: string; rotation: [number, number, number] }> = {
+  DDR4: { url: '/models/ram-ddr4-crucial.glb', rotation: [-Math.PI / 2, 0, Math.PI / 2] },
+  DDR5: { url: '/models/ram-ddr5-corsair.glb', rotation: [0, 0, Math.PI / 2] },
+};
+
 /* ====================================================================================
  * COMPONENTE: Peça Auto-Normalizada com Animação Opcional de Fan
  * Dimensiona peças para encaixe perfeito nas proporções físicas da placa
@@ -157,46 +199,50 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
   modelUrl,
   targetSize,
   position,
-  rotation = [0, 0, 0],
+  rotation = NO_ROTATION,
   isSpinning = false,
 }) => {
   const { scene } = useGLTF(modelUrl);
   const fanGroupRef = useRef<THREE.Group>(null);
+  // Dependências escalares: um array literal novo a cada render (ex.: rotation={[0, x, 0]})
+  // invalidava o useMemo e re-clonava o GLB em todo render da bancada.
+  const [rx, ry, rz] = rotation;
 
   const preparedScene = useMemo(() => {
     const clone = scene.clone(true);
 
-    // 1. Calcula o bounding box base do objeto sem rotação externa
-    const box = new THREE.Box3().setFromObject(clone);
+    // 1. Aplica a rotação ANTES de medir: assim a peça girada (ex.: pente de RAM em pé)
+    //    continua com a face inferior assentada em Y=0, em vez de afundar metade na placa.
+    const rotated = new THREE.Group();
+    rotated.rotation.set(rx, ry, rz);
+    rotated.add(clone);
+    rotated.updateMatrixWorld(true);
+
+    const box = new THREE.Box3().setFromObject(rotated);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
 
-    // 2. Centraliza a base em X e Z e assenta a face inferior em Y=0
-    clone.position.set(-center.x, -box.min.y, -center.z);
+    // 2. Centraliza em X e Z e assenta a face inferior em Y=0 (espaço já rotacionado)
+    rotated.position.set(-center.x, -box.min.y, -center.z);
 
-    // 3. Normaliza para o tamanho alvo na maior dimensão em grupo interno
+    // 3. Normaliza para o tamanho alvo na maior dimensão
     const maxDim = Math.max(size.x, size.y, size.z);
     const scaleFactor = targetSize / Math.max(0.001, maxDim);
 
-    const innerWrapper = new THREE.Group();
-    innerWrapper.add(clone);
-    innerWrapper.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-    // 4. Aplica a rotação pretendida no outerWrapper de forma limpa e despolarizada
     const wrapper = new THREE.Group();
-    wrapper.add(innerWrapper);
-    wrapper.rotation.set(rotation[0], rotation[1], rotation[2]);
+    wrapper.add(rotated);
+    wrapper.scale.setScalar(scaleFactor);
     wrapper.updateMatrixWorld(true);
 
     wrapper.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
+      if (child instanceof THREE.Mesh) {
         child.castShadow = true;
         child.receiveShadow = true;
       }
     });
 
     return wrapper;
-  }, [scene, targetSize, rotation]);
+  }, [scene, targetSize, rx, ry, rz]);
 
   useFrame((_, delta) => {
     if (isSpinning && fanGroupRef.current) {
@@ -209,6 +255,57 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
       <group ref={fanGroupRef}>
         <primitive object={preparedScene} />
       </group>
+    </group>
+  );
+};
+
+/* ====================================================================================
+ * COMPONENTE: Bloco da Bomba do Water Cooler (AIO)
+ * O GLB cooler-aio-240 contém apenas um fragmento (placa de 0.03 × 0.39 × 0.12) e, normalizado,
+ * virava uma lâmina fina em pé sobre a CPU. A bomba é procedural: base de cobre + corpo + rotor.
+ * ==================================================================================== */
+const AioPumpBlock: React.FC<{ position: [number, number, number]; isRunning?: boolean }> = ({
+  position,
+  isRunning = false,
+}) => {
+  const rotorRef = useRef<THREE.Group>(null);
+
+  useFrame((_, delta) => {
+    if (isRunning && rotorRef.current) {
+      rotorRef.current.rotation.y += delta * 6;
+    }
+  });
+
+  return (
+    <group position={position}>
+      {/* Base de cobre (cold plate) em contato com a pasta */}
+      <mesh position={[0, 0.015, 0]} castShadow receiveShadow>
+        <boxGeometry args={[0.82, 0.03, 0.82]} />
+        <meshStandardMaterial color="#b87333" metalness={0.85} roughness={0.3} />
+      </mesh>
+      {/* Corpo da bomba */}
+      <mesh position={[0, 0.17, 0]} castShadow>
+        <cylinderGeometry args={[0.38, 0.4, 0.28, 40]} />
+        <meshStandardMaterial color="#111827" metalness={0.4} roughness={0.45} />
+      </mesh>
+      {/* Tampa com anel de LED e rotor (gira apenas com o PC ligado) */}
+      <group ref={rotorRef} position={[0, 0.315, 0]}>
+        <mesh>
+          <torusGeometry args={[0.28, 0.025, 12, 40]} />
+          <meshStandardMaterial color="#22d3ee" emissive="#0891b2" emissiveIntensity={isRunning ? 1.2 : 0.25} />
+        </mesh>
+        <mesh rotation={[0, 0, 0]}>
+          <boxGeometry args={[0.42, 0.012, 0.06]} />
+          <meshStandardMaterial color="#334155" metalness={0.6} roughness={0.3} />
+        </mesh>
+      </group>
+      {/* Mangueiras saindo para o radiador */}
+      {[-0.14, 0.14].map((z) => (
+        <mesh key={z} position={[0.42, 0.2, z]} rotation={[0, 0, Math.PI / 2]} castShadow>
+          <cylinderGeometry args={[0.045, 0.045, 0.22, 16]} />
+          <meshStandardMaterial color="#0b0f19" roughness={0.8} />
+        </mesh>
+      ))}
     </group>
   );
 };
@@ -596,7 +693,25 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
     installStorage,
     installGpu,
     openFrontPanelModal,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    // Seletor raso: sem ele a bancada 3D re-renderizava a cada tick do cronômetro (1 s)
+    useShallow((s) => ({
+      selectedMotherboard: s.selectedMotherboard,
+      installMotherboard: s.installMotherboard,
+      assembly: s.assembly,
+      postResult: s.postResult,
+      selectedComponentForPlacement: s.selectedComponentForPlacement,
+      installCpu: s.installCpu,
+      toggleSocketLever: s.toggleSocketLever,
+      applyThermalPaste: s.applyThermalPaste,
+      installCooler: s.installCooler,
+      removeCooler: s.removeCooler,
+      installRam: s.installRam,
+      installStorage: s.installStorage,
+      installGpu: s.installGpu,
+      openFrontPanelModal: s.openFrontPanelModal,
+    }))
+  );
 
   // Seleciona o modelo 3D e layout físico fiel à plataforma de cada placa-mãe
   const targetMb =
@@ -614,6 +729,10 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
   const layout = isIntel
     ? MOTHERBOARD_LAYOUTS.INTEL_LGA1700
     : MOTHERBOARD_LAYOUTS.AMD_AM4_AM5;
+
+  // Topo do IHS da CPU instalada: referência para a gota de pasta e a base do cooler
+  const ihsTopY =
+    layout.CPU_SOCKET[1] + (assembly.cpuInstalled ? CPU_MODELS[assembly.cpuInstalled.socket].height : 0);
 
   // Aciona preset de câmera
   const applyViewPreset = (view: 'iso' | 'top' | 'front') => {
@@ -648,32 +767,14 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
   const isGpuTarget = selectedComponentForPlacement?.category === 'GPU';
 
   const handleCpuAreaClick = () => {
-    if (isCpuTarget) {
-      installCpu(selectedComponentForPlacement as never);
-    } else if (isPasteTarget) {
+    const selected = selectedComponentForPlacement;
+    if (selected?.category === 'CPU') {
+      installCpu(selected);
+    } else if (selected?.category === 'PASTE') {
       applyThermalPaste();
-    } else if (isCoolerTarget) {
-      if (!assembly.cpuInstalled) {
-        useAssemblyStore.setState({
-          activeAlert: {
-            type: 'error',
-            title: 'Soquete Vazio!',
-            message: 'Instale o processador no soquete antes de fixar o cooler.',
-          },
-        });
-        return;
-      }
-      if (!assembly.thermalPasteApplied) {
-        useAssemblyStore.setState({
-          activeAlert: {
-            type: 'error',
-            title: 'Pasta Térmica Obrigatória!',
-            message: 'Você não pode instalar o cooler sem antes aplicar a pasta térmica sobre o processador! Selecione a pasta térmica no catálogo.',
-          },
-        });
-        return;
-      }
-      installCooler(selectedComponentForPlacement as never);
+    } else if (selected?.category === 'COOLER') {
+      // A ordem CPU → Pasta → Cooler é validada no motor (validateCoolerPrerequisites), igual na bancada 2D
+      installCooler(selected);
     }
   };
 
@@ -682,7 +783,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
       {/* ==================================================================================
        * BARRA SUPERIOR DE FERRAMENTAS E CONTROLES DE CÂMERA
        * ================================================================================== */}
-      <div className="absolute top-3 left-3 right-3 z-40 flex items-center justify-between pointer-events-none">
+      <div className="absolute top-3 left-3 right-3 z-40 flex flex-wrap items-start justify-between gap-2 pointer-events-none">
         {/* Identificador de Placa e Modo 3D */}
         <div className="flex items-center gap-2 pointer-events-auto bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-700/80 shadow-lg text-xs font-mono">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-sm shadow-cyan-400" />
@@ -698,12 +799,12 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
         </div>
 
         {/* Controles de Câmera e Modos */}
-        <div className="flex items-center gap-2 pointer-events-auto">
+        <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
           {/* Presets de Câmera */}
           <div className="bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700/80 p-1 flex items-center gap-1 shadow-lg">
             <button
               onClick={() => applyViewPreset('iso')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono whitespace-nowrap transition-all cursor-pointer ${
                 activePreset === 'iso'
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
@@ -716,7 +817,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
 
             <button
               onClick={() => applyViewPreset('top')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono whitespace-nowrap transition-all cursor-pointer ${
                 activePreset === 'top'
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
@@ -729,7 +830,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
 
             <button
               onClick={() => applyViewPreset('front')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono whitespace-nowrap transition-all cursor-pointer ${
                 activePreset === 'front'
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800'
@@ -954,68 +1055,54 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             {/* CPU Instalada no Soquete */}
             {assembly.cpuInstalled && (
               <AutoNormalizedPart
-                modelUrl={
-                  assembly.cpuInstalled.socket === 'AM4'
-                    ? '/models/cpu-ryzen-am4.glb'
-                    : '/models/cpu-intel-lga1700.glb'
-                }
-                targetSize={1.15}
+                modelUrl={CPU_MODELS[assembly.cpuInstalled.socket].url}
+                targetSize={CPU_TARGET_SIZE}
                 position={layout.CPU_SOCKET}
               />
             )}
 
-            {/* Pasta Térmica aplicada sobre o IHS da CPU */}
+            {/* Pasta Térmica: gota do tamanho de uma ervilha exatamente sobre o IHS da CPU */}
             {assembly.cpuInstalled && assembly.thermalPasteApplied && !assembly.coolerInstalled && (
-              <group position={[layout.CPU_SOCKET[0], 0.28, layout.CPU_SOCKET[2]]}>
-                {/* Gota tridimensional de composto térmico prateado metálico */}
-                <mesh position={[0, 0.015, 0]}>
-                  <cylinderGeometry args={[0.22, 0.28, 0.03, 32]} />
-                  <meshStandardMaterial
-                    color="#a1a1aa"
-                    roughness={0.25}
-                    metalness={0.75}
-                  />
-                </mesh>
-                <mesh position={[0, 0.03, 0]}>
-                  <sphereGeometry args={[0.12, 16, 16]} />
-                  <meshStandardMaterial
-                    color="#d4d4d8"
-                    roughness={0.2}
-                    metalness={0.85}
-                  />
-                </mesh>
-              </group>
+              <mesh
+                position={[layout.CPU_SOCKET[0], ihsTopY, layout.CPU_SOCKET[2]]}
+                scale={[1, 0.4, 1]}
+                castShadow
+              >
+                <sphereGeometry args={[0.13, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+                <meshStandardMaterial color="#c4c4cc" roughness={0.3} metalness={0.7} />
+              </mesh>
             )}
 
-            {/* Cooler Instalado Assentado sobre a CPU e Pasta Térmica */}
-            {assembly.coolerInstalled && (
-              <AutoNormalizedPart
-                modelUrl={
-                  assembly.coolerInstalled.coolerType === 'Water'
-                    ? '/models/cooler-aio-240.glb'
-                    : '/models/cooler-torre.glb'
-                }
-                targetSize={2.4}
-                position={[layout.CPU_SOCKET[0], 0.31, layout.CPU_SOCKET[2]]}
-                isSpinning={Boolean(postResult?.bootSuccess)}
-              />
-            )}
+            {/* Cooler assentado sobre a CPU e a camada de pasta espalhada */}
+            {assembly.coolerInstalled &&
+              (assembly.coolerInstalled.coolerType === 'Water' ? (
+                <AioPumpBlock
+                  position={[layout.CPU_SOCKET[0], ihsTopY + PASTE_LAYER, layout.CPU_SOCKET[2]]}
+                  isRunning={Boolean(postResult?.bootSuccess)}
+                />
+              ) : (
+                <AutoNormalizedPart
+                  modelUrl="/models/cooler-torre.glb"
+                  targetSize={2.4}
+                  position={[layout.CPU_SOCKET[0], ihsTopY + PASTE_LAYER, layout.CPU_SOCKET[2]]}
+                />
+              ))}
 
-            {/* Pentes de Memória RAM na VERTICAL */}
+            {/* Pentes de Memória RAM EM PÉ, encaixados no canal do slot DIMM e alinhados ao seu comprimento */}
             {assembly.ramInstalledSlot2 && (
               <AutoNormalizedPart
-                modelUrl="/models/ram-ddr4-crucial.glb"
-                targetSize={3.3}
+                modelUrl={RAM_MODELS[assembly.ramInstalledSlot2.ramType].url}
+                targetSize={layout.RAM_STICK_LENGTH}
                 position={layout.RAM_SLOT_2}
-                rotation={[0, Math.PI / 2, 0]}
+                rotation={RAM_MODELS[assembly.ramInstalledSlot2.ramType].rotation}
               />
             )}
             {assembly.ramInstalledSlot4 && (
               <AutoNormalizedPart
-                modelUrl="/models/ram-ddr4-crucial.glb"
-                targetSize={3.3}
+                modelUrl={RAM_MODELS[assembly.ramInstalledSlot4.ramType].url}
+                targetSize={layout.RAM_STICK_LENGTH}
                 position={layout.RAM_SLOT_4}
-                rotation={[0, Math.PI / 2, 0]}
+                rotation={RAM_MODELS[assembly.ramInstalledSlot4.ramType].rotation}
               />
             )}
 
@@ -1035,8 +1122,6 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                     modelUrl="/models/gpu-rx-6700xt.glb"
                     targetSize={4.2}
                     position={layout.PCIE_SLOT}
-                    rotation={[0, 0, 0]}
-                    isSpinning={Boolean(postResult?.bootSuccess)}
                   />
                 )}
               </>
