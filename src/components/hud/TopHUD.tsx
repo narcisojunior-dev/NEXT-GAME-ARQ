@@ -162,13 +162,19 @@ export const TopHUD: React.FC = () => {
 
           {/* Botão de Alternância: Bancada vs Mesa Battlestation 3D (Fase 4) */}
           <button
+            type="button"
+            aria-pressed={activeWorkbenchView === 'desk'}
             onClick={() => setActiveWorkbenchView(activeWorkbenchView === 'desk' ? 'bench' : 'desk')}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
               activeWorkbenchView === 'desk'
                 ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-500/20'
                 : 'bg-slate-900 hover:bg-slate-800 border-purple-700/60 text-purple-300'
             }`}
-            title="Alternar para a Mesa Battlestation 3D"
+            title={
+              activeWorkbenchView === 'desk'
+                ? 'Voltar para a Bancada de Montagem'
+                : 'Alternar para a Mesa Battlestation 3D'
+            }
           >
             <Monitor className="w-3.5 h-3.5" />
             <span>{activeWorkbenchView === 'desk' ? 'Bancada' : 'Mesa 3D'}</span>

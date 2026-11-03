@@ -59,9 +59,12 @@ const SlotThumb: React.FC<{ component: HardwareComponent | null; icon: React.Rea
 
 export const WorkbenchMat: React.FC = () => {
   const [is3DMode, setIs3DMode] = React.useState<boolean>(false);
+  const [hasWebGL, setHasWebGL] = React.useState<boolean>(true);
 
   React.useEffect(() => {
-    setIs3DMode(isWebGLAvailable());
+    const available = isWebGLAvailable();
+    setHasWebGL(available);
+    setIs3DMode(available);
   }, []);
 
   const {
@@ -219,7 +222,12 @@ export const WorkbenchMat: React.FC = () => {
           {/* Alternador 3D / 2D da Bancada */}
           <div className="bg-slate-950/80 rounded-xl border border-slate-800 p-1 flex items-center gap-1">
             <button
-              onClick={() => setIs3DMode(true)}
+              type="button"
+              aria-pressed={activeWorkbenchView === 'bench' && is3DMode}
+              onClick={() => {
+                setIs3DMode(true);
+                setActiveWorkbenchView('bench');
+              }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
                 is3DMode
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow'
@@ -231,7 +239,12 @@ export const WorkbenchMat: React.FC = () => {
               <span>3D</span>
             </button>
             <button
-              onClick={() => setIs3DMode(false)}
+              type="button"
+              aria-pressed={activeWorkbenchView === 'bench' && !is3DMode}
+              onClick={() => {
+                setIs3DMode(false);
+                setActiveWorkbenchView('bench');
+              }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
                 !is3DMode
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow'
@@ -258,7 +271,26 @@ export const WorkbenchMat: React.FC = () => {
       <div className="relative z-10 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_370px] xl:grid-cols-[minmax(0,1fr)_420px] items-start">
         <div className="min-w-0">
           {activeWorkbenchView === 'desk' ? (
-            <DeskSetup3D onBackToWorkbench={() => setActiveWorkbenchView('bench')} />
+            hasWebGL ? (
+              <DeskSetup3D onBackToWorkbench={() => setActiveWorkbenchView('bench')} />
+            ) : (
+              <div
+                role="alert"
+                className="w-full h-[620px] rounded-2xl border border-amber-700/60 bg-slate-950 flex flex-col items-center justify-center gap-3 p-6 text-center font-mono"
+              >
+                <p className="text-sm font-bold text-amber-300">Mesa 3D indisponível neste computador</p>
+                <p className="text-xs text-slate-400 max-w-md">
+                  O navegador não oferece WebGL (aceleração 3D). A montagem continua salva: volte à bancada 2D para prosseguir.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveWorkbenchView('bench')}
+                  className="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 text-xs font-bold cursor-pointer"
+                >
+                  Voltar à Bancada
+                </button>
+              </div>
+            )
           ) : is3DMode ? (
             <Workbench3D onToggle2D={() => setIs3DMode(false)} />
           ) : (

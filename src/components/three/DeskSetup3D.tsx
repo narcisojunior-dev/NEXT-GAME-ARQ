@@ -1,32 +1,13 @@
 'use client';
 
-import React, { Suspense, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useAssemblyStore, selectDeskStage } from '@/store/useAssemblyStore';
-import {
-  DeskSnapPointId,
-  DeskStage,
-  DESK_SNAP_POINTS,
-} from '@/engine/deskSetup';
-import {
-  Eye,
-  ArrowUpFromLine,
-  Monitor,
-  User,
-  ZoomIn,
-  ZoomOut,
-  RotateCw,
-  Power,
-  Layers,
-  Wrench,
-  CheckCircle2,
-  AlertTriangle,
-  Lock,
-  Sparkles,
-} from 'lucide-react';
+import { DESK_SNAP_POINTS } from '@/engine/deskSetup';
+import { Eye, ArrowUpFromLine, Monitor, User, ZoomIn, ZoomOut, RotateCw, Wrench } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
 /* ====================================================================================
@@ -61,45 +42,60 @@ export const DESK_CAMERA_PRESETS: Record<
  * ==================================================================================== */
 interface DeskCameraControllerProps {
   preset: DeskCameraPreset;
+  /** Incrementado a cada clique: permite re-aplicar o mesmo preset (ex.: "Resetar Câmera" após orbitar) */
+  requestId: number;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
 }
 
-const DeskCameraController: React.FC<DeskCameraControllerProps> = ({ preset, controlsRef }) => {
+const DeskCameraController: React.FC<DeskCameraControllerProps> = ({ preset, requestId, controlsRef }) => {
   const { camera } = useThree();
-  const [targetConfig, setTargetConfig] = useState(DESK_CAMERA_PRESETS[preset]);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  // Refs (e não estado): a transição roda no loop de frame sem provocar re-render do React
+  const targetPos = useRef(new THREE.Vector3(...DESK_CAMERA_PRESETS[preset].pos));
+  const targetLook = useRef(new THREE.Vector3(...DESK_CAMERA_PRESETS[preset].target));
+  const isTransitioning = useRef(false);
 
-  React.useEffect(() => {
-    setTargetConfig(DESK_CAMERA_PRESETS[preset]);
-    setIsTransitioning(true);
-  }, [preset]);
+  useEffect(() => {
+    targetPos.current.set(...DESK_CAMERA_PRESETS[preset].pos);
+    targetLook.current.set(...DESK_CAMERA_PRESETS[preset].target);
+    isTransitioning.current = true;
+  }, [preset, requestId]);
 
   useFrame((_, delta) => {
-    if (!isTransitioning) return;
+    if (!isTransitioning.current) return;
 
     const t = Math.min(1, delta * 5.0);
-    const targetPos = new THREE.Vector3(...targetConfig.pos);
-    const targetLook = new THREE.Vector3(...targetConfig.target);
+    camera.position.lerp(targetPos.current, t);
 
-    camera.position.lerp(targetPos, t);
-
-    if (controlsRef.current) {
-      controlsRef.current.target.lerp(targetLook, t);
-      controlsRef.current.update();
+    const controls = controlsRef.current;
+    if (controls) {
+      controls.target.lerp(targetLook.current, t);
+      controls.update();
     }
 
-    if (camera.position.distanceTo(targetPos) < 0.04) {
-      camera.position.copy(targetPos);
-      if (controlsRef.current) {
-        controlsRef.current.target.copy(targetLook);
-        controlsRef.current.update();
+    if (camera.position.distanceTo(targetPos.current) < 0.04) {
+      camera.position.copy(targetPos.current);
+      if (controls) {
+        controls.target.copy(targetLook.current);
+        controls.update();
       }
-      setIsTransitioning(false);
+      isTransitioning.current = false;
     }
   });
 
   return null;
 };
+
+const PRESET_BUTTONS: {
+  preset: DeskCameraPreset;
+  label: string;
+  title: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { preset: 'setup-wide', label: 'Panorâmica', title: 'Visão Panorâmica da Estação (setup-wide)', Icon: Eye },
+  { preset: 'setup-top', label: 'Topo', title: 'Visão Superior dos Periféricos (setup-top)', Icon: ArrowUpFromLine },
+  { preset: 'setup-pc', label: 'Conexões PC', title: 'Visão Traseira das Conexões do PC e GPU (setup-pc)', Icon: Monitor },
+  { preset: 'setup-seat', label: 'Visão do Aluno', title: 'Visão em Primeira Pessoa do Aluno na Cadeira (setup-seat)', Icon: User },
+];
 
 /* ====================================================================================
  * COMPONENTE: Mesa Gamer / Mobiliário da Battlestation
@@ -244,6 +240,12 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
 
   const deskStage = useAssemblyStore(selectDeskStage);
   const activePreset = deskSetup.deskCameraPreset;
+  const [cameraRequestId, setCameraRequestId] = useState(0);
+
+  const applyPreset = (preset: DeskCameraPreset) => {
+    setDeskCameraPreset(preset);
+    setCameraRequestId((id) => id + 1);
+  };
 
   const handleZoom = (factor: number) => {
     const controls = controlsRef.current;
@@ -260,7 +262,7 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
   };
 
   const handleResetCamera = () => {
-    setDeskCameraPreset('setup-wide');
+    applyPreset('setup-wide');
   };
 
   const handleBack = () => {
@@ -276,9 +278,9 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
       {/* ==================================================================================
        * BARRA SUPERIOR: CONTROLES DE CÂMERA E ESTÁGIO DA MESA
        * ================================================================================== */}
-      <div className="absolute top-3 left-3 right-3 z-40 flex items-center justify-between pointer-events-none">
-        {/* Indicador de Estágio da Mesa */}
-        <div className="flex items-center gap-2 pointer-events-auto bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-700/80 shadow-lg text-xs font-mono">
+      <div className="absolute top-3 left-3 right-3 z-40 flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+        {/* Indicador de Estágio da Mesa (anunciado a leitores de tela a cada mudança) */}
+        <div role="status" aria-live="polite" className="flex items-center gap-2 pointer-events-auto bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-slate-700/80 shadow-lg text-xs font-mono">
           <span
             className={`w-2.5 h-2.5 rounded-full ${
               deskStage === 'RUNNING'
@@ -320,65 +322,36 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
         </div>
 
         {/* Presets de Câmera e Ações */}
-        <div className="flex items-center gap-2 pointer-events-auto">
+        <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
           {/* Botões de Preset com nomes exatos */}
-          <div className="bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700/80 p-1 flex items-center gap-1 shadow-lg">
-            <button
-              onClick={() => setDeskCameraPreset('setup-wide')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
-                activePreset === 'setup-wide'
-                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-              title="Visão Panorâmica da Estação (setup-wide)"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Panorâmica</span>
-            </button>
-
-            <button
-              onClick={() => setDeskCameraPreset('setup-top')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
-                activePreset === 'setup-top'
-                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-              title="Visão Superior Ortográfica dos Periféricos (setup-top)"
-            >
-              <ArrowUpFromLine className="w-3.5 h-3.5" />
-              <span>Topo</span>
-            </button>
-
-            <button
-              onClick={() => setDeskCameraPreset('setup-pc')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
-                activePreset === 'setup-pc'
-                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-              title="Visão Traseira das Conexões do PC e GPU (setup-pc)"
-            >
-              <Monitor className="w-3.5 h-3.5" />
-              <span>Conexões PC</span>
-            </button>
-
-            <button
-              onClick={() => setDeskCameraPreset('setup-seat')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer ${
-                activePreset === 'setup-seat'
-                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-              title="Visão em Primeira Pessoa do Aluno na Cadeira (setup-seat)"
-            >
-              <User className="w-3.5 h-3.5" />
-              <span>Visão do Aluno</span>
-            </button>
+          <div
+            role="group"
+            aria-label="Presets de câmera da mesa"
+            className="bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700/80 p-1 flex items-center gap-1 shadow-lg"
+          >
+            {PRESET_BUTTONS.map(({ preset, label, title, Icon }) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => applyPreset(preset)}
+                aria-pressed={activePreset === preset}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono whitespace-nowrap transition-all cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400 ${
+                  activePreset === preset
+                    ? 'bg-cyan-500 text-slate-950 font-bold shadow'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                }`}
+                title={title}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{label}</span>
+              </button>
+            ))}
           </div>
 
           {/* Zoom e Reset */}
           <div className="bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700/80 p-1 flex items-center gap-1 shadow-lg">
             <button
+              type="button"
               onClick={() => handleZoom(0.85)}
               className="p-1 rounded-lg text-slate-300 hover:text-cyan-300 hover:bg-slate-800 transition-all cursor-pointer"
               title="Aproximar (+)"
@@ -387,6 +360,7 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
             <button
+              type="button"
               onClick={() => handleZoom(1.15)}
               className="p-1 rounded-lg text-slate-300 hover:text-cyan-300 hover:bg-slate-800 transition-all cursor-pointer"
               title="Afastar (-)"
@@ -395,6 +369,7 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
             <button
+              type="button"
               onClick={handleResetCamera}
               className="p-1 rounded-lg text-slate-300 hover:text-cyan-300 hover:bg-slate-800 transition-all cursor-pointer"
               title="Resetar Câmera"
@@ -406,9 +381,11 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
 
           {/* Botão de Retorno à Bancada */}
           <button
+            type="button"
             onClick={handleBack}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md border border-slate-700/80 text-xs font-mono text-cyan-300 hover:text-cyan-200 shadow-lg transition-all cursor-pointer"
             title="Voltar para a bancada técnica de montagem"
+            aria-label="Voltar à bancada de montagem"
           >
             <Wrench className="w-3.5 h-3.5" />
             <span>Voltar à Bancada</span>
@@ -438,7 +415,7 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
           <pointLight position={[0, 2, -2]} color="#38bdf8" intensity={1.2} distance={8} />
 
           {/* Gerenciador de Câmera */}
-          <DeskCameraController preset={activePreset} controlsRef={controlsRef} />
+          <DeskCameraController preset={activePreset} requestId={cameraRequestId} controlsRef={controlsRef} />
           <OrbitControls
             ref={controlsRef}
             enableDamping
