@@ -4,7 +4,9 @@
 [![React 19](https://img.shields.io/badge/React-19.0.0-blue?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.2-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.0.9-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
-[![Vitest Tests](https://img.shields.io/badge/Vitest-37%2F37%20Passed-green?style=for-the-badge&logo=vitest)](https://vitest.dev/)
+[![Vitest Tests](https://img.shields.io/badge/Vitest-184%2F184%20Passed-green?style=for-the-badge&logo=vitest)](https://vitest.dev/)
+[![Playwright E2E](https://img.shields.io/badge/Playwright_E2E-Verified-blue?style=for-the-badge&logo=playwright)](https://playwright.dev/)
+[![Three.js 3D](https://img.shields.io/badge/Three.js-Interactive_3D_Bench-black?style=for-the-badge&logo=three.js)](https://threejs.org/)
 [![Hardware Catalog](https://img.shields.io/badge/Hardware-70%2B%20Real%20Components-blue?style=for-the-badge&logo=intel)](./src/engine/hardwareCatalog.ts)
 [![Web Audio API](https://img.shields.io/badge/Web_Audio-Procedural_Sound-purple?style=for-the-badge)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
 [![PWA Ready](https://img.shields.io/badge/PWA-100%25%20Offline-orange?style=for-the-badge&logo=pwa)](https://web.dev/progressive-web-apps/)
@@ -64,15 +66,22 @@ mindmap
       Sintese Sonora Procedural Web Audio API
 ```
 
-### 1. 🛠️ Bancada Interativa & Oficina Livre
-* **Bancada Limpa com Seleção de Placa-Mãe:** O aluno inicia na bancada antiestática e escolhe a placa-mãe apropriada (**AMD AM4 B550**, **AMD AM5 B650**, **Intel LGA1700 B760** ou **Mini-ITX Z790**).
+### 1. 🛠️ Bancada Interativa (3D Realista & 2D Leve) & Oficina Livre
+* **Bancada 3D Interativa com Calibração Física Fidedigna:** O aluno experimenta uma bancada virtual completa de testes de engenharia com tapete antiestático escuro, iluminação técnica e modelos GLB hiper-realistas:
+  * **Dual Plataforma AMD & Intel:** Modelos físicos dedicados para **Intel LGA1700** (`mb-z790-atx.glb`) e **AMD AM4/AM5** (`mb-b550m.glb`) com calibração milimétrica de soquetes, slots DIMM de memória, M.2 NVMe, PCIe x16 e conectores elétricos.
+  * **Assentamento Direto Holográfico 3D:** Quando a bancada estiver vazia, o tapete antiestático exibe o holograma demarcador e um card 3D flutuante para posicionar a placa com um clique direto.
+  * **Affordances e Pinos Inteligentes:** Pinos circulares contextuais sem qualquer sobreposição ou amontoamento visual. Os detalhes técnicos expandem com animações suaves no *hover* ou navegação por teclado.
+  * **Persistência Bidirecional 100% 2D <-> 3D:** Alternância transparente entre o modo 3D e o modo 2D leve (gráfico vetorial SVG, ideal para economia de energia em laptops escolares), preservando integralmente o estado das peças instaladas, alavanca, pasta térmica, coolers e cabeamento.
+  * **Modo "Levar ao Gabinete":** Transição direta para o gabinete 3D envolvente com tampa de vidro temperado interativa e ventoinhas giratórias acionadas pelo POST.
+  * **Menu Lateral de Escolha de Componentes & Cabeamento:** Navegação ágil com busca instantânea, selos de compatibilidade em tempo real e categorias individualizadas (com separação independente de Coolers e Pastas Térmicas).
 * **Física Real de Montagem:**
   * Alavanca do soquete da CPU com trava de pressão mecânica.
-  * Aplicação e espalhamento de pasta térmica (*thermal compound*).
-  * Encaixe de memórias RAM com abertura prévia de travas laterais.
+  * Aplicação e espalhamento de gota de pasta térmica metálica sobre o IHS.
+  * Parafusamento de Coolers Torre e Water Coolers (AIO 240mm) sobre a CPU com pasta térmica pré-requisito obrigatório.
+  * Encaixe vertical de pentes de memórias RAM nos slots DIMM recomendados (Dual Channel Slots 2 e 4).
   * Parafusamento de SSDs M.2 NVMe com dissipadores térmicos.
-  * Instalação de placas de vídeo no slot PCIe x16 com trava de retenção.
-  * Conexão de cabos modulares (ATX 24 pinos, EPS 8 pinos, PCIe 8 pinos e SATA).
+  * Instalação de placas de vídeo no slot PCIe x16 com alimentação obrigatória via cabo PCIe 8 pinos.
+  * Conexão de cabos modulares (ATX 24 pinos, EPS 8 pinos, PCIe 8 pinos, CPU_FAN e Painel Frontal F_PANEL com retenção de estado).
 * **Catálogo Amplo com Marcas e Modelos Reais (+70 Componentes Oficiais):**
   * **Placas-Mãe:** ASUS (ROG Maximus Z790, ROG Strix B650E-F / B760-I ITX, TUF Gaming B550M / B650-Plus, Prime H610M), MSI (MAG Tomahawk B550 / Z790, MAG Mortar B650M / B760M, PRO B760M), Gigabyte (AORUS Elite B650M / B550M, DS3H), ASRock (Steel Legend).
   * **Processadores:** Linha AMD Ryzen (3600, 4600G com iGPU Vega 7, 5600, 5700X3D com 3D V-Cache, 5900X 12C, 7600, 8600G com NPU Ryzen AI, 7700X, 7800X3D o campeão dos jogos, 7950X 16C) e Intel Core (i3-12100/F, i5-12400F, i5-13400F, i5-13600K, i7-13700K, i7-14700K, i9-14900K até 6.0 GHz).
@@ -213,13 +222,21 @@ O projeto segue rigorosamente o princípio de **Test-Driven Development (TDD)** 
 npm test
 ```
 
-### Cobertura de Testes (35 testes aprovados):
-* `compatibility.test.ts` (9 testes): Soquetes AM4 vs AM5 vs LGA1700, DDR4 vs DDR5, trava de memória, pasta térmica e travas de soquete.
-* `frontPanel.test.ts` (7 testes): Mapeamento de pinos, conexões corretas de POWER SW, HDD LED com polaridade (+/-) e rejeição de conexões inválidas.
-* `diagnostic.test.ts` (7 testes): 6 cenários reais de assistência técnica, validação de correções e verificação de máquina saudável.
-* `benchmark.test.ts` (5 testes): Fórmulas matemáticas de FPS, detecção de gargalo (*Bottleneck*) de CPU vs GPU e limites de frametime.
-* `setupAndRoom.test.ts` (4 testes): Seleção de periféricos, cálculo de consumo de periféricos e temas de sala virtual.
-* `teacher.test.ts` (3 testes): Cálculo de pontuação escolar (0 a 10.000 pts), geração e validação de hash criptográfico de certificado (`PCA-XXXXXX`).
+### Cobertura de Testes (184 testes unitários e de integração + Suíte E2E Playwright):
+* **Vitest (184 testes em 15 arquivos):**
+  * `hardwareMatrix.test.ts` & `allCombinationsHardwarePeripherals.test.ts`: Testes combinatórios exaustivos de todos os componentes de hardware, periféricos e gabinetes.
+  * `compatibility.test.ts`: Soquetes AM4 vs AM5 vs LGA1700, DDR4 vs DDR5, trava de memória, pasta térmica e travas de soquete.
+  * `frontPanel.test.ts`: Mapeamento de pinos, conexões corretas de POWER SW, HDD LED com polaridade (+/-) e retenção de estado.
+  * `diagnostic.test.ts`: 6 cenários reais de assistência técnica, validação de correções e verificação de máquina saudável.
+  * `benchmark.test.ts`: Fórmulas matemáticas de FPS, detecção de gargalo (*Bottleneck*) de CPU vs GPU e limites de frametime.
+  * `setupAndRoom.test.ts`: Seleção de periféricos, cálculo de consumo de periféricos e temas de sala virtual.
+  * `teacher.test.ts`: Cálculo de pontuação escolar (0 a 10.000 pts), geração e validação de hash criptográfico de certificado (`PCA-XXXXXX`).
+  * `models3d.test.ts`: Integridade dos metadados e modelos 3D GLB normalizados.
+  * `cabling.test.ts`: Validação de regras e compatibilidade de cabeamento interno.
+* **Playwright E2E (Testes no Navegador Real):**
+  * Montagem 3D completa de ponta a ponta com Intel e AMD.
+  * Alternância e persistência de estado 2D leve <-> 3D interativo.
+  * Menu lateral, filtros de categorias e verificação de Q-Connector do F_PANEL.
 
 ---
 
