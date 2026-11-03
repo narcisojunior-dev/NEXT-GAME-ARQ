@@ -29,7 +29,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    // Porta explícita: 'next dev' sozinho escuta na 3000 e o webServer esperava a 3001 (timeout)
+    command: 'npm run dev -- -p 3001',
     url: 'http://localhost:3001',
     reuseExistingServer: true,
     timeout: 120 * 1000,

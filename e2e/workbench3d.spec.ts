@@ -1,4 +1,12 @@
 import { test, expect } from '@playwright/test';
+import type { useAssemblyStore } from '../src/store/useAssemblyStore';
+
+// Store exposto em window pela página (hook de teste em src/app/page.tsx)
+declare global {
+  interface Window {
+    useAssemblyStore: typeof useAssemblyStore;
+  }
+}
 
 test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
   test.beforeEach(async ({ page }) => {
@@ -30,6 +38,30 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
     // Garante que o modo 3D está ativo
     const btn3D = page.locator('button[title*="Modo 3D da Bancada"]');
     await btn3D.click();
+
+    // As âncoras de cabos só existem com uma placa-mãe assentada na bancada
+    await page.evaluate(() => {
+      const store = window.useAssemblyStore.getState();
+      store.dischargeEsd();
+      store.installMotherboard({
+        id: 'mb-b550m-am4',
+        name: 'B550M AM4',
+        category: 'MOTHERBOARD',
+        socket: 'AM4',
+        supportedRam: 'DDR4',
+        formFactor: 'Micro-ATX',
+        ramSlotsCount: 4,
+        m2SlotsCount: 1,
+        pcieSlotsCount: 1,
+        hasIntegratedIoShield: false,
+        chipset: 'B550',
+        price: 0,
+        tdpWatts: 0,
+        description: '',
+        analogy: '',
+        trivia: '',
+      });
+    });
 
     // As âncoras projetadas com data-cable-target devem estar presentes e acessíveis
     const atxAnchor = page.locator('[data-cable-target="ATX_PWR"]');
@@ -84,6 +116,6 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
     // Salva screenshot do visual limpo da bancada
     await page.waitForTimeout(1000);
     const canvas = page.locator('canvas').first();
-    await canvas.screenshot({ path: 'workbench3d-clean.png' });
+    await canvas.screenshot({ path: 'test-results/workbench3d-clean.png' });
   });
 });
