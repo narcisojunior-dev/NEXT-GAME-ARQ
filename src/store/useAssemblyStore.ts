@@ -39,6 +39,19 @@ import { INITIAL_ASSEMBLY_STATE } from '../engine/assemblyState';
 import { derivePhase } from '../engine/phases';
 import { soundEngine } from '../engine/audio/soundEngine';
 import {
+  DeskSnapPointId,
+  DeskStage,
+  PlacedDeskItem,
+  DeskSetupState,
+  createInitialDeskSetupState,
+  canPlaceOnDesk,
+  canRemoveFromDesk,
+  deriveDeskStage,
+  PlacementValidationResult,
+  RemovalValidationResult,
+} from '../engine/deskSetup';
+
+import {
   CableId,
   CableTargetId,
   CableResult,
@@ -150,12 +163,29 @@ interface AssemblyStore {
   togglePsuSwitch: () => void;
   triggerPostBoot: () => void;
   calculateFinalScore: () => GroupScore;
+  // Setup da Mesa e Battlestation (Fase 4)
+  deskSetup: DeskSetupState;
+  placeDeskItem: (snapPointId: DeskSnapPointId, item: PlacedDeskItem) => boolean;
+  removeDeskItem: (snapPointId: DeskSnapPointId) => boolean;
+  clearDeskSetup: () => void;
+  setDeskPower: (on: boolean) => void;
+  setDeskCameraPreset: (preset: 'setup-wide' | 'setup-top' | 'setup-pc' | 'setup-seat') => void;
+  canPlaceOnDeskSnapPoint: (snapPointId: DeskSnapPointId, item: unknown) => PlacementValidationResult;
+  canRemoveDeskSnapPoint: (snapPointId: DeskSnapPointId) => RemovalValidationResult;
   resetAssembly: () => void;
 }
 
 /**
  * Fase canônica atual, derivada do estado físico da montagem
  */
+export const selectDeskStage = (state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard' | 'deskSetup'>): DeskStage =>
+  deriveDeskStage({
+    assembly: state.assembly,
+    selectedMotherboard: state.selectedMotherboard,
+    deskSetup: state.deskSetup,
+    isDeskPoweredOn: state.deskSetup.isDeskPoweredOn,
+  });
+
 export const selectCurrentPhase = (state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard'>): AssemblyPhase =>
   derivePhase(state.assembly, state.selectedMotherboard);
 
@@ -185,6 +215,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   penaltiesCount: 0,
 
   assembly: INITIAL_ASSEMBLY_STATE,
+  deskSetup: createInitialDeskSetupState(),
 
   inspectedComponent: null,
   selectedComponentForPlacement: null,
@@ -892,6 +923,141 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
     };
   },
 
+  placeDeskItem: (snapPointId, item) => {
+    const { deskSetup, assembly, selectedMotherboard, studentSetup } = get();
+    const isPcAssembled =
+      Boolean(selectedMotherboard) &&
+      Boolean(assembly.cpuInstalled) &&
+      Boolean(assembly.coolerInstalled) &&
+      Boolean(assembly.socketLeverLocked) &&
+      (Boolean(assembly.ramInstalledSlot2) || Boolean(assembly.ramInstalledSlot4)) &&
+      Boolean(assembly.caseInstalled) &&
+      Boolean(assembly.psuInstalled) &&
+      (Boolean(assembly.cpuInstalled?.hasIntegratedGpu) || Boolean(assembly.gpuInstalled));
+
+    const validation = canPlaceOnDesk(snapPointId, item, deskSetup.placedDeskItems, {
+      isPcAssembled,
+      studentSetup,
+    });
+
+    if (!validation.allowed) {
+      if (validation.isErrorPenalty) {
+        soundEngine.playErrorBuzz();
+        set((st) => ({
+          penaltiesCount: st.penaltiesCount + 1,
+          activeAlert: {
+            type: 'error',
+            title: 'Posicionamento Incompatível!',
+            message: validation.message ?? 'Não é possível posicionar este item aqui.',
+          },
+        }));
+      } else {
+        set({
+          activeAlert: {
+            type: 'warning',
+            title: 'Pré-requisito Pendente',
+            message: validation.message ?? 'Pré-requisito não atendido.',
+          },
+        });
+      }
+      return false;
+    }
+
+    soundEngine.playSlotClick();
+    set((st) => ({
+      deskSetup: {
+        ...st.deskSetup,
+        placedDeskItems: {
+          ...st.deskSetup.placedDeskItems,
+          [snapPointId]: item,
+        },
+      },
+    }));
+    return true;
+  },
+
+  removeDeskItem: (snapPointId) => {
+    const { deskSetup } = get();
+    const validation = canRemoveFromDesk(snapPointId, deskSetup.placedDeskItems);
+    if (!validation.allowed) {
+      set({
+        activeAlert: {
+          type: 'warning',
+          title: 'Não é Possível Remover',
+          message: validation.message ?? 'Remova primeiro os itens dependentes.',
+        },
+      });
+      return false;
+    }
+
+    soundEngine.playLeverRelease();
+    set((st) => {
+      const nextItems = { ...st.deskSetup.placedDeskItems };
+      delete nextItems[snapPointId];
+      return {
+        deskSetup: {
+          ...st.deskSetup,
+          placedDeskItems: nextItems,
+        },
+      };
+    });
+    return true;
+  },
+
+  clearDeskSetup: () => {
+    set((st) => ({
+      deskSetup: {
+        ...st.deskSetup,
+        placedDeskItems: {},
+        isDeskPoweredOn: false,
+      },
+    }));
+  },
+
+  setDeskPower: (on) => {
+    if (on) {
+      soundEngine.playBootChime();
+    }
+    set((st) => ({
+      deskSetup: {
+        ...st.deskSetup,
+        isDeskPoweredOn: on,
+      },
+    }));
+  },
+
+  setDeskCameraPreset: (preset) => {
+    set((st) => ({
+      deskSetup: {
+        ...st.deskSetup,
+        deskCameraPreset: preset,
+      },
+    }));
+  },
+
+  canPlaceOnDeskSnapPoint: (snapPointId, item) => {
+    const { deskSetup, assembly, selectedMotherboard, studentSetup } = get();
+    const isPcAssembled =
+      Boolean(selectedMotherboard) &&
+      Boolean(assembly.cpuInstalled) &&
+      Boolean(assembly.coolerInstalled) &&
+      Boolean(assembly.socketLeverLocked) &&
+      (Boolean(assembly.ramInstalledSlot2) || Boolean(assembly.ramInstalledSlot4)) &&
+      Boolean(assembly.caseInstalled) &&
+      Boolean(assembly.psuInstalled) &&
+      (Boolean(assembly.cpuInstalled?.hasIntegratedGpu) || Boolean(assembly.gpuInstalled));
+
+    return canPlaceOnDesk(snapPointId, item, deskSetup.placedDeskItems, {
+      isPcAssembled,
+      studentSetup,
+    });
+  },
+
+  canRemoveDeskSnapPoint: (snapPointId) => {
+    const { deskSetup } = get();
+    return canRemoveFromDesk(snapPointId, deskSetup.placedDeskItems);
+  },
+
   resetAssembly: () => {
     set({
       selectedMotherboard: null,
@@ -907,6 +1073,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
       activeAlert: null,
       selectedComponentForPlacement: null,
       inspectedComponent: null,
+      deskSetup: createInitialDeskSetupState(),
     });
   },
   };

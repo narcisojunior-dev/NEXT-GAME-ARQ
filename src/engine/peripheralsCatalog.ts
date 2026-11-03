@@ -6,10 +6,22 @@ export type AudioType = 'AUDIO_WOOD_SPEAKERS' | 'AUDIO_HEADSET_71';
 export type GamepadType = 'GAMEPAD_HALL_EFFECT' | 'GAMEPAD_NONE';
 export type CaseThemeType = 'CASE_MESH_BLACK' | 'CASE_AQUARIUM_RGB' | 'CASE_MINIMAL_WHITE';
 
+export type PeripheralCategory =
+  | 'MONITOR'
+  | 'KEYBOARD'
+  | 'MOUSE'
+  | 'STAND'
+  | 'AUDIO'
+  | 'GAMEPAD'
+  | 'CASE_THEME'
+  | 'DESK'
+  | 'CHAIR'
+  | 'MOUSEPAD';
+
 export interface PeripheralItem {
   id: string;
   name: string;
-  category: 'MONITOR' | 'KEYBOARD' | 'MOUSE' | 'STAND' | 'AUDIO' | 'GAMEPAD' | 'CASE_THEME';
+  category: PeripheralCategory;
   price: number;
   description: string;
   featureBadge: string;
@@ -190,6 +202,69 @@ export const CASE_THEMES: PeripheralItem[] = [
   },
 ];
 
+export const DESKS: PeripheralItem[] = [
+  {
+    id: 'desk-gamer-carbon',
+    name: 'Mesa Gamer Fibra de Carbono 140cm',
+    category: 'DESK',
+    price: 420,
+    description: 'Mesa robusta com tampo chanfrado em textura de fibra de carbono, pés em aço reforçado e passa-fios integrado.',
+    featureBadge: '140cm • Carbono & Aço',
+    specs: { Largura: '140cm', Profundidade: '60cm', Material: 'Aço & MDF Fibra de Carbono', 'Carga Máxima': '100kg' },
+  },
+  {
+    id: 'desk-wood-minimal',
+    name: 'Mesa Industrial Madeira & Metal 120cm',
+    category: 'DESK',
+    price: 320,
+    description: 'Mesa de design industrial limpo com tampo em carvalho maciço e estrutura metálica eletrostática preta.',
+    featureBadge: '120cm • Madeira & Metal',
+    specs: { Largura: '120cm', Profundidade: '60cm', Material: 'Aço & Madeira Maciça', 'Carga Máxima': '80kg' },
+  },
+];
+
+export const CHAIRS: PeripheralItem[] = [
+  {
+    id: 'chair-ergonomic-mesh',
+    name: 'Cadeira Ergonômica Mesh NR-17',
+    category: 'CHAIR',
+    price: 680,
+    description: 'Cadeira com encosto respirável em tela Mesh, apoio lombar dinâmico e certificação ergonômica NR-17 para longas sessões de estudo.',
+    featureBadge: 'Ergonômica • NR-17',
+    specs: { Encosto: 'Mesh Respirável', 'Apoio Lombar': 'Ajustável 3D', Pistão: 'Classe 4 a Gás' },
+  },
+  {
+    id: 'chair-gamer-recline',
+    name: 'Cadeira Gamer Couro PU Reclinável',
+    category: 'CHAIR',
+    price: 750,
+    description: 'Design esportivo com estofamento de alta densidade, almofadas cervical e lombar e inclinação até 180°.',
+    featureBadge: 'Reclinável 180° • Almofadas',
+    specs: { Material: 'Couro PU Premium', Inclinação: 'Até 180°', Braços: '2D Ajustáveis' },
+  },
+];
+
+export const MOUSEPADS: PeripheralItem[] = [
+  {
+    id: 'mousepad-speed-xl',
+    name: 'Mousepad Gamer Speed XL 900x400mm',
+    category: 'MOUSEPAD',
+    price: 80,
+    description: 'Deskmat de tamanho estendido que acomoda teclado e mouse com superfície lisa Speed para deslize suave e base de borracha antiderrapante.',
+    featureBadge: '900x400mm • Speed XL',
+    specs: { Dimensões: '900 x 400 x 4mm', Superfície: 'Tecido Microfibra Speed', Borda: 'Costura Reforçada' },
+  },
+  {
+    id: 'mousepad-control-desk',
+    name: 'Mousepad Desk Mat Feltro Minimalista',
+    category: 'MOUSEPAD',
+    price: 60,
+    description: 'Tapete de mesa minimalista em feltro escuro ecológico que protege o tampo e proporciona conforto térmico para os punhos.',
+    featureBadge: '800x300mm • Feltro Clean',
+    specs: { Dimensões: '800 x 300 x 3mm', Superfície: 'Feltro de Alta Densidade', Base: 'Pontos Antiderrapantes' },
+  },
+];
+
 export interface StudentSetupConfig {
   monitor: PeripheralItem;
   keyboard: PeripheralItem;
@@ -198,6 +273,9 @@ export interface StudentSetupConfig {
   audio: PeripheralItem;
   gamepad: PeripheralItem;
   caseTheme: PeripheralItem;
+  desk?: PeripheralItem;
+  chair?: PeripheralItem;
+  mousepad?: PeripheralItem;
 }
 
 export const DEFAULT_STUDENT_SETUP: StudentSetupConfig = {
@@ -208,5 +286,7 @@ export const DEFAULT_STUDENT_SETUP: StudentSetupConfig = {
   audio: AUDIO_DEVICES[1], // Headset 7.1
   gamepad: GAMEPADS[1], // Gamepad Hall Effect
   caseTheme: CASE_THEMES[1], // Aquário RGB
+  desk: DESKS[0],
+  chair: CHAIRS[0],
+  mousepad: MOUSEPADS[0],
 };
-

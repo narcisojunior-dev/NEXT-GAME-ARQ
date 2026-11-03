@@ -504,7 +504,10 @@
     "faces": 296,
     "group": "PERIPHERAL",
     "category": "MOUSEPAD",
-    "targets": [],
+    "targets": [
+      "mousepad-speed-xl",
+      "mousepad-control-desk"
+    ],
     "illustrative": false,
     "note": "Mousepad gamer (vitrine)."
   },
@@ -642,7 +645,10 @@
     "faces": 1234,
     "group": "PERIPHERAL",
     "category": "CHAIR",
-    "targets": [],
+    "targets": [
+      "chair-ergonomic-mesh",
+      "chair-gamer-recline"
+    ],
     "illustrative": false,
     "note": "Cadeira de escritório (vitrine; ergonomia)."
   },
@@ -655,7 +661,10 @@
     "faces": 4782,
     "group": "PERIPHERAL",
     "category": "DESK",
-    "targets": [],
+    "targets": [
+      "desk-gamer-carbon",
+      "desk-wood-minimal"
+    ],
     "illustrative": false,
     "note": "Mesa gamer (vitrine; ergonomia)."
   },
