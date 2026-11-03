@@ -57,11 +57,11 @@ export interface MotherboardLayout {
 export const MOTHERBOARD_LAYOUTS: Record<'AMD_AM4_AM5' | 'INTEL_LGA1700', MotherboardLayout> = {
   // 1. AMD AM4 / AM5 (Baseado no modelo fiel ASRock B550M-HDV)
   AMD_AM4_AM5: {
-    CPU_SOCKET: [-0.55, 0.22, -0.85],
+    CPU_SOCKET: [-0.25, 0.22, -0.85],
     CPU_FAN_HEADER: [-0.20, 0.22, -2.45],
     ATX12V_HEADER: [-2.75, 0.22, -3.10],
-    RAM_SLOT_2: [1.35, 0.22, -0.85],
-    RAM_SLOT_4: [1.65, 0.22, -0.85],
+    RAM_SLOT_2: [1.65, 0.22, -1.10],
+    RAM_SLOT_4: [1.95, 0.22, -1.10],
     M2_SLOT: [-0.50, 0.22, 0.25],
     PCIE_SLOT: [-0.55, 0.22, 1.45],
     ATX24P_HEADER: [3.10, 0.22, -0.60],
@@ -71,11 +71,11 @@ export const MOTHERBOARD_LAYOUTS: Record<'AMD_AM4_AM5' | 'INTEL_LGA1700', Mother
   },
   // 2. Intel LGA1700 (Baseado no modelo fiel MSI MAG Z790 Tomahawk ATX)
   INTEL_LGA1700: {
-    CPU_SOCKET: [0.20, 0.22, -1.05],
+    CPU_SOCKET: [0.15, 0.22, -1.55],
     CPU_FAN_HEADER: [0.45, 0.22, -2.85],
     ATX12V_HEADER: [-1.90, 0.22, -3.20],
-    RAM_SLOT_2: [1.85, 0.22, -1.05],
-    RAM_SLOT_4: [2.25, 0.22, -1.05],
+    RAM_SLOT_2: [1.95, 0.22, -1.55],
+    RAM_SLOT_4: [2.55, 0.22, -1.55],
     M2_SLOT: [-0.40, 0.22, 0.20],
     PCIE_SLOT: [-0.50, 0.22, 1.35],
     ATX24P_HEADER: [3.15, 0.22, -0.65],
@@ -1005,17 +1005,17 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             {assembly.ramInstalledSlot2 && (
               <AutoNormalizedPart
                 modelUrl="/models/ram-ddr4-crucial.glb"
-                targetSize={1.9}
+                targetSize={3.3}
                 position={layout.RAM_SLOT_2}
-                rotation={[0, 0, 0]}
+                rotation={[0, Math.PI / 2, 0]}
               />
             )}
             {assembly.ramInstalledSlot4 && (
               <AutoNormalizedPart
                 modelUrl="/models/ram-ddr4-crucial.glb"
-                targetSize={1.9}
+                targetSize={3.3}
                 position={layout.RAM_SLOT_4}
-                rotation={[0, 0, 0]}
+                rotation={[0, Math.PI / 2, 0]}
               />
             )}
 
