@@ -12,7 +12,6 @@ export const TeamChallengeBanner: React.FC = () => {
     setTeamName,
     calculateFinalScore,
     penaltiesCount,
-    elapsedSeconds,
   } = useAssemblyStore(
     useShallow((s) => ({
       gameMode: s.gameMode,
@@ -20,7 +19,6 @@ export const TeamChallengeBanner: React.FC = () => {
       setTeamName: s.setTeamName,
       calculateFinalScore: s.calculateFinalScore,
       penaltiesCount: s.penaltiesCount,
-      elapsedSeconds: s.elapsedSeconds,
     }))
   );
   const [isEditing, setIsEditing] = useState(false);

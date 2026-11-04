@@ -20,10 +20,11 @@ export const ActiveMissionPanel: React.FC = () => {
       openMap: s.openCampaignMap,
     }))
   );
-  // A sessão depende do cronômetro: o objeto muda a cada segundo, mas a avaliação é barata
-  const session = useAssemblyStore(useShallow(selectMissionSession));
+  // A sessão inclui o cronômetro (objetivos de tempo): só é lida com uma missão em andamento,
+  // senão o painel (vazio) re-renderizava a cada segundo (#31)
+  const session = useAssemblyStore(useShallow((s) => (s.activeCampaignMissionId ? selectMissionSession(s) : null)));
   const mission = activeId ? findMission(activeId) : null;
-  const evaluation = useMemo(() => (mission ? evaluateMission(mission, session) : null), [mission, session]);
+  const evaluation = useMemo(() => (mission && session ? evaluateMission(mission, session) : null), [mission, session]);
 
   if (!mission || !evaluation) return null;
   const done = evaluation.required.filter((r) => r.met).length;

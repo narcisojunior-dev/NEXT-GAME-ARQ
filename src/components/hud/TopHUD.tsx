@@ -30,12 +30,34 @@ const HAS_3D_MODELS = hasAvailableModels();
 const PHASES = PHASE_LABELS;
 
 
+const formatTime = (totalSeconds: number) => {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+/**
+ * Relógio isolado (#31): só ESTE componente re-renderiza a cada segundo. Antes, o HUD inteiro
+ * (e tudo que lia elapsedSeconds) era redesenhado no tique do cronômetro.
+ */
+const HudClock: React.FC = () => {
+  const elapsedSeconds = useAssemblyStore((s) => s.elapsedSeconds);
+  const tickTimer = useAssemblyStore((s) => s.tickTimer);
+  useEffect(() => {
+    const interval = setInterval(tickTimer, 1000);
+    return () => clearInterval(interval);
+  }, [tickTimer]);
+  return (
+    <div className="text-xs font-mono font-bold" aria-label={`Tempo de montagem: ${formatTime(elapsedSeconds)}`}>
+      {formatTime(elapsedSeconds)}
+    </div>
+  );
+};
+
 export const TopHUD: React.FC = () => {
   const {
     gameMode,
     setGameMode,
-    elapsedSeconds,
-    tickTimer,
     activeMission,
     assembly,
     selectedMotherboard,
@@ -48,8 +70,6 @@ export const TopHUD: React.FC = () => {
     useShallow((s) => ({
       gameMode: s.gameMode,
       setGameMode: s.setGameMode,
-      elapsedSeconds: s.elapsedSeconds,
-      tickTimer: s.tickTimer,
       activeMission: s.activeMission,
       assembly: s.assembly,
       selectedMotherboard: s.selectedMotherboard,
@@ -67,27 +87,14 @@ export const TopHUD: React.FC = () => {
   const openGallery = useModel3DStore((s) => s.openGallery);
   const currentPhaseNumber = PHASES.find((p) => p.id === currentPhase)?.number ?? 1;
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      tickTimer();
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [tickTimer]);
-
-  const formatTime = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const totalSpent = calculateTotalSpent(assembly, selectedMotherboard);
   const budgetRemaining = activeMission ? activeMission.budgetMax - totalSpent : null;
 
   return (
-    <header className="w-full bg-slate-950/90 border-b border-slate-800 p-4 sticky top-0 z-40 backdrop-blur-md">
+    <header className="w-full bg-slate-950/90 border-b border-slate-800 p-4 md:sticky md:top-0 z-40 backdrop-blur-md">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Título e Seletor de Modo */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-w-full">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-lg">
               <Cpu className="w-5 h-5" aria-hidden="true" />
@@ -100,7 +107,7 @@ export const TopHUD: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center bg-slate-900 rounded-xl p-1 border border-slate-800">
+          <div className="flex flex-wrap items-center justify-center bg-slate-900 rounded-xl p-1 border border-slate-800">
             <button
               onClick={() => setGameMode('OFICINA')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -152,7 +159,7 @@ export const TopHUD: React.FC = () => {
         </div>
 
         {/* Métricas: Orçamento e Cronômetro */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 max-w-full">
           {/* Campanha: missões sequenciais por módulo de jogo */}
           <button
             type="button"
@@ -247,7 +254,7 @@ export const TopHUD: React.FC = () => {
             <Clock className="w-4 h-4 text-cyan-400" />
             <div>
               <div className="text-[11px] uppercase font-bold text-slate-400">Tempo</div>
-              <div className="text-xs font-mono font-bold">{formatTime(elapsedSeconds)}</div>
+              <HudClock />
             </div>
           </div>
 
