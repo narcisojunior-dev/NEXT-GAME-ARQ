@@ -23,8 +23,24 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      // Resolução escolar padrão (o preset "Desktop Chrome" trocaria para 1280x720)
+      grepInvert: /@375/,
       use: {
         ...devices['Desktop Chrome'],
+        viewport: { width: 1366, height: 768 },
+        launchOptions: {
+          args: ['--enable-webgl', '--use-gl=angle', '--use-angle=swiftshader', '--no-sandbox'],
+        },
+      },
+    },
+    {
+      // Celular: só os testes marcados com @375 (#33)
+      name: 'mobile-375',
+      grep: /@375/,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 375, height: 812 },
+        hasTouch: true,
         launchOptions: {
           args: ['--enable-webgl', '--use-gl=angle', '--use-angle=swiftshader', '--no-sandbox'],
         },
