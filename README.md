@@ -1,4 +1,4 @@
-# 🛠️ PC Builder Academy (v3.0)
+# 🛠️ PC Builder Academy (v3.1)
 
 [![Next.js 15](https://img.shields.io/badge/Next.js-15.2.1-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React 19](https://img.shields.io/badge/React-19.0.0-blue?style=for-the-badge&logo=react)](https://react.dev/)
@@ -26,7 +26,7 @@ O **PC Builder Academy** soluciona esse gargalo oferecendo uma experiência imer
 
 ---
 
-## 🆕 Novidades da v2.1 à v3.0
+## 🆕 Novidades da v2.1 à v3.1
 
 | Área | O que mudou | Documentação |
 | :--- | :--- | :--- |
@@ -39,6 +39,7 @@ O **PC Builder Academy** soluciona esse gargalo oferecendo uma experiência imer
 | Professor | Relatório de erros da turma, CSV e habilidades do certificado ligadas à BNCC Computação (#34) | — |
 | Abrir o PC | Vista explodida, isolamento de subsistemas com leituras do benchmark, tour por ociosidade e níveis de qualidade para vídeo integrado (#38, #59–#63) | [ADR-013](./docs/adr/ADR-013-modo-abrir-o-pc.md) |
 | **Modo Orçamento** | Desafio de Orçamento sem turma: perfis de cliente, prévia de viabilidade, saldo ao vivo, "cabe no saldo" nos cards, pontuação de custo-benefício e ranking puro (#66–#70) | [Relatório da feature](./docs/relatorio-modo-orcamento.md) |
+| **Modo Decorar o Quarto** | Com o PC ligado na mesa, o aluno decora o quarto em 3D: 74 itens em 4 pacotes liberados por conquistas, arrastar ou clicar, teclado completo, recusas didáticas, itens por código (fita LED, hexágonos, neon com texto, pôsteres com os dados do PC), quarto salvo e foto 1920 × 1080 (#83–#91) | [Relatório da feature](./docs/relatorio-modo-decorar-quarto.md) |
 | PWA e desempenho | Cache versionado pelo build com aviso de nova versão, `/api/` fora do cache, relógio isolado do HUD (#24, #31, #66) | [pwa-atualizacao.md](./docs/pwa-atualizacao.md), [performance.md](./docs/performance.md) |
 | Qualidade | ESLint no CI, Playwright com arraste real, teclado e tela de 375 px (#33) | `.github/workflows/ci.yml` |
 
@@ -199,10 +200,12 @@ NEXT-GAME-ARQ/
 ├── src/
 │   ├── app/                   # App Router (layout, página principal, CSS global)
 │   ├── components/            # Interface: bancada 2D/3D, mesa, campanha, diagnóstico, professor, HUD, PWA
+│   │   └── room3d/            # Modo Decorar o Quarto (carregado sob demanda): quarto, gaveta, foto
 │   ├── engine/                # Regras puras em TypeScript (sem React): compatibilidade, fases, benchmark,
-│   │                          #   geometria 3D, campanha, orçamento, pontuação, ranking, detetive, corte
+│   │                          #   geometria 3D, campanha, orçamento, pontuação, ranking, detetive, corte,
+│   │                          #   quarto (catálogo, posicionamento e desbloqueios da decoração)
 │   │   └── __tests__/         # Testes do motor (Vitest)
-│   └── store/                 # Zustand: montagem (persistida), progresso e armazenamento seguro
+│   └── store/                 # Zustand: montagem (persistida), progresso, quarto decorado e armazenamento seguro
 └── .github/workflows/ci.yml   # tsc, ESLint, Vitest, build e Playwright
 ```
 
