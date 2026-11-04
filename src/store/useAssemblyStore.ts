@@ -1,4 +1,15 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { STORAGE_KEYS, safeStateStorage } from './safeStorage';
+import { useProgressStore } from './useProgressStore';
+import {
+  MissionEvaluation,
+  MissionSession,
+  buildMissionInitialState,
+  evaluateMission,
+} from '../engine/campaign';
+import { findMission } from '../engine/campaignMissions';
+import { buildDeskInventory } from '../engine/deskSetup';
 import {
   HardwareComponent,
   CpuComponent,
@@ -15,6 +26,7 @@ import {
   ClientMission,
   GroupScore,
   ValidationIssue,
+  ComponentCategory,
 } from '../engine/types';
 import { MOTHERBOARDS, CLIENT_MISSIONS } from '../engine/hardwareCatalog';
 import { DiagnosticScenario, DIAGNOSTIC_SCENARIOS } from '../engine/diagnosticCases';
@@ -198,7 +210,44 @@ interface AssemblyStore {
   disconnectExternalCable: (cableId: ExternalCableId) => void;
   clearExternalCables: () => void;
   resetAssembly: () => void;
+
+  // Campanha de missões sequenciais (#43, #44)
+  activeCampaignMissionId: string | null;
+  /** Títulos dos erros cometidos na missão atual (objetivos "sem o erro X") */
+  missionErrorLog: string[];
+  postAttempts: number;
+  /** Peças do cliente (custo zero) e categorias que podem ser compradas na missão */
+  campaignInventory: { clientPartIds: string[]; purchasableCategories: ComponentCategory[] | null } | null;
+  campaignHideHelpers: boolean;
+  isCampaignMapOpen: boolean;
+  /** Resultado exibido no debriefing */
+  missionDebrief: { missionId: string; evaluation: MissionEvaluation } | null;
+  openCampaignMap: () => void;
+  closeCampaignMap: () => void;
+  startCampaignMission: (missionId: string) => void;
+  abandonCampaignMission: () => void;
+  /** Avalia a missão ativa, registra o progresso se concluída e abre o debriefing */
+  finishCampaignMission: () => MissionEvaluation | null;
+  closeMissionDebrief: () => void;
+  /** Zera montagem, campanha e progresso salvo (#30 "Começar do zero") */
+  startFromScratch: () => void;
 }
+
+/** Retrato da sessão que a avaliação de missão lê */
+export const selectMissionSession = (s: AssemblyStore): MissionSession => ({
+  assembly: s.assembly,
+  motherboard: s.selectedMotherboard,
+  elapsedSeconds: s.elapsedSeconds,
+  penaltiesCount: s.penaltiesCount,
+  errorLog: s.missionErrorLog,
+  postAttempts: s.postAttempts,
+  clientPartIds: s.campaignInventory?.clientPartIds ?? [],
+  placedDeskItems: s.deskSetup.placedDeskItems,
+  externalCabling: s.externalCabling,
+  isDeskPoweredOn: s.deskSetup.isDeskPoweredOn,
+  resolvedScenarioIds: s.resolvedScenarioIds,
+  studentSetup: s.studentSetup,
+});
 
 /**
  * Fase canônica atual, derivada do estado físico da montagem
@@ -245,12 +294,15 @@ export const selectMonitorScreen = (
 export const selectCurrentPhase = (state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard'>): AssemblyPhase =>
   derivePhase(state.assembly, state.selectedMotherboard);
 
-export const useAssemblyStore = create<AssemblyStore>((set, get) => {
+export const useAssemblyStore = create<AssemblyStore>()(
+  persist(
+    (set, get) => {
   /** Recusa a ação com som de erro e alerta didático; penaliza quando a peça seria forçada ou danificada */
   const rejectAction = (issue: ValidationIssue, penalize: boolean) => {
     soundEngine.playErrorBuzz();
     set((state) => ({
       penaltiesCount: penalize ? state.penaltiesCount + 1 : state.penaltiesCount,
+      missionErrorLog: [...state.missionErrorLog, issue.title].slice(-50),
       activeAlert: {
         type: 'error',
         title: issue.title,
@@ -269,6 +321,13 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   return {
   gameMode: 'OFICINA',
   activeWorkbenchView: 'bench',
+  activeCampaignMissionId: null,
+  missionErrorLog: [],
+  postAttempts: 0,
+  campaignInventory: null,
+  campaignHideHelpers: false,
+  isCampaignMapOpen: false,
+  missionDebrief: null,
   selectedMotherboard: null,
   activeMission: null,
   activeDiagnosticScenario: null,
@@ -932,6 +991,11 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
     }
 
     const result = evaluatePostTest(assembly, selectedMotherboard);
+    const failures = result.issues.filter((i) => i.type === 'ERROR').map((i) => i.title);
+    set((state) => ({
+      postAttempts: state.postAttempts + 1,
+      missionErrorLog: [...state.missionErrorLog, ...failures].slice(-50),
+    }));
 
     if (result.canPowerOn) {
       soundEngine.playFanSpinUp();
@@ -1227,8 +1291,161 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
       externalCabling: createInitialExternalCablesState(),
     });
   },
+
+  openCampaignMap: () => set({ isCampaignMapOpen: true }),
+  closeCampaignMap: () => set({ isCampaignMapOpen: false }),
+
+  startCampaignMission: (missionId) => {
+    const mission = findMission(missionId);
+    if (!mission) return;
+    const { setup } = mission;
+    get().resetAssembly();
+
+    if (setup.diagnosticScenarioId) {
+      set({ gameMode: 'DIAGNOSTICO' });
+      get().selectDiagnosticScenario(setup.diagnosticScenarioId);
+    } else {
+      const { assembly, motherboard } = buildMissionInitialState(setup);
+      set({
+        gameMode: setup.gameMode,
+        activeMission: null,
+        activeDiagnosticScenario: null,
+        selectedMotherboard: motherboard,
+        assembly,
+        fPanelConnections: connectionsFromAssembly(assembly),
+        cableConnections: cableConnectionsFromAssembly(assembly),
+      });
+    }
+
+    // Mesa: itens já posicionados (do setup do aluno) e cabos já ligados
+    const deskPreset = setup.desk;
+    if (deskPreset) {
+      const inventory = buildDeskInventory(get().studentSetup);
+      const wanted = new Set(deskPreset.placed);
+      // O monitor com braço a gás exige o braço já fixado
+      if (wanted.has('MONITOR_MAIN')) wanted.add('MONITOR_ARM');
+      const placedDeskItems = Object.fromEntries(
+        inventory.filter((e) => wanted.has(e.targetSnapPoint)).map((e) => [e.targetSnapPoint, e.item])
+      );
+      set({
+        activeWorkbenchView: 'desk',
+        deskSetup: { ...createInitialDeskSetupState(), placedDeskItems },
+        externalCabling: { connections: { ...createInitialExternalCablesState().connections, ...deskPreset.cables } },
+      });
+    }
+
+    set({
+      activeCampaignMissionId: mission.id,
+      missionErrorLog: [],
+      postAttempts: 0,
+      penaltiesCount: 0,
+      elapsedSeconds: 0,
+      isTimerRunning: true,
+      campaignInventory: {
+        clientPartIds: setup.clientPartIds ?? [],
+        purchasableCategories: setup.purchasableCategories ?? null,
+      },
+      campaignHideHelpers: Boolean(setup.hideHelpers),
+      isCampaignMapOpen: false,
+      missionDebrief: null,
+      activeAlert: {
+        type: 'success',
+        title: `Missão: ${mission.title}`,
+        message: mission.briefing,
+      },
+    });
+  },
+
+  abandonCampaignMission: () =>
+    set({
+      activeCampaignMissionId: null,
+      campaignInventory: null,
+      campaignHideHelpers: false,
+      missionErrorLog: [],
+      postAttempts: 0,
+      missionDebrief: null,
+    }),
+
+  finishCampaignMission: () => {
+    const state = get();
+    const mission = state.activeCampaignMissionId ? findMission(state.activeCampaignMissionId) : null;
+    if (!mission) return null;
+    const evaluation = evaluateMission(mission, selectMissionSession(state));
+    if (evaluation.completed && evaluation.stars > 0) {
+      useProgressStore.getState().recordMissionResult(mission.id, {
+        stars: evaluation.stars === 3 ? 3 : evaluation.stars === 2 ? 2 : 1,
+        bestTimeSeconds: state.elapsedSeconds,
+        completedAt: new Date().toISOString(),
+      });
+      soundEngine.playSuccessChime();
+    } else {
+      soundEngine.playErrorBuzz();
+    }
+    set({ missionDebrief: { missionId: mission.id, evaluation }, isTimerRunning: !evaluation.completed });
+    return evaluation;
+  },
+
+  closeMissionDebrief: () => {
+    const debrief = get().missionDebrief;
+    set({ missionDebrief: null });
+    // Missão concluída: sai do modo missão; não concluída: o aluno continua tentando
+    if (debrief?.evaluation.completed) get().abandonCampaignMission();
+  },
+
+  startFromScratch: () => {
+    get().abandonCampaignMission();
+    get().resetAssembly();
+    set({ gameMode: 'OFICINA', resolvedScenarioIds: [], activeMission: null, activeDiagnosticScenario: null, teamName: '' });
+    useProgressStore.getState().resetProgress();
+    void useAssemblyStore.persist.clearStorage();
+    void useProgressStore.persist.clearStorage();
+  },
   };
-});
+},
+    {
+      name: STORAGE_KEYS.assembly,
+      version: 1,
+      storage: createJSONStorage(() => safeStateStorage),
+      // Hidratado no cliente (page.tsx), depois do primeiro render: evita divergência com o HTML do servidor
+      skipHydration: true,
+      partialize: (s) => ({
+        gameMode: s.gameMode,
+        selectedMotherboard: s.selectedMotherboard,
+        activeMission: s.activeMission,
+        // O caso de diagnóstico tem funções (isResolved): persiste só o id e reconstrói ao carregar
+        activeDiagnosticScenarioId: s.activeDiagnosticScenario?.id ?? null,
+        resolvedScenarioIds: s.resolvedScenarioIds,
+        teamName: s.teamName,
+        elapsedSeconds: s.elapsedSeconds,
+        penaltiesCount: s.penaltiesCount,
+        assembly: s.assembly,
+        studentSetup: s.studentSetup,
+        selectedRoomTheme: s.selectedRoomTheme,
+        fPanelConnections: s.fPanelConnections,
+        cableConnections: s.cableConnections,
+        deskSetup: s.deskSetup,
+        externalCabling: s.externalCabling,
+        activeWorkbenchView: s.activeWorkbenchView,
+        activeCampaignMissionId: s.activeCampaignMissionId,
+        missionErrorLog: s.missionErrorLog,
+        postAttempts: s.postAttempts,
+        campaignInventory: s.campaignInventory,
+        campaignHideHelpers: s.campaignHideHelpers,
+      }),
+      merge: (persisted, current) => {
+        if (typeof persisted !== 'object' || persisted === null) return current;
+        const scenarioId =
+          'activeDiagnosticScenarioId' in persisted && typeof persisted.activeDiagnosticScenarioId === 'string'
+            ? persisted.activeDiagnosticScenarioId
+            : null;
+        const scenario = DIAGNOSTIC_SCENARIOS.find((d) => d.id === scenarioId) ?? null;
+        return { ...current, ...persisted, activeDiagnosticScenario: scenario, missionDebrief: null, isCampaignMapOpen: false };
+      },
+      // Versão nova do formato salvo: descarta o salvamento antigo em vez de quebrar
+      migrate: () => ({}),
+    }
+  )
+);
 
 if (typeof window !== 'undefined') {
   (window as any).useAssemblyStore = useAssemblyStore;
