@@ -11,6 +11,7 @@ import {
   mergeTeamRecord,
   sanitizeProgress,
 } from '../engine/progress';
+import { QualityPreference } from '../engine/qualityTier';
 import { decodeValidationCode } from '../engine/validationCode';
 import { soundEngine } from '../engine/audio/soundEngine';
 import { STORAGE_KEYS, safeStateStorage } from './safeStorage';
@@ -28,6 +29,7 @@ interface ProgressStore extends PlayerProgress {
   removeLeaderboardEntry: (code: string) => void;
   setSoundMuted: (muted: boolean) => void;
   setTeacherUnlockAll: (unlock: boolean) => void;
+  setQualityPreference: (preference: QualityPreference) => void;
   resetProgress: () => void;
 }
 
@@ -66,6 +68,7 @@ export const useProgressStore = create<ProgressStore>()(
       },
 
       setTeacherUnlockAll: (unlock) => set({ teacherUnlockAll: unlock }),
+      setQualityPreference: (qualityPreference) => set({ qualityPreference }),
 
       resetProgress: () => {
         soundEngine.setMuted(false);
@@ -84,6 +87,7 @@ export const useProgressStore = create<ProgressStore>()(
         leaderboard: st.leaderboard,
         soundMuted: st.soundMuted,
         teacherUnlockAll: st.teacherUnlockAll,
+        qualityPreference: st.qualityPreference,
       }),
       // Qualquer versão antiga ou dado corrompido passa pela sanitização do motor
       migrate: (persisted) => sanitizeProgress(persisted),

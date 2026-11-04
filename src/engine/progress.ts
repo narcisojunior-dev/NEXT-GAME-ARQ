@@ -2,6 +2,8 @@
  * Progresso salvo do aluno (#30): missões concluídas, estrelas, melhores tempos, recordes por
  * equipe, placar do professor e preferências. Puro: a persistência fica no store.
  */
+import { QualityPreference } from './qualityTier';
+
 export const PROGRESS_VERSION = 1;
 
 export interface MissionResult {
@@ -35,6 +37,8 @@ export interface PlayerProgress {
   soundMuted: boolean;
   /** Modo professor: libera todas as missões da campanha */
   teacherUnlockAll: boolean;
+  /** Qualidade da bancada 3D escolhida pelo aluno (#63) */
+  qualityPreference: QualityPreference;
 }
 
 export function createEmptyProgress(): PlayerProgress {
@@ -45,6 +49,7 @@ export function createEmptyProgress(): PlayerProgress {
     leaderboard: [],
     soundMuted: false,
     teacherUnlockAll: false,
+    qualityPreference: 'AUTO',
   };
 }
 
@@ -139,5 +144,6 @@ export function sanitizeProgress(raw: unknown): PlayerProgress {
     leaderboard,
     soundMuted: raw.soundMuted === true,
     teacherUnlockAll: raw.teacherUnlockAll === true,
+    qualityPreference: raw.qualityPreference === 'LEVE' || raw.qualityPreference === 'ALTA' ? raw.qualityPreference : 'AUTO',
   };
 }
