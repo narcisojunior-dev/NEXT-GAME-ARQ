@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useShallow } from 'zustand/react/shallow';
 import { ComponentCategory, HardwareComponent } from '@/engine/types';
@@ -45,6 +45,8 @@ import {
   MapPin,
   Plus,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { getCompatibilityHint, getPriceTier, HintStatus, PriceTier } from '@/engine/cardInsights';
 import { HardwareImage } from '@/components/common/HardwareImage';
@@ -84,6 +86,101 @@ const CATEGORIES: CategoryItem[] = [
   { id: 'PSU', label: 'Fonte (PSU)', shortLabel: 'Fonte', icon: <Zap className="w-3.5 h-3.5" /> },
   { id: 'CASE', label: 'Gabinete', shortLabel: 'Gabinete', icon: <Server className="w-3.5 h-3.5" /> },
 ];
+
+/**
+ * Carrossel de categorias operável com mouse comum: a roda vertical rola na horizontal,
+ * as setas aparecem quando há categorias escondidas e a categoria ativa sempre fica à vista.
+ * (Com a barra de rolagem oculta, a roda do mouse não alcançava as últimas categorias.)
+ */
+const CategoryCarousel: React.FC<{ active: FilterCategory; onSelect: (id: FilterCategory) => void }> = ({ active, onSelect }) => {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [canScroll, setCanScroll] = useState({ left: false, right: false });
+
+  const updateArrows = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    setCanScroll({ left: el.scrollLeft > 1, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1 });
+  }, []);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    // Listener nativo não passivo: o onWheel do React é passivo e não pode impedir a rolagem da página
+    const onWheel = (e: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      const atStart = el.scrollLeft <= 0 && e.deltaY < 0;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 && e.deltaY > 0;
+      if (atStart || atEnd) return; // nas pontas, devolve a rolagem para a página
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    const resize = new ResizeObserver(updateArrows);
+    resize.observe(el);
+    updateArrows();
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      resize.disconnect();
+    };
+  }, [updateArrows]);
+
+  // Mantém a categoria ativa visível (ex.: escolhida pelo teclado ou por um filtro externo)
+  useEffect(() => {
+    trackRef.current?.querySelector<HTMLElement>('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [active]);
+
+  const scrollByPage = (direction: 1 | -1) => {
+    const el = trackRef.current;
+    if (el) el.scrollBy({ left: direction * el.clientWidth * 0.7, behavior: 'smooth' });
+  };
+
+  const arrowClass =
+    'absolute top-0 bottom-1 z-10 flex w-8 items-center justify-center text-slate-300 hover:text-white cursor-pointer focus-visible:outline-2 focus-visible:outline-cyan-400';
+
+  return (
+    <div role="group" aria-label="Filtrar por categoria" className="relative">
+      {canScroll.left && (
+        <button
+          type="button"
+          onClick={() => scrollByPage(-1)}
+          aria-label="Ver categorias anteriores"
+          className={`${arrowClass} left-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-transparent`}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+      )}
+      <div ref={trackRef} onScroll={updateArrows} className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none scroll-px-8">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            type="button"
+            onClick={() => onSelect(cat.id)}
+            aria-pressed={active === cat.id}
+            title={cat.label}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold shrink-0 transition-all cursor-pointer ${
+              active === cat.id
+                ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
+                : 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800'
+            }`}
+          >
+            {cat.icon}
+            <span>{cat.shortLabel}</span>
+          </button>
+        ))}
+      </div>
+      {canScroll.right && (
+        <button
+          type="button"
+          onClick={() => scrollByPage(1)}
+          aria-label="Ver mais categorias"
+          className={`${arrowClass} right-0 bg-gradient-to-l from-slate-950 via-slate-950/90 to-transparent`}
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+};
 
 const TIER_STYLES: Record<PriceTier, string> = {
   ENTRADA: 'bg-slate-800 text-slate-300',
@@ -191,6 +288,8 @@ const CompactLateralCard: React.FC<{ component: HardwareComponent }> = ({ compon
 
           <button
             onClick={() => setSelectedComponentForPlacement(isSelected ? null : component)}
+            aria-label={`${isSelected ? 'Em mãos' : 'Usar'}: ${component.name}`}
+            aria-pressed={isSelected}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
               isSelected
                 ? 'bg-cyan-400 text-slate-950 shadow-md shadow-cyan-400/30'
@@ -395,6 +494,7 @@ export const WorkbenchSidebar: React.FC<WorkbenchSidebarProps> = ({ className = 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar componente, soquete, DDR..."
+                aria-label="Buscar componente"
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-7 py-1.5 text-xs font-mono text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-500"
               />
               {searchQuery && (
@@ -407,23 +507,8 @@ export const WorkbenchSidebar: React.FC<WorkbenchSidebarProps> = ({ className = 
               )}
             </div>
 
-            {/* Chips de Categorias em Carrossel Horizontal Suave */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold shrink-0 transition-all cursor-pointer ${
-                    activeCategory === cat.id
-                      ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm'
-                      : 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800'
-                  }`}
-                >
-                  {cat.icon}
-                  <span>{cat.shortLabel}</span>
-                </button>
-              ))}
-            </div>
+            {/* Chips de Categorias em Carrossel Horizontal (roda do mouse + setas) */}
+            <CategoryCarousel active={activeCategory} onSelect={setActiveCategory} />
           </div>
 
           {/* Lista Rolável de Componentes */}

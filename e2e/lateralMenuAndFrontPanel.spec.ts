@@ -47,6 +47,42 @@ test.describe('Menu Lateral de Escolha de Componentes e Verificação do Painel 
     await expect(naMaoBanner).not.toBeVisible();
   });
 
+  test('as categorias escondidas são alcançáveis com a roda do mouse e com as setas', async ({ page }) => {
+    const carousel = page.getByRole('group', { name: 'Filtrar por categoria' });
+    const track = carousel.locator('div.overflow-x-auto');
+    await expect(carousel).toBeVisible();
+    const gabinete = carousel.getByRole('button', { name: 'Gabinete', exact: true });
+    const scrollLeft = () => track.evaluate((el) => el.scrollLeft);
+    const fullyVisible = () =>
+      gabinete.evaluate((chip) => {
+        const c = chip.getBoundingClientRect();
+        const t = chip.parentElement!.getBoundingClientRect();
+        return c.left >= t.left - 1 && c.right <= t.right + 1;
+      });
+
+    // O painel é estreito: a última categoria começa escondida e a seta "mais" aparece
+    test.skip(await fullyVisible(), 'todas as categorias cabem nesta largura de tela');
+    await expect(carousel.getByRole('button', { name: 'Ver mais categorias' })).toBeVisible();
+
+    // Roda vertical do mouse sobre os chips rola o carrossel na horizontal
+    await track.hover();
+    for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 120);
+    await expect.poll(scrollLeft).toBeGreaterThan(0);
+    await expect.poll(fullyVisible).toBe(true);
+    await expect(carousel.getByRole('button', { name: 'Ver categorias anteriores' })).toBeVisible();
+
+    // A seta de voltar leva de novo ao início
+    for (let i = 0; i < 4; i++) {
+      const back = carousel.getByRole('button', { name: 'Ver categorias anteriores' });
+      if (await back.isVisible()) await back.click();
+    }
+    await expect.poll(scrollLeft).toBeLessThan(2);
+
+    await gabinete.click();
+    await expect(gabinete).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(fullyVisible).toBe(true);
+  });
+
   test('separa coolers e pastas térmicas em categorias distintas no menu lateral', async ({ page }) => {
     const lateralMenu = page.locator('aside[aria-label="Menu Lateral de Escolha de Componentes e Cabeamento"]');
     await expect(lateralMenu).toBeVisible();
@@ -100,8 +136,8 @@ test.describe('Menu Lateral de Escolha de Componentes e Verificação do Painel 
     const fPanelStatusBtn = page.getByRole('button', { name: /Painel Frontal Conectado/i });
     await expect(fPanelStatusBtn).toBeVisible();
 
-    // 7. No Checklist de Montagem, o passo 10 do F_PANEL deve estar marcado como concluído
-    const checklistStep = page.locator('text=10. Ligar Painel Frontal (F_PANEL)');
+    // 7. No Checklist de Montagem, o passo do F_PANEL deve estar marcado como concluído
+    const checklistStep = page.getByText(/^\d+\. Ligar Painel Frontal \(F_PANEL\)$/);
     await expect(checklistStep).toBeVisible();
 
     // 8. No Menu Lateral, na aba de Cabos, o Painel Frontal deve exibir LIGADO ✓ e não solicitar ligar de novo
