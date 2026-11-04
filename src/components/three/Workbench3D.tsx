@@ -8,13 +8,9 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useCableDragStore } from '@/components/workbench/cableDragStore';
 import { CABLES, CableSpec, CableTargetId, cableTargetById } from '@/engine/cabling';
-import { HardwareComponent, MotherboardComponent } from '@/engine/types';
-import {
-  WORKBENCH_CPU_HEIGHTS,
-  resolveWorkbenchModelId,
-  workbenchModelRotation,
-  workbenchModelUrl,
-} from '@/engine/workbenchModels';
+import { MotherboardComponent } from '@/engine/types';
+import { workbenchModelUrl } from '@/engine/workbenchModels';
+import { benchPartPlacements } from '@/engine/benchGeometry';
 import {
   Cpu,
   Layers,
@@ -42,68 +38,6 @@ import { useShallow } from 'zustand/react/shallow';
 import { isWebGLAvailable } from './webglDetect';
 import { caseModelUrlFor } from './deskModels';
 export { isWebGLAvailable };
-
-/* ====================================================================================
- * LAYOUTS FÍSICOS CALIBRADOS POR MODELO DE PLACA-MÃE (Escala Normalizada: ~7.2)
- * Cada placa-mãe possui coordenadas dedicadas para alinhamento fidedigno de peças e pinos
- * ==================================================================================== */
-export interface MotherboardLayout {
-  /** Centro do soquete; Y = altura onde a base da CPU assenta */
-  CPU_SOCKET: [number, number, number];
-  CPU_FAN_HEADER: [number, number, number];
-  ATX12V_HEADER: [number, number, number];
-  RAM_SLOT_2: [number, number, number];
-  RAM_SLOT_4: [number, number, number];
-  M2_SLOT: [number, number, number];
-  PCIE_SLOT: [number, number, number];
-  ATX24P_HEADER: [number, number, number];
-  FPANEL_HEADER: [number, number, number];
-  DEBUG_LEDS: [number, number, number];
-  GPU_POWER_HEADER: [number, number, number];
-  /** Comprimento do pente DIMM (133 mm) na escala desta placa, para assentar entre as travas */
-  RAM_STICK_LENGTH: number;
-}
-
-/*
- * CALIBRAÇÃO MEDIDA (não estimada): soquete e slots DIMM foram localizados por um mapa de altura
- * (vista superior) gerado a partir da geometria dos GLBs, já com a mesma normalização de
- * AutoNormalizedMotherboard (largura 7.2, base em Y=0, rotação Z-up → Y-up quando necessário).
- * Validação cruzada: nas duas placas o centro dos slots DIMM coincide em Z com o centro do soquete,
- * como nas placas reais. Y dos slots = fundo do canal do DIMM (o pente "entra" no slot).
- */
-export const MOTHERBOARD_LAYOUTS: Record<'AMD_AM4_AM5' | 'INTEL_LGA1700', MotherboardLayout> = {
-  // 1. AMD AM4 / AM5 (mb-b550m.glb): soquete AM4 x∈[-0.28, 1.12] com alavanca à direita; 2 slots DIMM
-  AMD_AM4_AM5: {
-    CPU_SOCKET: [0.42, 0.22, -1.13],
-    CPU_FAN_HEADER: [-0.20, 0.22, -2.45],
-    ATX12V_HEADER: [-2.75, 0.22, -3.10],
-    RAM_SLOT_2: [2.38, 0.19, -1.12],
-    RAM_SLOT_4: [2.72, 0.19, -1.12],
-    RAM_STICK_LENGTH: 3.7,
-    M2_SLOT: [-0.50, 0.22, 0.25],
-    PCIE_SLOT: [-0.55, 0.22, 1.45],
-    ATX24P_HEADER: [3.10, 0.22, -0.60],
-    FPANEL_HEADER: [2.85, 0.22, 3.10],
-    DEBUG_LEDS: [2.90, 0.22, -2.80],
-    GPU_POWER_HEADER: [1.35, 0.95, 1.45],
-  },
-  // 2. Intel LGA1700 (mb-z790-atx.glb): ILM x∈[-0.40, 1.00] z∈[-2.70, -0.68]; 4 slots DIMM
-  //    (A1 1.875 | A2 2.125 | B1 2.388 | B2 2.65). Dual channel = A2 + B2.
-  INTEL_LGA1700: {
-    CPU_SOCKET: [0.30, 0.25, -1.69],
-    CPU_FAN_HEADER: [0.45, 0.22, -2.85],
-    ATX12V_HEADER: [-1.90, 0.22, -3.20],
-    RAM_SLOT_2: [2.125, 0.18, -1.66],
-    RAM_SLOT_4: [2.65, 0.18, -1.66],
-    RAM_STICK_LENGTH: 3.85,
-    M2_SLOT: [-0.40, 0.22, 0.20],
-    PCIE_SLOT: [-0.50, 0.22, 1.35],
-    ATX24P_HEADER: [3.15, 0.22, -0.65],
-    FPANEL_HEADER: [2.85, 0.22, 3.35],
-    DEBUG_LEDS: [2.95, 0.22, -2.90],
-    GPU_POWER_HEADER: [1.35, 0.95, 1.35],
-  },
-};
 
 /* ====================================================================================
  * COMPONENTE: Placa-Mãe Auto-Normalizada
@@ -173,12 +107,6 @@ const AutoNormalizedMotherboard: React.FC<{ modelUrl: string }> = ({ modelUrl })
 };
 
 const NO_ROTATION: [number, number, number] = [0, 0, 0];
-
-/** Tamanho (maior dimensão) da CPU no soquete: ~39 mm na escala das placas */
-const CPU_TARGET_SIZE = 1.15;
-
-/** Espessura da camada de pasta espalhada pela pressão do cooler */
-const PASTE_LAYER = 0.01;
 
 /* ====================================================================================
  * COMPONENTE: Peça Auto-Normalizada com Animação Opcional de Fan
@@ -261,8 +189,12 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
  * O GLB cooler-aio-240 contém apenas um fragmento (placa de 0.03 × 0.39 × 0.12) e, normalizado,
  * virava uma lâmina fina em pé sobre a CPU. A bomba é procedural: base de cobre + corpo + rotor.
  * ==================================================================================== */
-const AioPumpBlock: React.FC<{ position: [number, number, number]; isRunning?: boolean }> = ({
+/** Largura da base de cobre da bomba desenhada abaixo (a escala ajusta para 60 mm reais) */
+const AIO_PUMP_BASE = 0.82;
+
+const AioPumpBlock: React.FC<{ position: [number, number, number]; scale?: number; isRunning?: boolean }> = ({
   position,
+  scale = 1,
   isRunning = false,
 }) => {
   const rotorRef = useRef<THREE.Group>(null);
@@ -274,7 +206,7 @@ const AioPumpBlock: React.FC<{ position: [number, number, number]; isRunning?: b
   });
 
   return (
-    <group position={position}>
+    <group position={position} scale={scale}>
       {/* Base de cobre (cold plate) em contato com a pasta */}
       <mesh position={[0, 0.015, 0]} castShadow receiveShadow>
         <boxGeometry args={[0.82, 0.03, 0.82]} />
@@ -741,21 +673,12 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
       ? (selectedComponentForPlacement as MotherboardComponent)
       : null);
 
-  // Modelo da mesma família física da peça (engine/workbenchModels) e layout medido naquele GLB
-  const mbModelId = (targetMb && resolveWorkbenchModelId(targetMb)) ?? 'mb-b550m';
-  const mbModelUrl = workbenchModelUrl(mbModelId);
-  const layout = mbModelId === 'mb-z790-atx' ? MOTHERBOARD_LAYOUTS.INTEL_LGA1700 : MOTHERBOARD_LAYOUTS.AMD_AM4_AM5;
-
-  const partModel = (component: HardwareComponent) => {
-    const id = resolveWorkbenchModelId(component);
-    return id ? { id, url: workbenchModelUrl(id), rotation: workbenchModelRotation(id) } : null;
-  };
-  const cpuModel = assembly.cpuInstalled ? partModel(assembly.cpuInstalled) : null;
-  const ramModel2 = assembly.ramInstalledSlot2 ? partModel(assembly.ramInstalledSlot2) : null;
-  const ramModel4 = assembly.ramInstalledSlot4 ? partModel(assembly.ramInstalledSlot4) : null;
-
-  // Topo do IHS da CPU instalada: referência para a gota de pasta e a base do cooler
-  const ihsTopY = layout.CPU_SOCKET[1] + (cpuModel ? WORKBENCH_CPU_HEIGHTS[cpuModel.id] ?? 0.1 : 0);
+  // Geometria da bancada vem do motor (engine/benchGeometry): a MESMA função que os testes de
+  // encaixe percorrem em todas as montagens do catálogo — o que é desenhado é o que foi verificado
+  const placements = useMemo(() => benchPartPlacements(assembly, targetMb), [assembly, targetMb]);
+  const layout = placements.board.layout;
+  const mbModelUrl = workbenchModelUrl(placements.board.modelId);
+  const ihsTopY = placements.ihsTopY;
 
   // Aciona preset de câmera
   const applyViewPreset = (view: 'iso' | 'top' | 'front') => {
@@ -1078,14 +1001,24 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                     </Html>
                   )}
 
-            {/* 2. Peças Físicas Instaladas */}
-            {/* CPU Instalada no Soquete */}
-            {cpuModel && (
-              <AutoNormalizedPart
-                modelUrl={cpuModel.url}
-                targetSize={CPU_TARGET_SIZE}
-                position={layout.CPU_SOCKET}
-              />
+            {/* 2. Peças Físicas Instaladas (posições, tamanhos reais e rotações do motor) */}
+            {placements.parts.map((p) =>
+              p.modelId ? (
+                <AutoNormalizedPart
+                  key={p.part}
+                  modelUrl={workbenchModelUrl(p.modelId)}
+                  targetSize={p.targetSize}
+                  position={p.position}
+                  rotation={p.rotation}
+                />
+              ) : (
+                <AioPumpBlock
+                  key={p.part}
+                  position={p.position}
+                  scale={(p.box.max[0] - p.box.min[0]) / AIO_PUMP_BASE}
+                  isRunning={Boolean(postResult?.bootSuccess)}
+                />
+              )
             )}
 
             {/* Pasta Térmica: gota do tamanho de uma ervilha exatamente sobre o IHS da CPU */}
@@ -1099,58 +1032,6 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                 <meshStandardMaterial color="#c4c4cc" roughness={0.3} metalness={0.7} />
               </mesh>
             )}
-
-            {/* Cooler assentado sobre a CPU e a camada de pasta espalhada */}
-            {assembly.coolerInstalled &&
-              (assembly.coolerInstalled.coolerType === 'Water' ? (
-                <AioPumpBlock
-                  position={[layout.CPU_SOCKET[0], ihsTopY + PASTE_LAYER, layout.CPU_SOCKET[2]]}
-                  isRunning={Boolean(postResult?.bootSuccess)}
-                />
-              ) : (
-                <AutoNormalizedPart
-                  modelUrl="/models/cooler-torre.glb"
-                  targetSize={2.4}
-                  position={[layout.CPU_SOCKET[0], ihsTopY + PASTE_LAYER, layout.CPU_SOCKET[2]]}
-                />
-              ))}
-
-            {/* Pentes de Memória RAM EM PÉ, encaixados no canal do slot DIMM e alinhados ao seu comprimento */}
-            {ramModel2 && (
-              <AutoNormalizedPart
-                modelUrl={ramModel2.url}
-                targetSize={layout.RAM_STICK_LENGTH}
-                position={layout.RAM_SLOT_2}
-                rotation={ramModel2.rotation}
-              />
-            )}
-            {ramModel4 && (
-              <AutoNormalizedPart
-                modelUrl={ramModel4.url}
-                targetSize={layout.RAM_STICK_LENGTH}
-                position={layout.RAM_SLOT_4}
-                rotation={ramModel4.rotation}
-              />
-            )}
-
-            {/* Armazenamento SSD M.2 */}
-            {assembly.storageInstalled && assembly.storageInstalled.storageType.includes('M2') && (
-              <AutoNormalizedPart
-                modelUrl={workbenchModelUrl('ssd-nvme-990pro')}
-                targetSize={1.3}
-                position={layout.M2_SLOT}
-                rotation={workbenchModelRotation('ssd-nvme-990pro')}
-              />
-            )}
-
-                {/* Placa de Vídeo (GPU) */}
-                {assembly.gpuInstalled && (
-                  <AutoNormalizedPart
-                    modelUrl="/models/gpu-rx-6700xt.glb"
-                    targetSize={4.2}
-                    position={layout.PCIE_SLOT}
-                  />
-                )}
               </>
             )}
           </Suspense>
@@ -1342,7 +1223,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             {assembly.gpuInstalled && assembly.gpuInstalled.powerPins !== 'none' && (
               <CableTargetPin
                 targetId="GPU_POWER"
-                position={layout.GPU_POWER_HEADER}
+                position={placements.gpuPowerAnchor ?? layout.PCIE_SLOT}
                 name="PCIe 8P (GPU)"
               />
             )}

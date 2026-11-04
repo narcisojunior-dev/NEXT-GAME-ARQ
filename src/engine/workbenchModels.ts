@@ -42,16 +42,6 @@ export function resolveWorkbenchModelId(
 
 export const workbenchModelUrl = (modelId: string) => `/models/${modelId}.glb`;
 
-/**
- * Espessura (m de mundo) de cada modelo de CPU depois de normalizado para 1,15 de largura,
- * medida nas bounding boxes dos GLBs. Assenta a pasta térmica e o cooler sobre o IHS.
- */
-export const WORKBENCH_CPU_HEIGHTS: Record<string, number> = {
-  'cpu-ryzen-am4': 0.114,
-  'cpu-ryzen-am5': 0.075,
-  'cpu-intel-lga1700': 0.104,
-  'cpu-intel-simples': 0.067,
-};
 
 /**
  * Rotação (Euler XYZ, radianos) que assenta cada GLB na bancada antes da normalização.
