@@ -1,8 +1,38 @@
 import { AssemblyState, MotherboardComponent } from './types';
 import { CPUS, MOTHERBOARDS, RAMS, COOLERS, STORAGES, GPUS, PSUS, CASES } from './hardwareCatalog';
 
+/** Causas que o aluno pode apontar como hipótese antes de abrir a máquina (#32) */
+export type DiagnosticCauseId =
+  | 'PSU_SWITCH'
+  | 'POWER_SW'
+  | 'THERMAL_PASTE'
+  | 'RAM_MISSING'
+  | 'STANDOFFS'
+  | 'NO_VIDEO_OUTPUT'
+  | 'EPS_CABLE'
+  | 'FRONT_USB'
+  | 'GPU_POWER'
+  | 'BIOS_BATTERY';
+
+export const DIAGNOSTIC_CAUSES: Record<DiagnosticCauseId, string> = {
+  PSU_SWITCH: 'Chave I/O da fonte desligada',
+  POWER_SW: 'Botão Power desconectado do F_PANEL',
+  THERMAL_PASTE: 'Falta de pasta térmica entre CPU e cooler',
+  RAM_MISSING: 'Memória RAM ausente ou mal encaixada',
+  STANDOFFS: 'Placa encostando no gabinete (sem espaçadores)',
+  NO_VIDEO_OUTPUT: 'Sem saída de vídeo (CPU sem vídeo integrado e sem GPU)',
+  EPS_CABLE: 'Cabo EPS 8 pinos da CPU solto',
+  FRONT_USB: 'Cabo USB frontal desligado da placa',
+  GPU_POWER: 'Cabo PCIe da placa de vídeo solto',
+  BIOS_BATTERY: 'Bateria CR2032 da BIOS descarregada',
+};
+
 export interface DiagnosticScenario {
   id: string;
+  /** Causa real do defeito (a hipótese correta) */
+  cause: DiagnosticCauseId;
+  /** Outras formas de o cliente relatar o mesmo sintoma (sorteadas a cada chamado) */
+  symptomVariants: string[];
   title: string;
   difficulty: 'FÁCIL' | 'MÉDIO' | 'AVANÇADO';
   clientName: string;
@@ -61,6 +91,8 @@ const baseWorkingAssembly: AssemblyState = {
 export const DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
   {
     id: 'case-psu-switch',
+    cause: 'PSU_SWITCH',
+    symptomVariants: ['Aperto o botão e nada: nem luz, nem barulho de ventoinha.', 'O PC parece desligado da tomada, mas o cabo está ligado.'],
     title: 'Caso #1: "PC Morto" (Nenhum Sinal de Vida)',
     difficulty: 'FÁCIL',
     clientName: 'Prof. Marcos',
@@ -83,6 +115,8 @@ export const DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
   },
   {
     id: 'case-power-sw-loose',
+    cause: 'POWER_SW',
+    symptomVariants: ['A luz da fonte acende, mas o botão do gabinete parece decorativo.', 'Com a tomada ligada, apertar o Power não faz o PC partir.'],
     title: 'Caso #2: "Botão Fantasma" (Chave Conectada, Mas Botão Não Age)',
     difficulty: 'FÁCIL',
     clientName: 'Lucas Ferreira',
@@ -105,6 +139,8 @@ export const DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
   },
   {
     id: 'case-thermal-shutdown',
+    cause: 'THERMAL_PASTE',
+    symptomVariants: ['Liga, as ventoinhas aceleram e depois de alguns segundos tudo apaga.', 'O PC desliga sozinho logo depois de ligar, cada vez mais rápido.'],
     title: 'Caso #3: "Desligamento Térmico de Emergência"',
     difficulty: 'MÉDIO',
     clientName: 'Camila Rocha',
@@ -127,6 +163,8 @@ export const DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
   },
   {
     id: 'case-ram-dram-led',
+    cause: 'RAM_MISSING',
+    symptomVariants: ['Liga, mas o monitor fica preto e acende uma luz vermelha escrita DRAM.', 'As ventoinhas giram, sem imagem, e a placa mostra o LED da memória aceso.'],
     title: 'Caso #4: "Tela Preta & LED DRAM Aceso"',
     difficulty: 'MÉDIO',
     clientName: 'Beatriz Lima',
@@ -156,6 +194,8 @@ export const DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
   },
   {
     id: 'case-short-circuit-standoffs',
+    cause: 'STANDOFFS',
+    symptomVariants: ['A fonte dá um estalo e desliga na hora em que aperto o Power.', 'Logo ao ligar ouço um clique da fonte e tudo apaga.'],
     title: 'Caso #5: "Curto-Circuito com a Lata do Gabinete"',
     difficulty: 'AVANÇADO',
     clientName: 'Renato Silva',
@@ -178,6 +218,8 @@ export const DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
   },
   {
     id: 'case-cpu-f-no-gpu',
+    cause: 'NO_VIDEO_OUTPUT',
+    symptomVariants: ['Tudo liga, mas o monitor ligado na placa-mãe diz “Sem sinal”.', 'As luzes acendem e o LED VGA fica vermelho; a tela não mostra nada.'],
     title: 'Caso #6: "Processador Linha F Sem Placa de Vídeo"',
     difficulty: 'AVANÇADO',
     clientName: 'Guilherme Santos',
@@ -199,6 +241,60 @@ export const DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
     solutionHint: 'Instale uma placa de vídeo (GPU) no slot PCIe x16 e conecte a alimentação PCIe da fonte.',
     isResolved: (state) => Boolean(state.gpuInstalled && state.gpuScrewed && state.cableGpuPcieConnected),
     rewardPoints: 1800,
+  },
+  {
+    id: 'case-eps-loose',
+    cause: 'EPS_CABLE',
+    symptomVariants: [
+      'As ventoinhas giram, mas a tela não liga e o LED CPU fica vermelho.',
+      'Depois de trocar o gabinete, o PC acende as luzes e para no LED do processador.',
+    ],
+    title: 'Caso #7: "LED CPU Aceso Depois da Troca de Gabinete"',
+    difficulty: 'MÉDIO',
+    clientName: 'Ana Paula',
+    clientRole: 'Técnica do Laboratório de Informática',
+    clientAvatar: '👩‍🏭',
+    clientStory:
+      'Passei as peças de um gabinete velho para um novo, mais espaçoso. Liguei tudo de novo, as ventoinhas giram, mas não aparece imagem e a placa-mãe acende a luzinha vermelha do CPU.',
+    symptomSummary: 'Ventoinhas giram, sem vídeo, LED CPU aceso.',
+    symptomTechnical: 'Sem 12 V no conector ATX12V perto do soquete: o regulador de tensão (VRM) da CPU não recebe energia.',
+    motherboard: defaultMb,
+    initialAssembly: {
+      ...baseWorkingAssembly,
+      cableCpu8PinConnected: false,
+    },
+    defectExplanation:
+      'O processador não é alimentado pelo cabo de 24 pinos: ele tem um cabo próprio, o EPS de 8 pinos (CPU), que vai no canto superior esquerdo da placa. Na troca de gabinete ele costuma ficar para trás, porque passa por trás da chapa.',
+    solutionHint: 'Ligue o cabo EPS 8 pinos (CPU) da fonte no conector ATX12V, ao lado do soquete.',
+    isResolved: (state) => Boolean(state.cableCpu8PinConnected),
+    rewardPoints: 1400,
+  },
+  {
+    id: 'case-front-usb',
+    cause: 'FRONT_USB',
+    symptomVariants: [
+      'O pen drive funciona atrás do gabinete, mas na frente não é reconhecido.',
+      'Nenhum dispositivo funciona nas portas USB da frente do gabinete.',
+    ],
+    title: 'Caso #8: "USB da Frente Não Funciona"',
+    difficulty: 'FÁCIL',
+    clientName: 'Rafael Costa',
+    clientRole: 'Professor de Matemática',
+    clientAvatar: '🧑‍🏫',
+    clientStory:
+      'O computador liga e funciona normalmente, mas quando coloco o pen drive com as provas na frente do gabinete, nada acontece. Atrás funciona! Será que a porta da frente queimou?',
+    symptomSummary: 'O PC funciona, mas as portas USB frontais não reconhecem nada.',
+    symptomTechnical: 'Portas frontais sem 5 V e sem dados: o cabo do painel frontal não chega ao cabeçalho USB 3.0 da placa.',
+    motherboard: defaultMb,
+    initialAssembly: {
+      ...baseWorkingAssembly,
+      frontUsbConnected: false,
+    },
+    defectExplanation:
+      'As portas da frente do gabinete são só uma extensão: um cabo de 19 pinos precisa estar ligado no cabeçalho USB 3.0 da placa-mãe. Sem ele, o PC funciona, mas as portas frontais ficam mortas.',
+    solutionHint: 'Ligue o cabo USB 3.0 frontal no cabeçalho USB3 (19 pinos) da placa-mãe — não no USB 2.0.',
+    isResolved: (state) => Boolean(state.frontUsbConnected),
+    rewardPoints: 1100,
   },
 ];
 

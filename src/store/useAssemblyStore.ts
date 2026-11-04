@@ -32,7 +32,17 @@ import {
   ComponentCategory,
 } from '../engine/types';
 import { MOTHERBOARDS, CLIENT_MISSIONS } from '../engine/hardwareCatalog';
-import { DiagnosticScenario, DIAGNOSTIC_SCENARIOS } from '../engine/diagnosticCases';
+import { DiagnosticCauseId, DiagnosticScenario, DIAGNOSTIC_SCENARIOS } from '../engine/diagnosticCases';
+import {
+  DetectiveRecord,
+  drawCaseOrder,
+  phaseOf,
+  registerFailedBoot,
+  registerHint,
+  solveRecord,
+  startRecord,
+  submitHypothesis,
+} from '../engine/detective';
 import { FPanelConnectorId, ValidationResult, validateConnectorPlacement, connectionsFromAssembly } from '../engine/frontPanel';
 import { StudentSetupConfig, DEFAULT_STUDENT_SETUP, PeripheralItem } from '../engine/peripheralsCatalog';
 import { RoomThemeId } from '../engine/roomThemes';
@@ -120,6 +130,14 @@ interface AssemblyStore {
   activeMission: ClientMission | null;
   activeDiagnosticScenario: DiagnosticScenario | null;
   resolvedScenarioIds: string[];
+  /** Modo detetive (#32): semente do sorteio, ordem dos chamados e a ficha de cada um */
+  detective: { seed: number; order: string[]; records: Record<string, DetectiveRecord> };
+  /** Registra a hipótese da causa; a bancada só abre com a hipótese certa. Retorna se acertou. */
+  submitDiagnosticHypothesis: (cause: DiagnosticCauseId) => boolean;
+  /** Mostra a dica do professor (custa pontos do chamado) */
+  revealDiagnosticHint: () => void;
+  /** Sorteia uma nova ordem de chamados e novos relatos de sintoma */
+  drawDiagnosticCases: (seed?: number) => void;
   teamName: string;
   elapsedSeconds: number;
   isTimerRunning: boolean;
@@ -236,6 +254,25 @@ interface AssemblyStore {
   startFromScratch: () => void;
 }
 
+function isDetectiveState(value: unknown): value is AssemblyStore['detective'] {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.seed === 'number' &&
+    Array.isArray(v.order) &&
+    v.order.every((id) => typeof id === 'string' && DIAGNOSTIC_SCENARIOS.some((sc) => sc.id === id)) &&
+    typeof v.records === 'object' &&
+    v.records !== null
+  );
+}
+
+/** Modo diagnóstico: a bancada fica lacrada até o aluno registrar a hipótese certa (#32) */
+export const selectDiagnosticBenchLocked = (s: AssemblyStore): boolean =>
+  s.gameMode === 'DIAGNOSTICO' &&
+  s.activeDiagnosticScenario !== null &&
+  !s.resolvedScenarioIds.includes(s.activeDiagnosticScenario.id) &&
+  phaseOf(s.detective.records[s.activeDiagnosticScenario.id]) === 'HYPOTHESIS';
+
 /** Referência estável: um [] novo a cada leitura faria seletores rasos re-renderizarem em loop */
 const NO_CLIENT_PARTS: string[] = [];
 
@@ -338,6 +375,8 @@ export const useAssemblyStore = create<AssemblyStore>()(
   activeMission: null,
   activeDiagnosticScenario: null,
   resolvedScenarioIds: [],
+  // Semente fixa no primeiro render (mesmo HTML no servidor); o modo diagnóstico sorteia ao entrar
+  detective: { seed: 1, order: DIAGNOSTIC_SCENARIOS.map((sc) => sc.id), records: {} },
   teamName: 'Equipe Alfa',
   elapsedSeconds: 0,
   isTimerRunning: false,
@@ -368,8 +407,43 @@ export const useAssemblyStore = create<AssemblyStore>()(
     if (mode === 'MISSAO') {
       set({ activeMission: CLIENT_MISSIONS[0] });
     } else if (mode === 'DIAGNOSTICO') {
-      get().selectDiagnosticScenario(DIAGNOSTIC_SCENARIOS[0].id);
+      // Chamados sorteados a cada entrada no laboratório (#32)
+      get().drawDiagnosticCases();
     }
+  },
+
+  drawDiagnosticCases: (seed) => {
+    const next = seed ?? (Date.now() % 2147483647);
+    const order = drawCaseOrder(DIAGNOSTIC_SCENARIOS.map((sc) => sc.id), next);
+    set({ detective: { seed: next, order, records: {} }, resolvedScenarioIds: [] });
+    get().selectDiagnosticScenario(order[0]);
+  },
+
+  submitDiagnosticHypothesis: (cause) => {
+    const { activeDiagnosticScenario: scenario, detective } = get();
+    if (!scenario) return false;
+    const current = detective.records[scenario.id] ?? startRecord(scenario, detective.seed);
+    const { record, correct } = submitHypothesis(current, scenario, cause);
+    if (correct) soundEngine.playSuccessChime();
+    else soundEngine.playErrorBuzz();
+    set((st) => ({
+      detective: { ...st.detective, records: { ...st.detective.records, [scenario.id]: record } },
+      activeAlert: correct
+        ? { type: 'success', title: 'Hipótese registrada', message: 'Boa linha de investigação! A bancada foi liberada: confirme e conserte o defeito.' }
+        : {
+            type: 'error',
+            title: 'Hipótese descartada',
+            message: 'Os sintomas não batem com essa causa. Releia o relato e a leitura da telemetria (o chamado perdeu 25% do valor).',
+          },
+    }));
+    return correct;
+  },
+
+  revealDiagnosticHint: () => {
+    const { activeDiagnosticScenario: scenario, detective } = get();
+    if (!scenario) return;
+    const current = detective.records[scenario.id] ?? startRecord(scenario, detective.seed);
+    set((st) => ({ detective: { ...st.detective, records: { ...st.detective.records, [scenario.id]: registerHint(current) } } }));
   },
 
   setActiveWorkbenchView: (view) => set({ activeWorkbenchView: view }),
@@ -384,7 +458,12 @@ export const useAssemblyStore = create<AssemblyStore>()(
 
   selectDiagnosticScenario: (scenarioId) => {
     const scenario = DIAGNOSTIC_SCENARIOS.find((s) => s.id === scenarioId) || DIAGNOSTIC_SCENARIOS[0];
+    const { detective } = get();
     set({
+      // Ficha do chamado (mantém a hipótese já registrada ao reiniciar o caso)
+      detective: detective.records[scenario.id]
+        ? detective
+        : { ...detective, records: { ...detective.records, [scenario.id]: startRecord(scenario, detective.seed) } },
       activeDiagnosticScenario: scenario,
       selectedMotherboard: scenario.motherboard,
       assembly: { ...scenario.initialAssembly },
@@ -407,12 +486,18 @@ export const useAssemblyStore = create<AssemblyStore>()(
     if (activeDiagnosticScenario.isResolved(assembly, selectedMotherboard)) {
       if (!resolvedScenarioIds.includes(activeDiagnosticScenario.id)) {
         soundEngine.playSuccessChime();
+        const { detective } = get();
+        const solved = solveRecord(
+          detective.records[activeDiagnosticScenario.id] ?? startRecord(activeDiagnosticScenario, detective.seed),
+          activeDiagnosticScenario
+        );
         set((state) => ({
           resolvedScenarioIds: [...state.resolvedScenarioIds, activeDiagnosticScenario.id],
+          detective: { ...state.detective, records: { ...state.detective.records, [activeDiagnosticScenario.id]: solved } },
           activeAlert: {
             type: 'success',
             title: '🎯 DEFEITO RESOLVIDO COM SUCESSO!',
-            message: `Excelente diagnóstico! ${activeDiagnosticScenario.defectExplanation} (+${activeDiagnosticScenario.rewardPoints} XP)`,
+            message: `Excelente diagnóstico! ${activeDiagnosticScenario.defectExplanation} (+${solved.points ?? activeDiagnosticScenario.rewardPoints} XP)`,
           },
         }));
         return true;
@@ -998,10 +1083,19 @@ export const useAssemblyStore = create<AssemblyStore>()(
 
     const result = evaluatePostTest(assembly, selectedMotherboard);
     const failures = result.issues.filter((i) => i.type === 'ERROR').map((i) => i.title);
-    set((state) => ({
-      postAttempts: state.postAttempts + 1,
-      missionErrorLog: [...state.missionErrorLog, ...failures].slice(-50),
-    }));
+    set((state) => {
+      // Modo detetive: ligar sem ter consertado custa pontos do chamado (#32)
+      const scenario = state.gameMode === 'DIAGNOSTICO' ? state.activeDiagnosticScenario : null;
+      const record = scenario ? state.detective.records[scenario.id] : undefined;
+      const countsAsFailure = Boolean(scenario && record && !result.bootSuccess && phaseOf(record) === 'INVESTIGATING');
+      return {
+        postAttempts: state.postAttempts + 1,
+        missionErrorLog: [...state.missionErrorLog, ...failures].slice(-50),
+        ...(countsAsFailure && scenario && record
+          ? { detective: { ...state.detective, records: { ...state.detective.records, [scenario.id]: registerFailedBoot(record) } } }
+          : {}),
+      };
+    });
 
     if (result.canPowerOn) {
       soundEngine.playFanSpinUp();
@@ -1394,7 +1488,14 @@ export const useAssemblyStore = create<AssemblyStore>()(
   startFromScratch: () => {
     get().abandonCampaignMission();
     get().resetAssembly();
-    set({ gameMode: 'OFICINA', resolvedScenarioIds: [], activeMission: null, activeDiagnosticScenario: null, teamName: '' });
+    set({
+      gameMode: 'OFICINA',
+      resolvedScenarioIds: [],
+      detective: { seed: 1, order: DIAGNOSTIC_SCENARIOS.map((sc) => sc.id), records: {} },
+      activeMission: null,
+      activeDiagnosticScenario: null,
+      teamName: '',
+    });
     useProgressStore.getState().resetProgress();
     void useAssemblyStore.persist.clearStorage();
     void useProgressStore.persist.clearStorage();
@@ -1414,6 +1515,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
         // O caso de diagnóstico tem funções (isResolved): persiste só o id e reconstrói ao carregar
         activeDiagnosticScenarioId: s.activeDiagnosticScenario?.id ?? null,
         resolvedScenarioIds: s.resolvedScenarioIds,
+        detective: s.detective,
         teamName: s.teamName,
         elapsedSeconds: s.elapsedSeconds,
         penaltiesCount: s.penaltiesCount,
@@ -1438,7 +1540,10 @@ export const useAssemblyStore = create<AssemblyStore>()(
             ? persisted.activeDiagnosticScenarioId
             : null;
         const scenario = DIAGNOSTIC_SCENARIOS.find((d) => d.id === scenarioId) ?? null;
-        return { ...current, ...persisted, activeDiagnosticScenario: scenario, missionDebrief: null, isCampaignMapOpen: false };
+        // Ficha do detetive salva por versões antigas (ou corrompida): recomeça o sorteio
+        const savedDetective = 'detective' in persisted ? persisted.detective : null;
+        const detective = isDetectiveState(savedDetective) ? savedDetective : current.detective;
+        return { ...current, ...persisted, detective, activeDiagnosticScenario: scenario, missionDebrief: null, isCampaignMapOpen: false };
       },
       // Versão nova do formato salvo: descarta o salvamento antigo em vez de quebrar
       migrate: () => ({}),

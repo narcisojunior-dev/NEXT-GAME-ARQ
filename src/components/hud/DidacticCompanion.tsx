@@ -20,6 +20,8 @@ export const DidacticCompanion: React.FC = () => {
   const currentPhase = useAssemblyStore(selectCurrentPhase);
   // Prova final da campanha: tutor desligado (os alertas de erro continuam aparecendo)
   const hideHelpers = useAssemblyStore((s) => s.campaignHideHelpers);
+  // Modo detetive (#32): a dica da fase entregaria a resposta do chamado
+  const isDiagnostic = useAssemblyStore((s) => s.gameMode === 'DIAGNOSTICO');
 
   const getPhaseAdvice = () => {
     switch (currentPhase) {
@@ -72,7 +74,12 @@ export const DidacticCompanion: React.FC = () => {
     }
   };
 
-  const advice = getPhaseAdvice();
+  const advice = isDiagnostic
+    ? {
+        title: 'Modo Detetive',
+        text: 'Leia o relato do cliente e a telemetria, registre sua hipótese e só então abra a máquina. Cada tentativa de ligar sem consertar custa pontos.',
+      }
+    : getPhaseAdvice();
 
   if (hideHelpers && !activeAlert) return null;
 

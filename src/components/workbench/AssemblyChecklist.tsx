@@ -39,6 +39,8 @@ export const AssemblyChecklist: React.FC = () => {
   const [isOpen, setIsOpen] = useState(true);
   // Prova final da campanha: checklist desligado
   const hideHelpers = useAssemblyStore((s) => s.campaignHideHelpers);
+  // Modo detetive (#32): o checklist mostraria exatamente o passo com defeito
+  const isDiagnostic = useAssemblyStore((s) => s.gameMode === 'DIAGNOSTICO');
 
   // Etapas e status vêm do motor: as mesmas regras que liberam o PC para a mesa (derivePhase)
   const steps = buildAssemblyChecklist(assembly, selectedMotherboard, {
@@ -52,7 +54,7 @@ export const AssemblyChecklist: React.FC = () => {
   // Determinar o próximo passo que falta fazer
   const nextStep = steps.find((s) => !s.isDone) || steps[steps.length - 1];
 
-  if (hideHelpers) return null;
+  if (hideHelpers || isDiagnostic) return null;
 
   return (
     <div className="w-full bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-xl backdrop-blur-md mb-6">

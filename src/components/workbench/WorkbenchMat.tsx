@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { selectDiagnosticBenchLocked, useAssemblyStore } from '@/store/useAssemblyStore';
 import { useShallow } from 'zustand/react/shallow';
 import { MotherboardSvg } from './MotherboardSvg';
 import { CableTray } from './CableTray';
@@ -61,6 +61,7 @@ const SlotThumb: React.FC<{ component: HardwareComponent | null; icon: React.Rea
 );
 
 export const WorkbenchMat: React.FC = () => {
+  const isBenchLocked = useAssemblyStore(selectDiagnosticBenchLocked);
   const [is3DMode, setIs3DMode] = React.useState<boolean>(false);
   const [hasWebGL, setHasWebGL] = React.useState<boolean>(true);
 
@@ -131,6 +132,20 @@ export const WorkbenchMat: React.FC = () => {
   const isSataTarget = selectedComponentForPlacement?.category === 'STORAGE';
   const sataStorage =
     assembly.storageInstalled && assembly.storageInstalled.storageType !== 'NVMe_M2' ? assembly.storageInstalled : null;
+
+  if (isBenchLocked) {
+    return (
+      <section
+        aria-label="Bancada lacrada"
+        className="w-full rounded-3xl border-2 border-dashed border-cyan-800/60 bg-slate-950/80 p-8 text-center text-sm text-slate-300"
+      >
+        <p className="font-bold text-cyan-300">🔒 Máquina lacrada para investigação</p>
+        <p className="mt-1 text-xs text-slate-400">
+          Registre a hipótese da causa no chamado acima. Um bom técnico pensa antes de abrir o gabinete.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <div className="relative w-full rounded-3xl bg-slate-900 border-2 border-slate-800 p-6 shadow-2xl overflow-hidden">
