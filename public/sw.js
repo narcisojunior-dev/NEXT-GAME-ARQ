@@ -44,6 +44,8 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+  // API (Modo Professor, #66): dados ao vivo nunca passam pelo cache
+  if (url.pathname.startsWith('/api/')) return;
 
   // Páginas (HTML): rede primeiro para receber a versão mais nova; cache só como fallback offline
   if (event.request.mode === 'navigate') {
