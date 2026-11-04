@@ -1,6 +1,7 @@
 import { expect, Page } from '@playwright/test';
 import type { AssemblyState, MotherboardComponent } from '../../src/engine/types';
 import type { PostResult } from '../../src/engine/compatibility';
+import './windowStores';
 
 /**
  * Passos de interface reaproveitados pelos testes de fluxo completo: o aluno só usa o inventário
@@ -18,7 +19,7 @@ export interface Snapshot {
 
 export const snapshot = (page: Page): Promise<Snapshot> =>
   page.evaluate(() => {
-    const s = (window as unknown as { useAssemblyStore: { getState: () => Record<string, unknown> } }).useAssemblyStore.getState();
+    const s = window.useAssemblyStore.getState();
     return JSON.parse(
       JSON.stringify({
         assembly: s.assembly,
@@ -27,7 +28,7 @@ export const snapshot = (page: Page): Promise<Snapshot> =>
         alert: s.activeAlert,
         post: s.postResult,
         cables: s.cableConnections,
-        desk: (s.deskSetup as { placedDeskItems: object }).placedDeskItems,
+        desk: s.deskSetup.placedDeskItems,
       })
     );
   });
