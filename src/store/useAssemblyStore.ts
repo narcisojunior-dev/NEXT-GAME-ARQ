@@ -4,6 +4,7 @@ import { STORAGE_KEYS, safeStateStorage } from './safeStorage';
 import { useProgressStore } from './useProgressStore';
 import { encodeValidationCode } from '../engine/validationCode';
 import { buildAssemblyChecklist, pendingBenchSteps } from '../engine/assemblyChecklist';
+import { calculateGroupScore } from '../engine/score';
 import {
   MissionEvaluation,
   MissionSession,
@@ -1040,41 +1041,27 @@ export const useAssemblyStore = create<AssemblyStore>()(
 
   calculateFinalScore: () => {
     const { elapsedSeconds, penaltiesCount, assembly, selectedMotherboard, activeMission, teamName } = get();
-    let precision = 4000 - penaltiesCount * 500;
-    if (precision < 500) precision = 500;
-
-    // Bônus de tempo (meta de 300 segundos)
-    const timeDelta = Math.max(0, 300 - elapsedSeconds);
-    const speedPoints = Math.min(1500, Math.round(timeDelta * 5));
-
-    // Bônus de orçamento (se estiver em missão)
-    let budgetPoints = 2500;
-    let budgetRemaining = 0;
-    if (activeMission) {
-      const spent = calculateTotalSpent(assembly, selectedMotherboard);
-      budgetRemaining = activeMission.budgetMax - spent;
-      if (budgetRemaining < 0) {
-        budgetPoints = 0;
-      } else {
-        budgetPoints = Math.round(1500 + (budgetRemaining / activeMission.budgetMax) * 1000);
-      }
-    }
-
-    const benchmarkPoints = assembly.gpuInstalled ? 2000 : 800;
-    const totalScore = precision + speedPoints + budgetPoints + benchmarkPoints;
-
-    return {
+    // Pontuação pura do motor (#26): benchmark real contra a meta, alertas do POST e gargalo
+    const score = calculateGroupScore({
+      assembly,
+      motherboard: selectedMotherboard,
+      elapsedSeconds,
+      penaltiesCount,
+      mission: activeMission,
       teamName,
-      totalScore,
-      precisionPoints: precision,
-      budgetPoints,
-      benchmarkPoints,
-      speedPoints,
-      penaltyPoints: penaltiesCount * 500,
-      timeSpentSeconds: elapsedSeconds,
-      budgetRemaining,
+    });
+    return {
+      teamName: score.teamName,
+      totalScore: score.totalScore,
+      precisionPoints: score.precisionPoints,
+      budgetPoints: score.budgetPoints,
+      benchmarkPoints: score.benchmarkPoints,
+      speedPoints: score.speedPoints,
+      penaltyPoints: score.penaltyPoints,
+      timeSpentSeconds: score.timeSpentSeconds,
+      budgetRemaining: score.budgetRemaining,
       // Código verificável com selo SHA-256 (#29): determinístico, o professor confere no painel
-      hashValidation: encodeValidationCode({ teamName: teamName || 'Equipe', totalScore, timeSpentSeconds: elapsedSeconds }),
+      hashValidation: encodeValidationCode({ teamName: teamName || 'Equipe', totalScore: score.totalScore, timeSpentSeconds: elapsedSeconds }),
     };
   },
 

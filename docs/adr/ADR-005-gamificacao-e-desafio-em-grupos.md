@@ -24,6 +24,15 @@ Em um ambiente de sala de aula de 50 minutos do Ensino Médio, o professor preci
    * **Equilíbrio e Benchmark Teórico (Máx 2.000 pts):** Ausência de "gargalo" (bottleneck). Exemplo: colocar uma placa de vídeo topo de linha com uma CPU fraca que gera 40% de gargalo penaliza essa pontuação.
    * **Tempo de Montagem (Máx 1.500 pts):** Decaimento progressivo de pontos a partir de um tempo padrão esperado (ex: meta de 5 minutos; conclusão em menos tempo gera bônus de agilidade).
    * **Penalidades por Danos/Erros Críticos (-500 pts por ocorrência):** Esquecer pasta térmica, esquecer espaçadores ou subdimensionar a fonte.
+   * **Implementação (#26):** função pura `calculateGroupScore` em `src/engine/score.ts`, com testes em `src/engine/__tests__/score.test.ts`. O store só repassa o estado e acrescenta o selo verificável (#29).
+
+     | Bloco | Máx. | Regra |
+     |---|---|---|
+     | Precisão | 4.000 | −500 por erro físico penalizado (piso de 500) e **−250 por alerta de qualidade do POST** (cooler abaixo do TDP, fonte abaixo do recomendado pela GPU, ventoinhas do gabinete desligadas, disco sem cabos). |
+     | Orçamento | 2.500 | Sem missão: 2.500. Com missão: 1.500 + sobra ÷ teto × 1.000; estourou o teto = 0. |
+     | Benchmark | 2.000 | `calculateBenchmark` (ADR-007) em 1080p: 2.000 × (pontuação ÷ meta da missão), limitado a 2.000, × (1 − gargalo%), com perda máxima de 50%. Sem missão a meta é 8.000. PC que não passa no POST = 0. |
+     | Velocidade | 1.500 | 5 pontos por segundo abaixo da meta de 300 s. |
+     | Penalidades | — | Registradas à parte (`penaltyPoints` = 500 × erros) e já descontadas na precisão. |
 3. **Quadro de Líderes da Sala de Aula (Classroom Leaderboard):**
    * **Modo A (Painel do Professor / Sem servidor externo):** Ao finalizar o desafio, a tela do aluno exibe um **Resumo Criptografado / Hash do Score com QR Code** ou código de 6 dígitos que resume o tempo, custo e erros. O professor pode ler pelo celular ou digitar no painel projetado para atualizar o placar ao vivo.
    * **Modo B (P2P / Local Storage & WebSockets leves opcionais):** Sincronização em tempo real quando conectados na mesma rede local da escola via servidor local ou Firebase/Supabase gratuito.
