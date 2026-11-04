@@ -186,10 +186,10 @@
     "semantic_hash": "bbf438bae3894d5ca45c3ffe5405673a"
   },
   "src/app/page.tsx": {
-    "mtime": 1793762004.2228036,
-    "seen": 1793769440.141124,
-    "ast_hash": "5f02795ceed81be005b83f2b01bcde62",
-    "semantic_hash": "5f02795ceed81be005b83f2b01bcde62"
+    "mtime": 1793811143.48487,
+    "seen": 1793814084.254545,
+    "ast_hash": "31f8702025995b81f8d0ea9522a09ba8",
+    "semantic_hash": "31f8702025995b81f8d0ea9522a09ba8"
   },
   "src/components/challenges/TeamChallengeBanner.tsx": {
     "mtime": 1793761979.9289818,
@@ -246,16 +246,16 @@
     "semantic_hash": "005d29156f88c2a2fc49b63b43da5bcf"
   },
   "src/components/workbench/WorkbenchMat.tsx": {
-    "mtime": 1793766671.8380165,
-    "seen": 1793769440.1415198,
-    "ast_hash": "ca74e7bf4f29db81622651040c3b8d65",
-    "semantic_hash": "ca74e7bf4f29db81622651040c3b8d65"
+    "mtime": 1793810939.1704412,
+    "seen": 1793814084.25514,
+    "ast_hash": "d59a408dfe73cac49daade845d702db1",
+    "semantic_hash": "d59a408dfe73cac49daade845d702db1"
   },
   "src/engine/audio/soundEngine.ts": {
-    "mtime": 1793768197.9350138,
-    "seen": 1793769440.141898,
-    "ast_hash": "83cd34a2c5d084d9b38ca36ab1cd4462",
-    "semantic_hash": "83cd34a2c5d084d9b38ca36ab1cd4462"
+    "mtime": 1793810366.1553605,
+    "seen": 1793814084.2556732,
+    "ast_hash": "79b40078065f3029ec2584ed964cd9b2",
+    "semantic_hash": "79b40078065f3029ec2584ed964cd9b2"
   },
   "src/engine/compatibility.ts": {
     "mtime": 1793751450.3388312,
@@ -276,10 +276,10 @@
     "semantic_hash": "b1ab00d559ade6668dfe940ddaa7599c"
   },
   "src/store/useAssemblyStore.ts": {
-    "mtime": 1793768112.1554897,
-    "seen": 1793769440.1422641,
-    "ast_hash": "6a747a903d3d71f0b76cee1abc67a13d",
-    "semantic_hash": "6a747a903d3d71f0b76cee1abc67a13d"
+    "mtime": 1793810322.1248274,
+    "seen": 1793814084.256166,
+    "ast_hash": "7ee6fa3f1c8c71ccb06f352957334af6",
+    "semantic_hash": "7ee6fa3f1c8c71ccb06f352957334af6"
   },
   "tsconfig.json": {
     "mtime": 1793735056.790974,
@@ -522,10 +522,10 @@
     "semantic_hash": "62e10f891ff464b0dca673101f63c0d8"
   },
   "src/components/three/Model3DModal.tsx": {
-    "mtime": 1793735056.786469,
-    "seen": 1793737604.188846,
-    "ast_hash": "a68289a2e10a3cb4daa0cb0a48a1a28e",
-    "semantic_hash": "a68289a2e10a3cb4daa0cb0a48a1a28e"
+    "mtime": 1793812421.2022367,
+    "seen": 1793814084.25491,
+    "ast_hash": "38bc023c5c8fd129dcd12294cc4909d9",
+    "semantic_hash": "38bc023c5c8fd129dcd12294cc4909d9"
   },
   "src/components/three/ModelViewer.tsx": {
     "mtime": 1793735056.786533,
@@ -558,16 +558,16 @@
     "semantic_hash": "991058bcb0f3893cb02ba6d15d70a285"
   },
   "src/engine/models3d.data.json": {
-    "mtime": 1793735056.7899716,
-    "seen": 1793737604.188863,
-    "ast_hash": "9dac31ee7cd3a7de6c8b539008f7f7cb",
-    "semantic_hash": "9dac31ee7cd3a7de6c8b539008f7f7cb"
+    "mtime": 1793809553.464068,
+    "seen": 1793814084.2559402,
+    "ast_hash": "c352b8a74630fd3d3d74582f52bef8da",
+    "semantic_hash": "c352b8a74630fd3d3d74582f52bef8da"
   },
   "src/engine/models3d.ts": {
-    "mtime": 1793735056.7900417,
-    "seen": 1793737604.188864,
-    "ast_hash": "cae3ebc1bf1757964041bc007adc0534",
-    "semantic_hash": "cae3ebc1bf1757964041bc007adc0534"
+    "mtime": 1793809561.6533463,
+    "seen": 1793814084.2559412,
+    "ast_hash": "2c644b5d308fb86be68caeb6dbe2deaa",
+    "semantic_hash": "2c644b5d308fb86be68caeb6dbe2deaa"
   },
   "src/engine/models3dIndex.ts": {
     "mtime": 1793735056.7900996,
@@ -648,10 +648,10 @@
     "semantic_hash": "e800810d78d04fadbd556b6ae178c565"
   },
   "src/components/three/DeskSetup3D.tsx": {
-    "mtime": 1793755247.8516207,
-    "seen": 1793755316.199336,
-    "ast_hash": "d613e0ea7cdf628b637bdcedbae2fc08",
-    "semantic_hash": "d613e0ea7cdf628b637bdcedbae2fc08"
+    "mtime": 1793810833.6569047,
+    "seen": 1793814084.2548952,
+    "ast_hash": "c9c0b2436c47793d558379cbe9f9d0f1",
+    "semantic_hash": "c9c0b2436c47793d558379cbe9f9d0f1"
   },
   "src/components/workbench/WorkbenchSidebar.tsx": {
     "mtime": 1793768266.6079009,
@@ -708,10 +708,10 @@
     "semantic_hash": "3ed94c6bbbed5536f95d8ea7f7a8ebed"
   },
   "src/components/three/DeskStationScene.tsx": {
-    "mtime": 1793754501.1343343,
-    "seen": 1793755316.199337,
-    "ast_hash": "4e191bc3a9a3166b140bb7ea49763262",
-    "semantic_hash": "4e191bc3a9a3166b140bb7ea49763262"
+    "mtime": 1793810780.9559433,
+    "seen": 1793814084.2548962,
+    "ast_hash": "6f6c208b0981152620101a2e4c0df4ad",
+    "semantic_hash": "6f6c208b0981152620101a2e4c0df4ad"
   },
   "src/components/three/FittedModel.tsx": {
     "mtime": 1793742106.5339503,
@@ -906,10 +906,10 @@
     "semantic_hash": "a55dd00b4bea26c86a9aa3e83caebf2b"
   },
   "src/engine/progress.ts": {
-    "mtime": 1793766074.2225273,
-    "seen": 1793769440.1421492,
-    "ast_hash": "e657cff4a527f2923c0e2fef00baa009",
-    "semantic_hash": "e657cff4a527f2923c0e2fef00baa009"
+    "mtime": 1793809702.4687238,
+    "seen": 1793814084.255989,
+    "ast_hash": "be3fb1fbccc5c62864d300e7761b1eec",
+    "semantic_hash": "be3fb1fbccc5c62864d300e7761b1eec"
   },
   "src/engine/validationCode.ts": {
     "mtime": 1793765604.8328621,
@@ -924,16 +924,16 @@
     "semantic_hash": "af007a81123b2664d7a9283f6f4f68ff"
   },
   "src/store/safeStorage.ts": {
-    "mtime": 1793752909.3370395,
-    "seen": 1793755316.19996,
-    "ast_hash": "f19cfa74cd2a2e0befb7db6edea6a7ee",
-    "semantic_hash": "f19cfa74cd2a2e0befb7db6edea6a7ee"
+    "mtime": 1793810322.1244445,
+    "seen": 1793814084.256165,
+    "ast_hash": "0f8cb4c6689cd70fbce75af4b08da750",
+    "semantic_hash": "0f8cb4c6689cd70fbce75af4b08da750"
   },
   "src/store/useProgressStore.ts": {
-    "mtime": 1793766087.423043,
-    "seen": 1793769440.142265,
-    "ast_hash": "696cb6604d4a55499697c07a4ad3b28a",
-    "semantic_hash": "696cb6604d4a55499697c07a4ad3b28a"
+    "mtime": 1793809702.4689338,
+    "seen": 1793814084.256166,
+    "ast_hash": "eb1d57bb7be7af481c55f9f62bcb6d27",
+    "semantic_hash": "eb1d57bb7be7af481c55f9f62bcb6d27"
   },
   "e2e/fullAssemblyPhysics.spec.ts": {
     "mtime": 1793758287.7824163,
@@ -972,10 +972,10 @@
     "semantic_hash": "ece9940f63ed736ebc6545d059e09776"
   },
   "e2e/fluxoCompletoOrcamento.spec.ts": {
-    "mtime": 1793768374.2803943,
-    "seen": 1793769440.140996,
-    "ast_hash": "5a0905695b258179eb4d93e54cfb7272",
-    "semantic_hash": "5a0905695b258179eb4d93e54cfb7272"
+    "mtime": 1793813323.4500735,
+    "seen": 1793814084.2543192,
+    "ast_hash": "5535cf97dc35a2d6148f0c73af816c4b",
+    "semantic_hash": "5535cf97dc35a2d6148f0c73af816c4b"
   },
   "e2e/openThePc.spec.ts": {
     "mtime": 1793767030.642034,
@@ -984,10 +984,10 @@
     "semantic_hash": "4eb3e1bc34c0dfd7a095c445abd1514d"
   },
   "e2e/support/benchUi.ts": {
-    "mtime": 1793768323.208323,
-    "seen": 1793769440.141031,
-    "ast_hash": "29331680c33b346c1e8772cefb18282b",
-    "semantic_hash": "29331680c33b346c1e8772cefb18282b"
+    "mtime": 1793813323.449683,
+    "seen": 1793814084.2543669,
+    "ast_hash": "838273449d7d677773b788d693fddfa1",
+    "semantic_hash": "838273449d7d677773b788d693fddfa1"
   },
   "e2e/teacherReport.spec.ts": {
     "mtime": 1793765802.1919641,
@@ -1150,5 +1150,119 @@
     "seen": 1793769440.142226,
     "ast_hash": "97af3c3ae51a59d318813d8b006dfc86",
     "semantic_hash": "97af3c3ae51a59d318813d8b006dfc86"
+  },
+  "e2e/decorRoom.spec.ts": {
+    "mtime": 1793813331.6449294,
+    "seen": 1793814084.254269,
+    "ast_hash": "d77fd4ca035ed27fbfc0981b2b2e804e",
+    "semantic_hash": "d77fd4ca035ed27fbfc0981b2b2e804e"
+  },
+  "e2e/support/deskRunning.ts": {
+    "mtime": 1793813323.449326,
+    "seen": 1793814084.2543669,
+    "ast_hash": "a7a375a8ffcdcbb1f8ccbdc676d770fb",
+    "semantic_hash": "a7a375a8ffcdcbb1f8ccbdc676d770fb"
+  },
+  "e2e/support/windowStores.ts": {
+    "mtime": 1793813323.4280925,
+    "seen": 1793814084.254368,
+    "ast_hash": "b6c3fcef2b9c407998220ca462a2ae71",
+    "semantic_hash": "b6c3fcef2b9c407998220ca462a2ae71"
+  },
+  "src/components/room3d/DecorDrawer.tsx": {
+    "mtime": 1793812271.5734088,
+    "seen": 1793814084.254847,
+    "ast_hash": "88611571e49c3193415c7bcaf33a7a22",
+    "semantic_hash": "88611571e49c3193415c7bcaf33a7a22"
+  },
+  "src/components/room3d/DecorScene.tsx": {
+    "mtime": 1793813153.234619,
+    "seen": 1793814084.254848,
+    "ast_hash": "e66a9cd9af1e3cd169f5cfeb279ffdce",
+    "semantic_hash": "e66a9cd9af1e3cd169f5cfeb279ffdce"
+  },
+  "src/components/room3d/RoomShell.tsx": {
+    "mtime": 1793810437.7444873,
+    "seen": 1793814084.254849,
+    "ast_hash": "8aee45013a4f3b0398f24bd8858d4820",
+    "semantic_hash": "8aee45013a4f3b0398f24bd8858d4820"
+  },
+  "src/components/room3d/__tests__/decorShapes.test.ts": {
+    "mtime": 1793812486.7109222,
+    "seen": 1793814084.254849,
+    "ast_hash": "d0c4f6e864ee8415f63c8c4fb2119cef",
+    "semantic_hash": "d0c4f6e864ee8415f63c8c4fb2119cef"
+  },
+  "src/components/room3d/decorActions.ts": {
+    "mtime": 1793810930.380264,
+    "seen": 1793814084.254849,
+    "ast_hash": "4bb868ee68b655d3710725be0b464331",
+    "semantic_hash": "4bb868ee68b655d3710725be0b464331"
+  },
+  "src/components/room3d/decorModeStore.ts": {
+    "mtime": 1793813138.1683102,
+    "seen": 1793814084.2548501,
+    "ast_hash": "76c41f071e9cc0766d556d2e25fec554",
+    "semantic_hash": "76c41f071e9cc0766d556d2e25fec554"
+  },
+  "src/components/room3d/decorShapes.ts": {
+    "mtime": 1793813138.1694543,
+    "seen": 1793814084.254851,
+    "ast_hash": "f898913b23d997b3e06cb1cd5826b19b",
+    "semantic_hash": "f898913b23d997b3e06cb1cd5826b19b"
+  },
+  "src/components/room3d/posterArt.ts": {
+    "mtime": 1793813153.2344177,
+    "seen": 1793814084.254851,
+    "ast_hash": "89d02fb5da1d7212aea90027ab101e59",
+    "semantic_hash": "89d02fb5da1d7212aea90027ab101e59"
+  },
+  "src/engine/__tests__/decorUnlocks.test.ts": {
+    "mtime": 1793810250.910886,
+    "seen": 1793814084.255369,
+    "ast_hash": "640ed04c7c9ed79d731dcb928c6e5d6f",
+    "semantic_hash": "640ed04c7c9ed79d731dcb928c6e5d6f"
+  },
+  "src/engine/__tests__/roomDecor.test.ts": {
+    "mtime": 1793811572.248425,
+    "seen": 1793814084.255569,
+    "ast_hash": "e8c2bb95458e56a6cb9c2ef0dabc0b65",
+    "semantic_hash": "e8c2bb95458e56a6cb9c2ef0dabc0b65"
+  },
+  "src/engine/decorUnlocks.ts": {
+    "mtime": 1793809733.1842303,
+    "seen": 1793814084.255816,
+    "ast_hash": "8ec40554ad8ed996dc77fd20c61d78af",
+    "semantic_hash": "8ec40554ad8ed996dc77fd20c61d78af"
+  },
+  "src/engine/roomDecor.ts": {
+    "mtime": 1793813138.1687162,
+    "seen": 1793814084.256014,
+    "ast_hash": "bf638435212edba8b2c73dbfa3db9543",
+    "semantic_hash": "bf638435212edba8b2c73dbfa3db9543"
+  },
+  "src/engine/roomDecorState.ts": {
+    "mtime": 1793811572.2479181,
+    "seen": 1793814084.256014,
+    "ast_hash": "69dcf4d5e98802a951d21639f6540692",
+    "semantic_hash": "69dcf4d5e98802a951d21639f6540692"
+  },
+  "src/engine/roomLayout.ts": {
+    "mtime": 1793810184.1570604,
+    "seen": 1793814084.256015,
+    "ast_hash": "bee115ecdea99f7c6f91d68a47232782",
+    "semantic_hash": "bee115ecdea99f7c6f91d68a47232782"
+  },
+  "src/engine/roomPlacement.ts": {
+    "mtime": 1793813138.1689775,
+    "seen": 1793814084.256015,
+    "ast_hash": "99393765da8e1d323e3d22ee54056f45",
+    "semantic_hash": "99393765da8e1d323e3d22ee54056f45"
+  },
+  "src/store/useRoomDecorStore.ts": {
+    "mtime": 1793810339.6783445,
+    "seen": 1793814084.256167,
+    "ast_hash": "9d24ea8f01a6809ede397ff95209f1e2",
+    "semantic_hash": "9d24ea8f01a6809ede397ff95209f1e2"
   }
 }
