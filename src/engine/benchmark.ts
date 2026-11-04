@@ -1,4 +1,4 @@
-import { AssemblyState, MotherboardComponent } from './types';
+import { AssemblyState, CoolerComponent, MotherboardComponent } from './types';
 
 export interface BenchmarkResult {
   resolution: '1080p' | '1440p' | '4K';
@@ -209,3 +209,13 @@ export function calculateBenchmark(
   };
 }
 
+
+/**
+ * Rotação da ventoinha do cooler na temperatura prevista (curva PWM típica): mínimo de 35% até
+ * 30 °C e máximo do catálogo a partir de 85 °C. Usada pelo painel do modo "Abrir o PC" (#60).
+ */
+export function fanRpmFor(cooler: CoolerComponent | null, cpuTempC: number): number {
+  if (!cooler) return 0;
+  const ratio = Math.min(1, Math.max(0.35, (cpuTempC - 30) / (85 - 30)));
+  return Math.round(Math.max(0, finiteOr(cooler.fanRpmMax, 0)) * ratio);
+}
