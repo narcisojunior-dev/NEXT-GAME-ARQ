@@ -35,6 +35,8 @@ export const AssemblyChecklist: React.FC = () => {
     }))
   );
   const [isOpen, setIsOpen] = useState(true);
+  // Prova final da campanha: checklist desligado
+  const hideHelpers = useAssemblyStore((s) => s.campaignHideHelpers);
 
   // Lista de etapas de montagem e seus status
   const steps = [
@@ -127,6 +129,8 @@ export const AssemblyChecklist: React.FC = () => {
   // Determinar o próximo passo que falta fazer
   const nextStep = steps.find((s) => !s.isDone) || steps[steps.length - 1];
 
+  if (hideHelpers) return null;
+
   return (
     <div className="w-full bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-xl backdrop-blur-md mb-6">
       {/* Banner Principal com Próximo Passo */}
@@ -152,7 +156,7 @@ export const AssemblyChecklist: React.FC = () => {
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
           <div className="flex items-center gap-2.5">
             <div className="text-right">
-              <div className="text-[10px] uppercase font-bold text-slate-400">Progresso</div>
+              <div className="text-[11px] uppercase font-bold text-slate-400">Progresso</div>
               <div className="text-xs font-mono font-bold text-cyan-400">{progressPercent}% Concluído</div>
             </div>
             <div className="w-24 h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
@@ -195,7 +199,7 @@ export const AssemblyChecklist: React.FC = () => {
                 )}
                 <span className="line-clamp-1">{step.title}</span>
               </div>
-              <div className="text-[10px] opacity-80 line-clamp-1 leading-normal">
+              <div className="text-[11px] opacity-80 line-clamp-1 leading-normal">
                 {step.desc}
               </div>
             </div>

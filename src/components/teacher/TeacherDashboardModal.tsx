@@ -3,12 +3,9 @@
 import React, { useState } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useShallow } from 'zustand/react/shallow';
-import {
-  INITIAL_LEADERBOARD_ENTRIES,
-  StudentLeaderboardEntry,
-  verifyCertificateHash,
-  sortLeaderboard,
-} from '@/engine/teacherDashboard';
+import { certificateBadge } from '@/engine/teacherDashboard';
+import { DecodeResult, decodeValidationCode } from '@/engine/validationCode';
+import { useProgressStore } from '@/store/useProgressStore';
 import {
   GraduationCap,
   Trophy,
@@ -46,49 +43,48 @@ export const TeacherDashboardModal: React.FC = () => {
   );
 
   const [activeTab, setActiveTab] = useState<'LEADERBOARD' | 'CERTIFICATE' | 'VALIDATOR'>('LEADERBOARD');
-  const [selectedClass, setSelectedClass] = useState<string>('TODAS');
   const [searchHash, setSearchHash] = useState<string>('');
-  const [hashValidationResult, setHashValidationResult] = useState<boolean | null>(null);
+  const [decoded, setDecoded] = useState<DecodeResult | null>(null);
+  const [registerMessage, setRegisterMessage] = useState<string | null>(null);
 
-  const [leaderboard, setLeaderboard] = useState<StudentLeaderboardEntry[]>(INITIAL_LEADERBOARD_ENTRIES);
+  // Placar persistente (#29): só entra quem tem código com selo válido
+  const { leaderboard, addLeaderboardCode, removeLeaderboardEntry, recordTeamResult, teacherUnlockAll, setTeacherUnlockAll } =
+    useProgressStore(
+      useShallow((s) => ({
+        leaderboard: s.leaderboard,
+        addLeaderboardCode: s.addLeaderboardCode,
+        removeLeaderboardEntry: s.removeLeaderboardEntry,
+        recordTeamResult: s.recordTeamResult,
+        teacherUnlockAll: s.teacherUnlockAll,
+        setTeacherUnlockAll: s.setTeacherUnlockAll,
+      }))
+    );
 
   const scoreData = calculateFinalScore();
 
   if (!isTeacherDashboardOpen) return null;
 
-  // Registrar a pontuação atual do aluno na tabela
+  // Registrar a pontuação atual da equipe no placar (pelo próprio código verificável)
   const handleRegisterCurrentScore = () => {
-    const newEntry: StudentLeaderboardEntry = {
-      id: `entry-${Date.now()}`,
-      teamName: teamName || 'Equipe Atual',
-      classRoom: '1º Ano A',
-      totalScore: scoreData.totalScore,
-      precisionScore: scoreData.precisionPoints,
-      budgetRemaining: scoreData.budgetRemaining,
-      timeSpentSeconds: scoreData.timeSpentSeconds,
-      diagnosticsResolvedCount: 6,
-      hashValidation: scoreData.hashValidation,
-      completedAt: 'Agora há pouco',
-      badge: scoreData.totalScore >= 9500 ? 'OURO' : scoreData.totalScore >= 8500 ? 'PRATA' : 'BRONZE',
-    };
-
-    setLeaderboard((prev) => sortLeaderboard([newEntry, ...prev]));
-    setActiveTab('LEADERBOARD');
+    const result = addLeaderboardCode(scoreData.hashValidation);
+    recordTeamResult(teamName || 'Equipe', scoreData.totalScore, scoreData.timeSpentSeconds);
+    setRegisterMessage(result.ok ? 'Nota lançada no placar.' : 'Esta nota já está no placar.');
   };
 
   const handleValidateHash = (e: React.FormEvent) => {
     e.preventDefault();
-    setHashValidationResult(verifyCertificateHash(searchHash));
+    setDecoded(decodeValidationCode(searchHash));
+  };
+
+  const handleAddDecoded = () => {
+    const result = addLeaderboardCode(searchHash);
+    setRegisterMessage(result.ok ? `${result.entry.teamName} entrou no placar.` : 'Este código já está no placar.');
+    setActiveTab('LEADERBOARD');
   };
 
   const handlePrintCertificate = () => {
     window.print();
   };
-
-  const filteredEntries = leaderboard.filter((entry) => {
-    if (selectedClass === 'TODAS') return true;
-    return entry.classRoom === selectedClass;
-  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/90 backdrop-blur-md animate-in fade-in duration-200 select-none">
@@ -101,7 +97,7 @@ export const TeacherDashboardModal: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold tracking-widest uppercase px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/60">
+                <span className="text-[11px] font-mono font-bold tracking-widest uppercase px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/60">
                   Gestão Escolar
                 </span>
                 <span className="text-xs text-slate-400">
@@ -162,31 +158,34 @@ export const TeacherDashboardModal: React.FC = () => {
             <div className="space-y-6">
               {/* Barra de Filtro e Registro Rápido */}
               <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-slate-300">Filtrar por Turma:</span>
-                  {['TODAS', '1º Ano A', '1º Ano B'].map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setSelectedClass(c)}
-                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        selectedClass === c
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={teacherUnlockAll}
+                    onChange={(e) => setTeacherUnlockAll(e.target.checked)}
+                    className="w-4 h-4 accent-indigo-500"
+                  />
+                  Modo professor: liberar todas as missões da campanha
+                </label>
 
                 <button
                   onClick={handleRegisterCurrentScore}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md transition-all cursor-pointer hover:from-emerald-400"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Lançar Nota Atual de &quot;{teamName}&quot; ({scoreData.totalScore} pts)</span>
+                  <span>Lançar Nota Atual de &quot;{teamName || 'Equipe'}&quot; ({scoreData.totalScore} pts)</span>
                 </button>
               </div>
+              {registerMessage && (
+                <p role="status" className="text-xs text-emerald-300 font-mono">
+                  {registerMessage}
+                </p>
+              )}
+              {leaderboard.length === 0 && (
+                <p className="text-sm text-slate-400 p-4 rounded-2xl border border-dashed border-slate-700">
+                  O placar está vazio. Lance a nota atual ou valide o código que cada equipe apresentar na aba de validação.
+                </p>
+              )}
 
               {/* Tabela de Alto Contraste para Projetores de Sala */}
               <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-900/90 shadow-xl">
@@ -195,15 +194,15 @@ export const TeacherDashboardModal: React.FC = () => {
                     <tr className="bg-slate-950 text-[11px] font-mono uppercase tracking-wider text-slate-400 border-b border-slate-800">
                       <th className="py-3 px-4">Posição</th>
                       <th className="py-3 px-4">Equipe / Aluno</th>
-                      <th className="py-3 px-4">Turma</th>
+                      <th className="py-3 px-4">Certificado</th>
                       <th className="py-3 px-4">Pontuação Total</th>
                       <th className="py-3 px-4">Tempo</th>
-                      <th className="py-3 px-4">Economia</th>
                       <th className="py-3 px-4">Código de Autenticação</th>
+                      <th className="py-3 px-4"><span className="sr-only">Ações</span></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800 text-xs">
-                    {filteredEntries.map((entry, index) => {
+                    {leaderboard.map((entry, index) => {
                       const isTop3 = index < 3;
                       const podiumColors = [
                         'text-yellow-400 font-black',
@@ -213,7 +212,7 @@ export const TeacherDashboardModal: React.FC = () => {
 
                       return (
                         <tr
-                          key={entry.id}
+                          key={entry.code}
                           className={`hover:bg-slate-800/50 transition-colors ${
                             index === 0 ? 'bg-yellow-500/5' : ''
                           }`}
@@ -227,7 +226,7 @@ export const TeacherDashboardModal: React.FC = () => {
                             {entry.teamName}
                           </td>
                           <td className="py-3.5 px-4 text-slate-300 font-medium">
-                            {entry.classRoom}
+                            {certificateBadge(entry.totalScore)}
                           </td>
                           <td className="py-3.5 px-4 font-mono font-black text-emerald-400 text-sm">
                             {entry.totalScore.toLocaleString('pt-BR')} pts
@@ -235,13 +234,20 @@ export const TeacherDashboardModal: React.FC = () => {
                           <td className="py-3.5 px-4 font-mono text-slate-300">
                             {Math.floor(entry.timeSpentSeconds / 60)}m {entry.timeSpentSeconds % 60}s
                           </td>
-                          <td className="py-3.5 px-4 font-mono text-cyan-300">
-                            R$ {entry.budgetRemaining.toLocaleString('pt-BR')}
-                          </td>
                           <td className="py-3.5 px-4 font-mono text-[11px] text-slate-400">
                             <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-indigo-300">
-                              {entry.hashValidation}
+                              {entry.code}
                             </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <button
+                              type="button"
+                              onClick={() => removeLeaderboardEntry(entry.code)}
+                              className="min-h-[32px] px-2 rounded-lg text-[11px] font-mono text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                              aria-label={`Remover ${entry.teamName} do placar`}
+                            >
+                              Remover
+                            </button>
                           </td>
                         </tr>
                       );
@@ -333,13 +339,13 @@ export const TeacherDashboardModal: React.FC = () => {
                     <div className="flex flex-col items-center">
                       <div className="w-48 border-b border-slate-700 mb-1" />
                       <span className="font-bold text-slate-800">Professor de Informática & TI</span>
-                      <span className="text-slate-500 text-[10px]">Coordenação Pedagógica</span>
+                      <span className="text-slate-500 text-[11px]">Coordenação Pedagógica</span>
                     </div>
 
                     <div className="flex flex-col items-center">
                       <div className="w-48 border-b border-slate-700 mb-1" />
                       <span className="font-mono font-bold text-indigo-950">HASH: {scoreData.hashValidation}</span>
-                      <span className="text-slate-500 text-[10px]">Autenticação Digital Verificada</span>
+                      <span className="text-slate-500 text-[11px]">Autenticação Digital Verificada</span>
                     </div>
                   </div>
                 </div>
@@ -356,7 +362,7 @@ export const TeacherDashboardModal: React.FC = () => {
                   <span>Verificador de Autenticidade de Certificados</span>
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Digite ou cole o código que o aluno apresentou (ex: <code className="text-indigo-300 font-bold">PCA-9X8K2P</code>) para verificar se o certificado foi emitido genuinamente pela plataforma.
+                  Digite o código que a equipe apresentou (ex: <code className="text-indigo-300 font-bold">PCA-EQUIPE_AZUL-6BK-8C-1F3A9B</code>). O selo SHA-256 no fim do código confere equipe, pontuação e tempo: qualquer alteração invalida o código.
                 </p>
 
                 <form onSubmit={handleValidateHash} className="space-y-3">
@@ -365,7 +371,7 @@ export const TeacherDashboardModal: React.FC = () => {
                       type="text"
                       value={searchHash}
                       onChange={(e) => setSearchHash(e.target.value.toUpperCase())}
-                      placeholder="Ex: PCA-8X9K2P"
+                      placeholder="PCA-EQUIPE-PONTOS-TEMPO-SELO"
                       className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2 text-sm font-mono text-white focus:outline-none focus:border-indigo-500 uppercase tracking-wider"
                     />
                     <button
@@ -377,35 +383,40 @@ export const TeacherDashboardModal: React.FC = () => {
                   </div>
                 </form>
 
-                {hashValidationResult !== null && (
+                {decoded && (
                   <div
-                    className={`p-4 rounded-xl border flex items-center gap-3 animate-in fade-in ${
-                      hashValidationResult
-                        ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-200'
-                        : 'bg-rose-950/80 border-rose-500/60 text-rose-200'
+                    role="status"
+                    className={`p-4 rounded-xl border flex items-start gap-3 ${
+                      decoded.valid ? 'bg-emerald-950/80 border-emerald-500/60 text-emerald-200' : 'bg-rose-950/80 border-rose-500/60 text-rose-200'
                     }`}
                   >
-                    {hashValidationResult ? (
+                    {decoded.valid ? (
                       <>
                         <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                        <div>
-                          <div className="text-xs font-bold text-white">
-                            CERTIFICADO AUTÊNTICO E REGISTRADO!
+                        <div className="flex-1">
+                          <div className="text-xs font-bold text-white">CÓDIGO AUTÊNTICO</div>
+                          <div className="text-[11px] text-emerald-300/90 mt-0.5 font-mono">
+                            Equipe {decoded.payload.teamName} • {decoded.payload.totalScore.toLocaleString('pt-BR')} pts •{' '}
+                            {Math.floor(decoded.payload.timeSpentSeconds / 60)}m {decoded.payload.timeSpentSeconds % 60}s
                           </div>
-                          <div className="text-[11px] text-emerald-300/80 mt-0.5">
-                            O hash {searchHash} possui assinatura válida no ecossistema escolar PC Builder Academy.
-                          </div>
+                          <button
+                            type="button"
+                            onClick={handleAddDecoded}
+                            className="mt-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 cursor-pointer"
+                          >
+                            Adicionar ao placar
+                          </button>
                         </div>
                       </>
                     ) : (
                       <>
                         <XCircle className="w-5 h-5 text-rose-400 shrink-0" />
                         <div>
-                          <div className="text-xs font-bold text-white">
-                            CÓDIGO INVÁLIDO OU NÃO ENCONTRADO
-                          </div>
+                          <div className="text-xs font-bold text-white">CÓDIGO INVÁLIDO</div>
                           <div className="text-[11px] text-rose-300/80 mt-0.5">
-                            O formato fornecido não corresponde a nenhum certificado escolar válido emitido.
+                            {decoded.reason === 'SEAL'
+                              ? 'O selo não confere: a equipe, a pontuação ou o tempo foram alterados.'
+                              : 'O formato não corresponde a um código emitido pela plataforma.'}
                           </div>
                         </div>
                       </>

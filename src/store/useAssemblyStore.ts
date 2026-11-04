@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { STORAGE_KEYS, safeStateStorage } from './safeStorage';
 import { useProgressStore } from './useProgressStore';
+import { encodeValidationCode } from '../engine/validationCode';
 import {
   MissionEvaluation,
   MissionSession,
@@ -233,6 +234,9 @@ interface AssemblyStore {
   startFromScratch: () => void;
 }
 
+/** Referência estável: um [] novo a cada leitura faria seletores rasos re-renderizarem em loop */
+const NO_CLIENT_PARTS: string[] = [];
+
 /** Retrato da sessão que a avaliação de missão lê */
 export const selectMissionSession = (s: AssemblyStore): MissionSession => ({
   assembly: s.assembly,
@@ -241,7 +245,7 @@ export const selectMissionSession = (s: AssemblyStore): MissionSession => ({
   penaltiesCount: s.penaltiesCount,
   errorLog: s.missionErrorLog,
   postAttempts: s.postAttempts,
-  clientPartIds: s.campaignInventory?.clientPartIds ?? [],
+  clientPartIds: s.campaignInventory?.clientPartIds ?? NO_CLIENT_PARTS,
   placedDeskItems: s.deskSetup.placedDeskItems,
   externalCabling: s.externalCabling,
   isDeskPoweredOn: s.deskSetup.isDeskPoweredOn,
@@ -1068,7 +1072,8 @@ export const useAssemblyStore = create<AssemblyStore>()(
       penaltyPoints: penaltiesCount * 500,
       timeSpentSeconds: elapsedSeconds,
       budgetRemaining,
-      hashValidation: `PCA-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      // Código verificável com selo SHA-256 (#29): determinístico, o professor confere no painel
+      hashValidation: encodeValidationCode({ teamName: teamName || 'Equipe', totalScore, timeSpentSeconds: elapsedSeconds }),
     };
   },
 

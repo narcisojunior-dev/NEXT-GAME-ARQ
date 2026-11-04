@@ -264,7 +264,7 @@ export const CableTray: React.FC = () => {
                       <span className="flex items-center gap-1.5 text-xs font-semibold text-white">
                         <span>Painel frontal</span>
                         {assembly.frontPanelPowerSwConnected && (
-                          <span className="text-[9px] font-mono text-emerald-400 font-bold bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800">
+                          <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800">
                             LIGADO ✓
                           </span>
                         )}
@@ -280,7 +280,7 @@ export const CableTray: React.FC = () => {
                     {assembly.frontPanelPowerSwConnected ? (
                       <button
                         onClick={openFrontPanelModal}
-                        className="shrink-0 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-1 text-[10px] font-mono text-slate-300 hover:text-white cursor-pointer transition-colors"
+                        className="shrink-0 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2 py-1 text-[11px] font-mono text-slate-300 hover:text-white cursor-pointer transition-colors"
                         title="Ver pinos conectados"
                       >
                         Ver pinos

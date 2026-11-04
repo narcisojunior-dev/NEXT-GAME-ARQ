@@ -66,7 +66,7 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({ component }) => {
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 truncate">
             {CATEGORY_LABELS[component.category]}
           </span>
-          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap ${TIER_STYLES[tier]}`}>
+          <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap ${TIER_STYLES[tier]}`}>
             {TIER_LABELS[tier]}
           </span>
         </div>

@@ -402,7 +402,7 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
         {/* Item posicionado selecionado com o mouse: retirar da mesa */}
         {!heldItem && inspectedSnap && inspectedItem && (
           <div className="absolute bottom-3 left-3 z-40 w-[260px] p-3 rounded-xl bg-slate-950/95 border border-slate-700 text-xs font-mono shadow-xl backdrop-blur-md">
-            <div className="text-[10px] uppercase tracking-wider text-slate-500">{DESK_SNAP_POINTS[inspectedSnap].label}</div>
+            <div className="text-[11px] uppercase tracking-wider text-slate-500">{DESK_SNAP_POINTS[inspectedSnap].label}</div>
             <div className="text-slate-100 font-bold mt-0.5">{inspectedItem.name}</div>
             <div className="mt-2.5 flex gap-2">
               <button

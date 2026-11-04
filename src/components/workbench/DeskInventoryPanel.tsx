@@ -112,7 +112,7 @@ const InventoryCard: React.FC<{
           <Icon className="w-4 h-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
             {spec.label}
             {spec.isRequiredForBoot && <span className="text-cyan-500">• obrigatório</span>}
           </div>

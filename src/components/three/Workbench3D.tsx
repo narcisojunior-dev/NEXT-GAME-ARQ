@@ -500,17 +500,17 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
               aria-label={`Ações: ${label}`}
               className="min-w-[180px] max-w-[230px] p-2 rounded-xl bg-slate-950/95 border border-cyan-500/50 shadow-2xl backdrop-blur-lg text-left animate-in fade-in duration-150"
             >
-              <div className="flex items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-800 font-mono text-[10px] font-bold text-cyan-300">
+              <div className="flex items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-800 font-mono text-[11px] font-bold text-cyan-300">
                 <span className="truncate">{label}</span>
                 {isInstalled && (
-                  <span className="flex items-center gap-0.5 text-[9px] text-emerald-400 font-normal">
+                  <span className="flex items-center gap-0.5 text-[11px] text-emerald-400 font-normal">
                     <CheckCircle2 className="w-3 h-3" />
                     OK
                   </span>
                 )}
               </div>
 
-              <p aria-hidden="true" className="text-[9px] font-mono text-slate-300 leading-tight mb-1.5">
+              <p aria-hidden="true" className="text-[11px] font-mono text-slate-300 leading-tight mb-1.5">
                 {detailText}
               </p>
 
@@ -525,7 +525,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
                       e.stopPropagation();
                       onAction();
                     }}
-                    className={`w-full py-1 px-2 rounded-lg text-[9px] font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                    className={`w-full py-1 px-2 rounded-lg text-[11px] font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                       isTargeted
                         ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md animate-pulse motion-reduce:animate-none'
                         : isInstalled
@@ -544,7 +544,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
                       e.stopPropagation();
                       secondaryAction.onClick();
                     }}
-                    className="w-full py-0.5 px-2 rounded text-[8.5px] font-mono text-amber-300 hover:text-amber-200 hover:bg-amber-950/40 border border-amber-800/60 transition-all cursor-pointer"
+                    className="w-full py-0.5 px-2 rounded text-[11px] font-mono text-amber-300 hover:text-amber-200 hover:bg-amber-950/40 border border-amber-800/60 transition-all cursor-pointer"
                   >
                     {secondaryAction.text}
                   </button>
@@ -1047,7 +1047,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                         <span>CLIQUE PARA ASSENTAR NA BANCADA</span>
                       </div>
                       <span className="text-xs text-cyan-300 font-semibold">{selectedComponentForPlacement.name}</span>
-                      <span className="text-[10px] text-cyan-400/80">
+                      <span className="text-[11px] text-cyan-400/80">
                         {(selectedComponentForPlacement as MotherboardComponent).socket} • {(selectedComponentForPlacement as MotherboardComponent).supportedRam} • {(selectedComponentForPlacement as MotherboardComponent).formFactor}
                       </span>
                     </button>
@@ -1399,7 +1399,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                     }`}
                   />
                   <span
-                    className={`text-[10px] ${
+                    className={`text-[11px] ${
                       isGreen
                         ? 'text-emerald-300 font-bold'
                         : isRed

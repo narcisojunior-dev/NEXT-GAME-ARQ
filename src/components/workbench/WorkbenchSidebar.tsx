@@ -140,10 +140,10 @@ const CompactLateralCard: React.FC<{ component: HardwareComponent }> = ({ compon
         {/* Informações Principais */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-1">
-            <span className="text-[10px] font-mono uppercase text-slate-400 font-bold truncate">
+            <span className="text-[11px] font-mono uppercase text-slate-400 font-bold truncate">
               {CATEGORY_LABELS[component.category]}
             </span>
-            <span className={`text-[9px] font-mono px-1 py-0.2 rounded font-semibold ${TIER_STYLES[tier]}`}>
+            <span className={`text-[11px] font-mono px-1 py-0.2 rounded font-semibold ${TIER_STYLES[tier]}`}>
               {TIER_LABELS[tier]}
             </span>
           </div>
@@ -152,7 +152,7 @@ const CompactLateralCard: React.FC<{ component: HardwareComponent }> = ({ compon
             {component.name}
           </h4>
 
-          <p className="text-[10px] font-mono text-slate-400 truncate mt-0.5" title={spec}>
+          <p className="text-[11px] font-mono text-slate-400 truncate mt-0.5" title={spec}>
             {spec}
           </p>
         </div>
@@ -160,7 +160,7 @@ const CompactLateralCard: React.FC<{ component: HardwareComponent }> = ({ compon
 
       {/* Selo de Compatibilidade em Tempo Real */}
       {hint && (
-        <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium ${HINT_STYLES[hint.status].className}`}>
+        <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium ${HINT_STYLES[hint.status].className}`}>
           {HINT_STYLES[hint.status].icon}
           <span className="truncate">{hint.label}</span>
         </div>
@@ -173,7 +173,7 @@ const CompactLateralCard: React.FC<{ component: HardwareComponent }> = ({ compon
             R${component.price.toLocaleString('pt-BR')}
           </span>
           {component.tdpWatts > 0 && (
-            <span className="text-[10px] font-mono text-slate-400">
+            <span className="text-[11px] font-mono text-slate-400">
               {component.tdpWatts}W
             </span>
           )}
@@ -232,6 +232,8 @@ export const WorkbenchSidebar: React.FC<WorkbenchSidebarProps> = ({ className = 
       cableConnections: s.cableConnections,
     }))
   );
+  // Missão da campanha: só as peças do cliente e as categorias que podem ser compradas
+  const campaignInventory = useAssemblyStore((s) => s.campaignInventory);
 
   // Calcula estatística de cabeamento para a aba
   const requiredCables = useMemo(() => getRequiredCables(assembly), [assembly]);
@@ -245,6 +247,13 @@ export const WorkbenchSidebar: React.FC<WorkbenchSidebarProps> = ({ className = 
   // Filtragem inteligente de componentes
   const filteredComponents = useMemo(() => {
     return ALL_COMPONENTS.filter((comp) => {
+      // 0. Inventário da missão (peças do cliente + categorias compráveis)
+      if (campaignInventory) {
+        const isClientPart = campaignInventory.clientPartIds.includes(comp.id);
+        const canBuy = !campaignInventory.purchasableCategories || campaignInventory.purchasableCategories.includes(comp.category);
+        if (!isClientPart && !canBuy) return false;
+      }
+
       // 1. Filtro por Categoria
       if (activeCategory !== 'ALL' && comp.category !== activeCategory) {
         return false;
@@ -269,7 +278,14 @@ export const WorkbenchSidebar: React.FC<WorkbenchSidebarProps> = ({ className = 
 
       return true;
     });
-  }, [activeCategory, searchQuery, onlyCompatible, selectedMotherboard, assembly]);
+  }, [activeCategory, searchQuery, onlyCompatible, selectedMotherboard, assembly, campaignInventory]);
+
+  const clientBadge = (id: string) =>
+    campaignInventory?.clientPartIds.includes(id) ? (
+      <span className="absolute -top-1.5 right-2 z-10 px-1.5 py-0.5 rounded-md bg-emerald-500 text-slate-950 text-[11px] font-black shadow">
+        Do cliente • R$ 0
+      </span>
+    ) : null;
 
   return (
     <aside
@@ -345,7 +361,7 @@ export const WorkbenchSidebar: React.FC<WorkbenchSidebarProps> = ({ className = 
             <div className="flex items-center gap-2 min-w-0">
               <Hand className="w-4 h-4 text-cyan-400 animate-bounce shrink-0" />
               <div className="min-w-0">
-                <span className="text-[10px] text-cyan-400 font-bold block uppercase tracking-wider">
+                <span className="text-[11px] text-cyan-400 font-bold block uppercase tracking-wider">
                   Na Mão: Encaixe na Bancada ao Lado
                 </span>
                 <span className="font-bold text-white truncate block">
@@ -355,7 +371,7 @@ export const WorkbenchSidebar: React.FC<WorkbenchSidebarProps> = ({ className = 
             </div>
             <button
               onClick={() => setSelectedComponentForPlacement(null)}
-              className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono text-slate-300 hover:text-white shrink-0 cursor-pointer"
+              className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 hover:text-white shrink-0 cursor-pointer"
               title="Descartar seleção"
             >
               Soltar
@@ -421,19 +437,25 @@ export const WorkbenchSidebar: React.FC<WorkbenchSidebarProps> = ({ className = 
                     setSearchQuery('');
                     setActiveCategory('ALL');
                   }}
-                  className="mt-1 px-3 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-[10px]"
+                  className="mt-1 px-3 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-[11px]"
                 >
                   Limpar Filtros
                 </button>
               </div>
             ) : viewStyle === 'compact' ? (
               filteredComponents.map((comp) => (
-                <CompactLateralCard key={comp.id} component={comp} />
+                <div key={comp.id} className="relative">
+                  {clientBadge(comp.id)}
+                  <CompactLateralCard component={comp} />
+                </div>
               ))
             ) : (
               <div className="grid grid-cols-1 gap-2.5">
                 {filteredComponents.map((comp) => (
-                  <ComponentCard key={comp.id} component={comp} />
+                  <div key={comp.id} className="relative">
+                    {clientBadge(comp.id)}
+                    <ComponentCard component={comp} />
+                  </div>
                 ))}
               </div>
             )}
