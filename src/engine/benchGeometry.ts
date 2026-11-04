@@ -14,6 +14,8 @@ export const BOARD_WIDTH = 7.2;
 export interface BenchLayout {
   /** Centro do soquete; Y = altura onde a base da CPU assenta */
   CPU_SOCKET: Vec3;
+  /** Ponta da alavanca de retenção, à direita do soquete */
+  SOCKET_LEVER: Vec3;
   CPU_FAN_HEADER: Vec3;
   ATX12V_HEADER: Vec3;
   RAM_SLOT_2: Vec3;
@@ -25,6 +27,15 @@ export interface BenchLayout {
   ATX24P_HEADER: Vec3;
   FPANEL_HEADER: Vec3;
   DEBUG_LEDS: Vec3;
+  /**
+   * Cabeçalhos dos cabos do gabinete e do disco SATA. Posições típicas do padrão ATX (borda
+   * direita e borda inferior), aproximadas: os GLBs não têm esses conectores modelados.
+   */
+  SYS_FAN_HEADER: Vec3;
+  USB3_HEADER: Vec3;
+  USB2_HEADER: Vec3;
+  HD_AUDIO_HEADER: Vec3;
+  SATA_PORTS: Vec3;
 }
 
 export interface BenchBoard {
@@ -56,6 +67,7 @@ export const BENCH_BOARDS: Record<BenchBoard['modelId'], BenchBoard> = {
     mmPerUnit: RAM_STICK_MM / 3.7,
     layout: {
       CPU_SOCKET: [0.42, 0.22, -1.13],
+      SOCKET_LEVER: [1.2, 0.22, -1.13],
       CPU_FAN_HEADER: [-0.2, 0.22, -2.45],
       ATX12V_HEADER: [-2.75, 0.22, -3.1],
       RAM_SLOT_2: [2.38, 0.19, -1.12],
@@ -66,6 +78,11 @@ export const BENCH_BOARDS: Record<BenchBoard['modelId'], BenchBoard> = {
       ATX24P_HEADER: [3.1, 0.22, -0.6],
       FPANEL_HEADER: [2.85, 0.22, 3.1],
       DEBUG_LEDS: [2.9, 0.22, -2.8],
+      SYS_FAN_HEADER: [-0.9, 0.22, 3.3],
+      USB3_HEADER: [3.2, 0.22, 0.6],
+      USB2_HEADER: [1.6, 0.22, 3.3],
+      HD_AUDIO_HEADER: [-3.0, 0.22, 3.3],
+      SATA_PORTS: [3.2, 0.22, 2.4],
     },
   },
   // Intel LGA1700: ILM x∈[−0,40; 1,00]; DIMMs A1 1,875 | A2 2,125 | B1 2,388 | B2 2,65; PCIe x16 em z≈0,92
@@ -76,6 +93,7 @@ export const BENCH_BOARDS: Record<BenchBoard['modelId'], BenchBoard> = {
     mmPerUnit: RAM_STICK_MM / 3.85,
     layout: {
       CPU_SOCKET: [0.3, 0.25, -1.69],
+      SOCKET_LEVER: [1.08, 0.25, -1.69],
       CPU_FAN_HEADER: [0.45, 0.22, -2.85],
       ATX12V_HEADER: [-1.9, 0.22, -3.2],
       RAM_SLOT_2: [2.125, 0.18, -1.66],
@@ -87,6 +105,11 @@ export const BENCH_BOARDS: Record<BenchBoard['modelId'], BenchBoard> = {
       ATX24P_HEADER: [3.15, 0.22, -0.65],
       FPANEL_HEADER: [2.85, 0.22, 3.35],
       DEBUG_LEDS: [2.95, 0.22, -2.9],
+      SYS_FAN_HEADER: [-0.9, 0.22, 3.45],
+      USB3_HEADER: [3.2, 0.22, 0.3],
+      USB2_HEADER: [1.6, 0.22, 3.45],
+      HD_AUDIO_HEADER: [-3.0, 0.22, 3.45],
+      SATA_PORTS: [3.2, 0.22, 2.2],
     },
   },
 };
@@ -114,7 +137,15 @@ const GPU_PCB_OFFSET = 0.1;
 /** Camada de pasta espalhada pelo cooler */
 export const PASTE_LAYER = 0.01;
 
-export type BenchPartId = 'CPU' | 'COOLER' | 'RAM_2' | 'RAM_4' | 'M2_SSD' | 'GPU';
+export type BenchPartId = 'CPU' | 'COOLER' | 'RAM_2' | 'RAM_4' | 'M2_SSD' | 'GPU' | 'SATA_DRIVE';
+
+/** Medidas reais [comprimento, altura, largura] (mm) dos discos SATA deitados sobre o tapete */
+export const SATA_DRIVE_MM: Record<'SATA_SSD' | 'SATA_HDD', Vec3> = {
+  SATA_SSD: [100, 7, 70],
+  SATA_HDD: [147, 26, 101],
+};
+/** Distância (unidades) entre a borda inferior da placa e o disco SATA no tapete */
+const SATA_DRIVE_GAP = 0.3;
 
 export interface BenchPartPlacement {
   part: BenchPartId;
@@ -134,6 +165,8 @@ export interface BenchPlacements {
   ihsTopY: number;
   /** Conector PCIe 8 pinos na borda superior da GPU (pino de cabo) */
   gpuPowerAnchor: Vec3 | null;
+  /** Entrada de energia SATA (15 pinos) na ponta do disco */
+  drivePowerAnchor: Vec3 | null;
 }
 
 function glbPart(part: BenchPartId, modelId: string, targetSize: number, position: Vec3, rotation?: Vec3): BenchPartPlacement {
@@ -197,5 +230,17 @@ export function benchPartPlacements(assembly: AssemblyState, motherboard: Mother
     gpuPowerAnchor = [gpu.box.max[0] - 0.9, gpu.box.max[1], centerZ];
   }
 
-  return { board, parts, ihsTopY, gpuPowerAnchor };
+  let drivePowerAnchor: Vec3 | null = null;
+  const sataType = assembly.storageInstalled?.storageType;
+  if (sataType === 'SATA_SSD' || sataType === 'SATA_HDD') {
+    // Disco deitado no tapete, logo abaixo do canto inferior direito da placa (perto das portas SATA)
+    // — fora do alcance das GPUs, que nunca passam da borda inferior da placa
+    const [l, h, w] = SATA_DRIVE_MM[sataType].map((mm) => mm / mmPerUnit);
+    const position: Vec3 = [BOARD_WIDTH / 2 - l / 2, 0, board.depth / 2 + SATA_DRIVE_GAP + w / 2];
+    const box = placedBox([l, h, w], position);
+    parts.push({ part: 'SATA_DRIVE', modelId: null, targetSize: l, rotation: [0, 0, 0], position, box });
+    drivePowerAnchor = [box.max[0] - 0.25, box.max[1], box.min[2] + 0.15];
+  }
+
+  return { board, parts, ihsTopY, gpuPowerAnchor, drivePowerAnchor };
 }

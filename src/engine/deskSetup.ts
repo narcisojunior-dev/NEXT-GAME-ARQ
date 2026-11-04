@@ -269,6 +269,8 @@ export function createInitialDeskSetupState(): DeskSetupState {
 
 export interface PlaceOnDeskContext {
   isPcAssembled?: boolean;
+  /** Passos da bancada que faltam (para dizer exatamente o que impede levar o PC) */
+  pendingBenchSteps?: string[];
   studentSetup?: StudentSetupConfig;
 }
 
@@ -356,7 +358,9 @@ export function canPlaceOnDesk(
       allowed: false,
       isErrorPenalty: false,
       message:
-        'Finalize a montagem do computador na bancada (incluindo os cabos internos) antes de levá-lo para a mesa.',
+        context.pendingBenchSteps && context.pendingBenchSteps.length > 0
+          ? `Finalize a montagem do computador na bancada antes de levá-lo para a mesa. Falta: ${context.pendingBenchSteps.join('; ')}.`
+          : 'Finalize a montagem do computador na bancada (incluindo os cabos internos) antes de levá-lo para a mesa.',
     };
   }
 

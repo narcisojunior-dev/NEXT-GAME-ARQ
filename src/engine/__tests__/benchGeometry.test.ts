@@ -69,6 +69,11 @@ function fitProblems(combo: Combo): string[] {
 
   parts.forEach((p) => {
     // 1. Dentro da placa (a GPU pode passar da borda direita: placas longas são maiores que uma Micro-ATX)
+    if (p.part === 'SATA_DRIVE') {
+      // No tapete (y = 0), à frente da borda inferior da placa e alinhado à borda direita
+      if (Math.abs(p.box.min[1]) > EPS || p.box.min[2] <= boardBox.max[2]) problems.push('disco SATA fora da baia no tapete');
+      return;
+    }
     const inside =
       p.part === 'GPU'
         ? p.box.min[2] >= boardBox.min[2] - EPS && p.box.max[2] <= boardBox.max[2] + EPS && Math.abs(p.box.min[0] + BOARD_WIDTH / 2) < 1e-3

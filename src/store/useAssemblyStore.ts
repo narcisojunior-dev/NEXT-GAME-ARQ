@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { STORAGE_KEYS, safeStateStorage } from './safeStorage';
 import { useProgressStore } from './useProgressStore';
 import { encodeValidationCode } from '../engine/validationCode';
+import { buildAssemblyChecklist, pendingBenchSteps } from '../engine/assemblyChecklist';
 import {
   MissionEvaluation,
   MissionSession,
@@ -1198,9 +1199,15 @@ export const useAssemblyStore = create<AssemblyStore>()(
   },
 
   canPlaceOnDeskSnapPoint: (snapPointId, item) => {
-    const { deskSetup, assembly, selectedMotherboard, studentSetup } = get();
+    const { deskSetup, assembly, selectedMotherboard, studentSetup, cableConnections, postResult } = get();
+    const isPcAssembled = isPcReadyForDesk(assembly, selectedMotherboard);
     return canPlaceOnDesk(snapPointId, item, deskSetup.placedDeskItems, {
-      isPcAssembled: isPcReadyForDesk(assembly, selectedMotherboard),
+      isPcAssembled,
+      pendingBenchSteps: isPcAssembled
+        ? []
+        : pendingBenchSteps(
+            buildAssemblyChecklist(assembly, selectedMotherboard, { cableConnections, bootSuccess: Boolean(postResult?.bootSuccess) })
+          ).map((step) => step.title.replace(/^\d+\. /, '')),
       studentSetup,
     });
   },

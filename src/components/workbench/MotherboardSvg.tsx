@@ -32,6 +32,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
     installRam,
     installStorage,
     installGpu,
+    screwGpu,
     openFrontPanelModal,
     fPanelConnections,
   } = useAssemblyStore(
@@ -50,6 +51,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
       installRam: s.installRam,
       installStorage: s.installStorage,
       installGpu: s.installGpu,
+      screwGpu: s.screwGpu,
       openFrontPanelModal: s.openFrontPanelModal,
       fPanelConnections: s.fPanelConnections,
     }))
@@ -83,6 +85,9 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
   const handlePcieSlotClick = () => {
     if (selectedComponentForPlacement?.category === 'GPU') {
       installGpu(selectedComponentForPlacement as never);
+    } else if (assembly.gpuInstalled && !assembly.gpuScrewed) {
+      // Suporte traseiro parafusado no gabinete: a placa não enverga o slot
+      screwGpu();
     }
   };
 
@@ -566,7 +571,13 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           className={`cursor-pointer transition-transform hover:scale-102 ${SVG_FOCUS_RING}`}
           onClick={handlePcieSlotClick}
           {...pressableProps(
-            `Slot PCIe x16: ${assembly.gpuInstalled ? assembly.gpuInstalled.name : isGpuTarget ? 'vazio, pressione para encaixar a placa de vídeo' : 'vazio'}`,
+            `Slot PCIe x16: ${
+              assembly.gpuInstalled
+                ? `${assembly.gpuInstalled.name}${assembly.gpuScrewed ? ', parafusada' : ', pressione para parafusar o suporte'}`
+                : isGpuTarget
+                ? 'vazio, pressione para encaixar a placa de vídeo'
+                : 'vazio'
+            }`,
             handlePcieSlotClick
           )}
           filter={isGpuTarget ? 'url(#targetPulse)' : undefined}
