@@ -17,6 +17,7 @@ import {
 } from '@/engine/hardwareCatalog';
 import { ComponentCard } from '@/components/inventory/ComponentCard';
 import { CableTray } from './CableTray';
+import { spentIfInstalled } from '@/engine/budgetChallenge';
 import {
   Package,
   Cable as CableIcon,
@@ -208,6 +209,9 @@ const CompactLateralCard: React.FC<{ component: HardwareComponent }> = ({ compon
         setInspectedComponent: s.setInspectedComponent,
       }))
     );
+  // Desafio de Orçamento (#70): a peça cabe no saldo do cliente?
+  const budget = useAssemblyStore((s) => s.budgetChallenge?.config.budget ?? null);
+  const spentAfter = budget === null ? null : spentIfInstalled(component, assembly, selectedMotherboard);
 
   const hint = getCompatibilityHint(component, assembly, selectedMotherboard);
   const tier = getPriceTier(component);
@@ -260,6 +264,20 @@ const CompactLateralCard: React.FC<{ component: HardwareComponent }> = ({ compon
         <div className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium ${HINT_STYLES[hint.status].className}`}>
           {HINT_STYLES[hint.status].icon}
           <span className="truncate">{hint.label}</span>
+        </div>
+      )}
+
+      {budget !== null && spentAfter !== null && (
+        <div
+          className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-medium ${
+            spentAfter <= budget ? 'bg-emerald-950/50 text-emerald-300' : 'bg-rose-950/70 text-rose-300'
+          }`}
+        >
+          {spentAfter <= budget ? (
+            <span>Cabe no saldo (sobra R$ {(budget - spentAfter).toLocaleString('pt-BR')})</span>
+          ) : (
+            <span>Estoura o saldo em R$ {(spentAfter - budget).toLocaleString('pt-BR')}</span>
+          )}
         </div>
       )}
 

@@ -5,8 +5,11 @@ import { useProgressStore } from './useProgressStore';
 import { encodeValidationCode } from '../engine/validationCode';
 import { buildAssemblyChecklist, pendingBenchSteps } from '../engine/assemblyChecklist';
 import { calculateGroupScore } from '../engine/score';
+import { BudgetBuildSummary, BudgetChallengeConfig, analyzeBudget, buildBudgetMission, requirementsOf } from '../engine/budgetChallenge';
+import { BudgetScoreBreakdown, scoreBudgetSubmission } from '../engine/scoring';
 import { ErrorTally, addToTally, tallyToCounts } from '../engine/classReport';
 import {
+  CampaignMission,
   MissionEvaluation,
   MissionSession,
   buildMissionInitialState,
@@ -245,7 +248,11 @@ interface AssemblyStore {
   campaignHideHelpers: boolean;
   isCampaignMapOpen: boolean;
   /** Resultado exibido no debriefing */
-  missionDebrief: { missionId: string; evaluation: MissionEvaluation } | null;
+  missionDebrief: { missionId: string; evaluation: MissionEvaluation; budgetScore?: BudgetScoreBreakdown } | null;
+  /** Desafio de Orçamento em andamento (#70): configuração, referência congelada e a missão gerada */
+  budgetChallenge: ActiveBudgetChallenge | null;
+  /** Começa um Desafio de Orçamento sem turma; recusa orçamentos que não atendem o cliente */
+  startBudgetChallenge: (config: BudgetChallengeConfig) => { ok: true } | { ok: false; cheapestCost: number };
   openCampaignMap: () => void;
   closeCampaignMap: () => void;
   startCampaignMission: (missionId: string) => void;
@@ -275,6 +282,22 @@ export const selectDiagnosticBenchLocked = (s: AssemblyStore): boolean =>
   s.activeDiagnosticScenario !== null &&
   !s.resolvedScenarioIds.includes(s.activeDiagnosticScenario.id) &&
   phaseOf(s.detective.records[s.activeDiagnosticScenario.id]) === 'HYPOTHESIS';
+
+export interface ActiveBudgetChallenge {
+  config: BudgetChallengeConfig;
+  reference: BudgetBuildSummary;
+  cheapestCost: number;
+  ceilingCost: number;
+  catalogRev: string;
+  mission: CampaignMission;
+}
+
+/** Missão por id: a do Desafio de Orçamento em andamento ou a da campanha */
+export function missionById(state: Pick<AssemblyStore, 'budgetChallenge'>, id: string | null): CampaignMission | null {
+  if (!id) return null;
+  if (state.budgetChallenge?.mission.id === id) return state.budgetChallenge.mission;
+  return findMission(id) ?? null;
+}
 
 /** Referência estável: um [] novo a cada leitura faria seletores rasos re-renderizarem em loop */
 const NO_CLIENT_PARTS: string[] = [];
@@ -371,6 +394,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
   activeCampaignMissionId: null,
   missionErrorLog: [],
   errorTally: {},
+  budgetChallenge: null,
   postAttempts: 0,
   campaignInventory: null,
   campaignHideHelpers: false,
@@ -1400,9 +1424,30 @@ export const useAssemblyStore = create<AssemblyStore>()(
   openCampaignMap: () => set({ isCampaignMapOpen: true }),
   closeCampaignMap: () => set({ isCampaignMapOpen: false }),
 
+  startBudgetChallenge: (config) => {
+    const requirements = config.requirements ?? requirementsOf(config.profile);
+    const analysis = analyzeBudget(config.budget, requirements, config.resolution);
+    if (!analysis.feasible || !analysis.reference) return { ok: false, cheapestCost: analysis.cheapestCost };
+    const mission = buildBudgetMission({ ...config, requirements }, analysis);
+    set({
+      budgetChallenge: {
+        config: { ...config, requirements },
+        reference: analysis.reference,
+        cheapestCost: analysis.cheapestCost,
+        ceilingCost: analysis.ceilingCost,
+        catalogRev: analysis.catalogRev,
+        mission,
+      },
+    });
+    get().startCampaignMission(mission.id);
+    return { ok: true };
+  },
+
   startCampaignMission: (missionId) => {
-    const mission = findMission(missionId);
+    const mission = missionById(get(), missionId);
     if (!mission) return;
+    // Missão da campanha encerra um Desafio de Orçamento anterior
+    if (get().budgetChallenge?.mission.id !== mission.id) set({ budgetChallenge: null });
     const { setup } = mission;
     get().resetAssembly();
 
@@ -1463,6 +1508,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
 
   abandonCampaignMission: () =>
     set({
+      budgetChallenge: null,
       activeCampaignMissionId: null,
       campaignInventory: null,
       campaignHideHelpers: false,
@@ -1473,9 +1519,24 @@ export const useAssemblyStore = create<AssemblyStore>()(
 
   finishCampaignMission: () => {
     const state = get();
-    const mission = state.activeCampaignMissionId ? findMission(state.activeCampaignMissionId) : null;
+    const mission = missionById(state, state.activeCampaignMissionId);
     if (!mission) return null;
     const evaluation = evaluateMission(mission, selectMissionSession(state));
+    // Desafio de Orçamento: detalhamento dos pontos contra a referência, logo após a entrega (#70)
+    const challenge = state.budgetChallenge?.mission.id === mission.id ? state.budgetChallenge : null;
+    const budgetScore = challenge
+      ? scoreBudgetSubmission({
+          assembly: state.assembly,
+          motherboard: state.selectedMotherboard,
+          penaltiesCount: state.penaltiesCount,
+          elapsedSeconds: state.elapsedSeconds,
+          completed: evaluation.completed,
+          budget: challenge.config.budget,
+          targetTimeSeconds: challenge.config.targetTimeSeconds,
+          resolution: challenge.config.resolution,
+          reference: challenge.reference,
+        })
+      : undefined;
     if (evaluation.completed && evaluation.stars > 0) {
       useProgressStore.getState().recordMissionResult(mission.id, {
         stars: evaluation.stars === 3 ? 3 : evaluation.stars === 2 ? 2 : 1,
@@ -1486,7 +1547,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
     } else {
       soundEngine.playErrorBuzz();
     }
-    set({ missionDebrief: { missionId: mission.id, evaluation }, isTimerRunning: !evaluation.completed });
+    set({ missionDebrief: { missionId: mission.id, evaluation, budgetScore }, isTimerRunning: !evaluation.completed });
     return evaluation;
   },
 
@@ -1545,6 +1606,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
         postAttempts: s.postAttempts,
         campaignInventory: s.campaignInventory,
         campaignHideHelpers: s.campaignHideHelpers,
+        budgetChallenge: s.budgetChallenge,
       }),
       merge: (persisted, current) => {
         if (typeof persisted !== 'object' || persisted === null) return current;

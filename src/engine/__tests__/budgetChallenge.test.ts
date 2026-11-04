@@ -148,3 +148,20 @@ describe('Motor do Modo Orçamento (#67)', () => {
     expect(performance.now() - t0).toBeLessThan(200);
   });
 });
+
+describe('Saldo do cartão de peça (#70)', () => {
+  it('troca a peça da mesma categoria e soma pentes avulsos no slot livre', async () => {
+    const { spentIfInstalled } = await import('../budgetChallenge');
+    const { INITIAL_ASSEMBLY_STATE } = await import('../assemblyState');
+    const mb = MOTHERBOARDS.find((m) => m.id === 'mb-b550m-am4')!;
+    const cpuA = CPUS.find((c) => c.id === 'cpu-r5-5600')!;
+    const cpuB = CPUS.find((c) => c.id === 'cpu-r7-5700x3d')!;
+    const single = RAMS.find((r) => r.id === 'ram-8gb-d4-single')!;
+    const kit = RAMS.find((r) => r.id === 'ram-16gb-d4-dual')!;
+    const withCpu = { ...INITIAL_ASSEMBLY_STATE, cpuInstalled: cpuA };
+    expect(spentIfInstalled(cpuB, withCpu, mb)).toBe(mb.price + cpuB.price);
+    const oneStick = { ...withCpu, ramInstalledSlot2: single };
+    expect(spentIfInstalled(single, oneStick, mb)).toBe(mb.price + cpuA.price + 2 * single.price);
+    expect(spentIfInstalled(kit, oneStick, mb)).toBe(mb.price + cpuA.price + kit.price);
+  });
+});

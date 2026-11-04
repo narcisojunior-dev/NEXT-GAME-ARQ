@@ -4,6 +4,7 @@ import {
   CoolerComponent,
   CpuComponent,
   GpuComponent,
+  HardwareComponent,
   MotherboardComponent,
   PsuComponent,
   RamComponent,
@@ -329,4 +330,50 @@ export function buildBudgetMission(config: BudgetChallengeConfig, analysis: Budg
       explanation: 'Desempenho por real vem do equilíbrio: uma GPU cara presa por uma CPU fraca desperdiça dinheiro.',
     },
   };
+}
+
+/**
+ * Gasto se a peça for instalada agora (#70, card "cabe no saldo"): troca a peça da mesma categoria;
+ * pente avulso ocupa o slot livre (ou troca o do slot 2); kit dual ocupa os dois slots.
+ * Pasta térmica não entra no orçamento da montagem (null = sem efeito no saldo).
+ */
+export function spentIfInstalled(
+  component: HardwareComponent,
+  assembly: AssemblyState,
+  motherboard: MotherboardComponent | null
+): number | null {
+  let next = assembly;
+  let mb = motherboard;
+  switch (component.category) {
+    case 'MOTHERBOARD':
+      mb = component;
+      break;
+    case 'CPU':
+      next = { ...assembly, cpuInstalled: component };
+      break;
+    case 'COOLER':
+      next = { ...assembly, coolerInstalled: component };
+      break;
+    case 'GPU':
+      next = { ...assembly, gpuInstalled: component };
+      break;
+    case 'STORAGE':
+      next = { ...assembly, storageInstalled: component };
+      break;
+    case 'PSU':
+      next = { ...assembly, psuInstalled: component };
+      break;
+    case 'CASE':
+      next = { ...assembly, caseInstalled: component };
+      break;
+    case 'RAM':
+      if (component.moduleCount >= 2) next = { ...assembly, ramInstalledSlot2: component, ramInstalledSlot4: component };
+      else if (!assembly.ramInstalledSlot2) next = { ...assembly, ramInstalledSlot2: component };
+      else if (!assembly.ramInstalledSlot4) next = { ...assembly, ramInstalledSlot4: component };
+      else next = { ...assembly, ramInstalledSlot2: component };
+      break;
+    default:
+      return null;
+  }
+  return calculateTotalSpent(next, mb);
 }

@@ -272,6 +272,31 @@ class SoundEngine {
   }
 
   /**
+   * Saldo do Desafio de Orçamento (#70): duas notas descendentes ao passar de 90% do valor;
+   * três notas graves ao estourar. Equivalente sonoro do aviso de texto e do ícone no HUD.
+   */
+  public playBudgetAlert(over: boolean) {
+    if (this.isMuted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const notes = over ? [330, 262, 196] : [660, 494];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const t0 = ctx.currentTime + i * 0.12;
+      osc.type = over ? 'square' : 'triangle';
+      osc.frequency.setValueAtTime(freq, t0);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(over ? 0.18 : 0.14, t0 + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.11);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.12);
+    });
+  }
+
+  /**
    * Encaixe com atração magnética na mesa (Fase 4).
    */
   public playSnapSound() {
