@@ -520,6 +520,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
           detective.records[activeDiagnosticScenario.id] ?? startRecord(activeDiagnosticScenario, detective.seed),
           activeDiagnosticScenario
         );
+        useProgressStore.getState().recordDiagnosticResolved(activeDiagnosticScenario.id);
         set((state) => ({
           resolvedScenarioIds: [...state.resolvedScenarioIds, activeDiagnosticScenario.id],
           detective: { ...state.detective, records: { ...state.detective.records, [activeDiagnosticScenario.id]: solved } },
@@ -1143,6 +1144,10 @@ export const useAssemblyStore = create<AssemblyStore>()(
           return;
         }
         soundEngine.playBiosBeep(result.bootSuccess);
+        // POST de primeira (conquista da decoração, #85): fora do diagnóstico, onde o defeito é proposital
+        if (result.bootSuccess && current.postAttempts === 1 && current.gameMode !== 'DIAGNOSTICO') {
+          useProgressStore.getState().recordPostFirstTry();
+        }
         set({
           postResult: result,
           isBiosOpen: true,

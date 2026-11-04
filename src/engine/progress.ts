@@ -4,7 +4,8 @@
  */
 import { QualityPreference } from './qualityTier';
 
-export const PROGRESS_VERSION = 1;
+/** v2 (#85): conquistas usadas pelos desbloqueios da decoração do quarto */
+export const PROGRESS_VERSION = 2;
 
 export interface MissionResult {
   stars: 1 | 2 | 3;
@@ -39,6 +40,12 @@ export interface PlayerProgress {
   teacherUnlockAll: boolean;
   /** Qualidade da bancada 3D escolhida pelo aluno (#63) */
   qualityPreference: QualityPreference;
+  /** Primeira vez em que o PC ligou na mesa e o AcademyOS subiu (libera o pacote Clássico) */
+  deskRunningAt: string | null;
+  /** POSTs aprovados na primeira tentativa da montagem */
+  postFirstTryCount: number;
+  /** Casos do modo diagnóstico resolvidos (sem repetição) */
+  diagnosticsResolved: string[];
 }
 
 export function createEmptyProgress(): PlayerProgress {
@@ -50,6 +57,9 @@ export function createEmptyProgress(): PlayerProgress {
     soundMuted: false,
     teacherUnlockAll: false,
     qualityPreference: 'AUTO',
+    deskRunningAt: null,
+    postFirstTryCount: 0,
+    diagnosticsResolved: [],
   };
 }
 
@@ -145,5 +155,11 @@ export function sanitizeProgress(raw: unknown): PlayerProgress {
     soundMuted: raw.soundMuted === true,
     teacherUnlockAll: raw.teacherUnlockAll === true,
     qualityPreference: raw.qualityPreference === 'LEVE' || raw.qualityPreference === 'ALTA' ? raw.qualityPreference : 'AUTO',
+    // v1 não tinha os campos abaixo: começam vazios
+    deskRunningAt: typeof raw.deskRunningAt === 'string' ? raw.deskRunningAt : null,
+    postFirstTryCount: isFiniteNumber(raw.postFirstTryCount) && raw.postFirstTryCount >= 0 ? Math.floor(raw.postFirstTryCount) : 0,
+    diagnosticsResolved: Array.isArray(raw.diagnosticsResolved)
+      ? [...new Set(raw.diagnosticsResolved.filter((id): id is string => typeof id === 'string'))]
+      : [],
   };
 }
