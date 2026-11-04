@@ -52,8 +52,25 @@ const cableButton = (page: Page, name: string) =>
  * elemento está sob ele (rolagem e mudanças de layout já resolvidas), antes de pressionar e
  * antes de soltar; os passos intermediários disparam a atração magnética como no touchpad.
  */
+/** Espera a caixa do elemento parar de mudar (fontes e compilação a frio do dev server ainda mexem no layout) */
+async function settled(locator: Locator) {
+  const box = async () => JSON.stringify(await locator.boundingBox());
+  let previous = '';
+  await expect
+    .poll(async () => {
+      const current = await box();
+      const same = current === previous;
+      previous = current;
+      return same;
+    }, { intervals: [100, 150, 200] })
+    .toBe(true);
+}
+
 async function dragTo(page: Page, source: Locator, target: Locator) {
+  await page.evaluate(() => document.fonts.ready);
   await target.evaluate((el) => el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' }));
+  await settled(source);
+  await settled(target);
   await source.hover();
   await page.mouse.down();
   const to = await target.boundingBox();

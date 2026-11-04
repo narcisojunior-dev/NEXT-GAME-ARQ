@@ -114,7 +114,7 @@ export function calculateBenchmark(
   const isDualChannel = Boolean(ramInstalledSlot2 && ramInstalledSlot4);
   const singleChannelPenalty = !isDualChannel;
 
-  let onePercentLowFactor = isDualChannel ? 0.78 : 0.55; // Single channel sofre micro-stutters
+  const onePercentLowFactor = isDualChannel ? 0.78 : 0.55; // Single channel sofre micro-stutters
   if (singleChannelPenalty) {
     baseFps = baseFps * 0.92; // Perda de ~8% de FPS médio
   }

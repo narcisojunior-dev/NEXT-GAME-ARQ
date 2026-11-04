@@ -332,8 +332,8 @@ const CaseEnclosure: React.FC<CaseEnclosureProps> = ({
     clone.rotation.set(0, Math.PI / 2, -Math.PI / 2);
     clone.updateMatrixWorld(true);
 
-    let box = new THREE.Box3().setFromObject(clone);
-    let size = box.getSize(new THREE.Vector3());
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
 
     // Centraliza o chassi em X e Z, assentando a bandeja interna em Y=0
