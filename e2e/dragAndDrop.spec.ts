@@ -122,7 +122,7 @@ test.describe('Arrastar e soltar real: cabos da fonte e painel frontal', () => {
     const rotateButton = modal.getByRole('button', { name: 'Girar o conector HDD LED (+/-) 180 graus' });
 
     await dragTo(page, plug, pin1);
-    let seated = (await state(page)).fpanel.HDD_LED;
+    const seated = (await state(page)).fpanel.HDD_LED;
     if (seated) {
       // Caiu na orientação certa por sorte: tira dos pinos, gira para a errada e testa a recusa
       // Arrasta para longe dos pinos (sobre o título); a prévia do conector cobre o título, então solta pela coordenada
