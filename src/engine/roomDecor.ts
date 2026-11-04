@@ -194,7 +194,7 @@ const MUSEU: DecorItem[] = [
   item('decor-terminal-ibm', 'Terminal de mainframe', 'MUSEU', ['SHELF', 'DESK'], [0.36, 0.4, 0.36], CAMPAIGN, 4442, 'Anos 80: o terminal não processava nada, só mostrava o que o mainframe da sala ao lado calculava.'),
   item('decor-pc-retro-psx', 'Microcomputador retrô', 'MUSEU', ['SHELF', 'DESK'], [0.2, 0.15, 0.18], CAMPAIGN, 194, 'Microcomputadores pessoais levaram o computador para dentro de casa nos anos 80.'),
   item('decor-computadores-antigos', 'Computadores antigos', 'MUSEU', ['FLOOR'], [1.2, 0.5, 1.2], CAMPAIGN, 16056, 'Coleção de máquinas antigas: compare as gerações de processador e memória.'),
-  item('proc-linha-do-tempo', 'Estante "Linha do tempo"', 'MUSEU', ['FLOOR'], [1.8, 0.45, 1.2], CAMPAIGN, 400, 'Placas de ano de 1977 até hoje, terminando no PC que você montou.', { providesShelfSlots: 4 }),
+  item('proc-linha-do-tempo', 'Estante "Linha do tempo"', 'MUSEU', ['FLOOR'], [0.95, 0.45, 1.3], CAMPAIGN, 400, 'Placas de ano de 1977 até hoje, terminando no PC que você montou.', { providesShelfSlots: 4 }),
 ];
 
 /* ====================================================================================

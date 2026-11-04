@@ -1577,6 +1577,9 @@ export const useAssemblyStore = create<AssemblyStore>()(
     useProgressStore.getState().resetProgress();
     void useAssemblyStore.persist.clearStorage();
     void useProgressStore.persist.clearStorage();
+    // Quarto decorado: o módulo só é baixado com o Modo Decorar, então é importado sob demanda
+    safeStateStorage.removeItem(STORAGE_KEYS.room);
+    void import('./useRoomDecorStore').then((m) => m.useRoomDecorStore.getState().forget());
   },
   };
 },

@@ -29,6 +29,13 @@ import { isWebGLAvailable } from '@/components/three/webglDetect';
 import { DeskInventoryPanel } from '@/components/workbench/DeskInventoryPanel';
 import { CutawayPanel } from '@/components/workbench/CutawayPanel';
 import { useCutawayStore } from '@/components/three/cutawayStore';
+import { useDecorModeStore } from '@/components/room3d/decorModeStore';
+
+/** Gaveta do Modo Decorar: baixada só quando o aluno abre o modo (#87) */
+const DecorDrawer = dynamic(() => import('@/components/room3d/DecorDrawer'), {
+  ssr: false,
+  loading: () => <div className="p-4 rounded-2xl border border-slate-800 bg-slate-950 text-xs font-mono text-slate-400">Carregando a gaveta de decoração…</div>,
+});
 
 const DeskSetup3D = dynamic(() => import('@/components/three/DeskSetup3D'), {
   ssr: false,
@@ -63,6 +70,7 @@ const SlotThumb: React.FC<{ component: HardwareComponent | null; icon: React.Rea
 );
 
 export const WorkbenchMat: React.FC = () => {
+  const decorOpen = useDecorModeStore((s) => s.isOpen);
   const isBenchLocked = useAssemblyStore(selectDiagnosticBenchLocked);
   // Modo "Abrir o PC" (#61): só depois de um POST bem-sucedido
   const bootSuccess = useAssemblyStore((s) => Boolean(s.postResult?.bootSuccess));
@@ -385,7 +393,7 @@ export const WorkbenchMat: React.FC = () => {
         </div>
         <div className="w-full">
           {/* Na mesa, a gaveta lateral vira o inventário de móveis e periféricos */}
-          {activeWorkbenchView === 'desk' ? <DeskInventoryPanel /> : <WorkbenchSidebar />}
+          {activeWorkbenchView === 'desk' ? decorOpen ? <DecorDrawer /> : <DeskInventoryPanel /> : <WorkbenchSidebar />}
         </div>
       </div>
 

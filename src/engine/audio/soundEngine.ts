@@ -297,6 +297,45 @@ class SoundEngine {
   }
 
   /**
+   * Modo Decorar (#87): "toc" grave de madeira no chão, clique seco na parede e zumbido curto
+   * ao ligar um neon ou fita LED. O equivalente visual é a mola da peça e o texto anunciado.
+   */
+  public playDecorPlace(kind: 'FLOOR' | 'WALL' | 'LIGHT') {
+    if (this.isMuted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const t0 = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    if (kind === 'FLOOR') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(180, t0);
+      osc.frequency.exponentialRampToValueAtTime(70, t0 + 0.12);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.35, t0 + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+    } else if (kind === 'WALL') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1200, t0);
+      osc.frequency.exponentialRampToValueAtTime(600, t0 + 0.04);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.2, t0 + 0.003);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.06);
+    } else {
+      // Zumbido do transformador do neon: 120 Hz com um brilho que sobe
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, t0);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.08, t0 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.35);
+    }
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.4);
+  }
+
+  /**
    * Encaixe com atração magnética na mesa (Fase 4).
    */
   public playSnapSound() {

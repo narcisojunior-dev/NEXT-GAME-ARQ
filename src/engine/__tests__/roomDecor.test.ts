@@ -369,7 +369,7 @@ describe('Conjunto inicial por tema e estado salvo (#86, #90)', () => {
     const onlyClassic = (id: string) => decor(id).pack === 'CLASSICO';
     const clean = sanitizeRoomDecor(raw, CTX, onlyClassic);
     expect(clean.theme).toBe('ROOM_LAB');
-    expect(clean.items.map((p) => p.instanceId).sort()).toEqual(good.items.map((p) => p.instanceId).sort());
+    expect(clean.items.map((p) => p.instanceId)).toEqual(good.items.map((p) => p.instanceId));
     // Desbloqueado, o fliperama volta
     expect(sanitizeRoomDecor(raw, CTX, () => true).items.some((p) => p.decorId === 'decor-fliperama')).toBe(true);
   });

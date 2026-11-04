@@ -217,7 +217,9 @@ export function sanitizeRoomDecor(raw: unknown, ctx: RoomContext, isItemUnlocked
     };
     state = { ...state, items: [...state.items, clean] };
   }
-  return state;
+  // Mesma ordem em que o aluno colocou (a lista "Itens no quarto" não muda depois do F5)
+  const order = new Map(entries.map((p, i) => [p.instanceId, i]));
+  return { ...state, items: [...state.items].sort((a, b) => (order.get(a.instanceId) ?? 0) - (order.get(b.instanceId) ?? 0)) };
 }
 
 /** Ocupação dos nichos de cada estante, para a vitrine mostrar troféus nos nichos vazios */

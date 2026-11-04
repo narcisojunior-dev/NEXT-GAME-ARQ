@@ -141,7 +141,7 @@ export const SHELF_LAYOUTS: Record<string, ShelfLayout> = {
   'decor-estante-parede': { cols: 2, levels: [0.02, 0.3], clearance: 0.26 },
   'decor-estante-decorada': { cols: 2, levels: [0.82, 1.22], clearance: 0.36 },
   'decor-vitrine': { cols: 1, levels: [0.1, 0.5, 0.9, 1.3], clearance: 0.36 },
-  'proc-linha-do-tempo': { cols: 4, levels: [0.45], clearance: 0.6 },
+  'proc-linha-do-tempo': { cols: 2, levels: [0.05, 0.65], clearance: 0.55 },
   'proc-aparador': { cols: 2, levels: [0.75], clearance: 0.6 },
 };
 
