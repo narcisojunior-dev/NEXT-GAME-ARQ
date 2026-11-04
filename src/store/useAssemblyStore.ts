@@ -5,6 +5,7 @@ import { useProgressStore } from './useProgressStore';
 import { encodeValidationCode } from '../engine/validationCode';
 import { buildAssemblyChecklist, pendingBenchSteps } from '../engine/assemblyChecklist';
 import { calculateGroupScore } from '../engine/score';
+import { ErrorTally, addToTally, tallyToCounts } from '../engine/classReport';
 import {
   MissionEvaluation,
   MissionSession,
@@ -236,6 +237,8 @@ interface AssemblyStore {
   activeCampaignMissionId: string | null;
   /** Títulos dos erros cometidos na missão atual (objetivos "sem o erro X") */
   missionErrorLog: string[];
+  /** Erros da montagem atual por tipo pedagógico (#34): viajam no código verificável da equipe */
+  errorTally: ErrorTally;
   postAttempts: number;
   /** Peças do cliente (custo zero) e categorias que podem ser compradas na missão */
   campaignInventory: { clientPartIds: string[]; purchasableCategories: ComponentCategory[] | null } | null;
@@ -346,6 +349,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
     set((state) => ({
       penaltiesCount: penalize ? state.penaltiesCount + 1 : state.penaltiesCount,
       missionErrorLog: [...state.missionErrorLog, issue.title].slice(-50),
+      errorTally: addToTally(state.errorTally, issue.title),
       activeAlert: {
         type: 'error',
         title: issue.title,
@@ -366,6 +370,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
   activeWorkbenchView: 'bench',
   activeCampaignMissionId: null,
   missionErrorLog: [],
+  errorTally: {},
   postAttempts: 0,
   campaignInventory: null,
   campaignHideHelpers: false,
@@ -632,13 +637,12 @@ export const useAssemblyStore = create<AssemblyStore>()(
       return result;
     } else {
       soundEngine.playErrorBuzz();
-      set({
-        activeAlert: {
-          type: 'error',
-          title: result.isPolarityInverted ? 'Polaridade Invertida (+/-)' : 'Pinos Incorretos',
-          message: result.message,
-        },
-      });
+      const title = result.isPolarityInverted ? 'Polaridade Invertida (+/-)' : 'Pinos Incorretos';
+      set((state) => ({
+        errorTally: addToTally(state.errorTally, title),
+        missionErrorLog: [...state.missionErrorLog, title].slice(-50),
+        activeAlert: { type: 'error', title, message: result.message },
+      }));
       return result;
     }
   },
@@ -1091,6 +1095,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
       return {
         postAttempts: state.postAttempts + 1,
         missionErrorLog: [...state.missionErrorLog, ...failures].slice(-50),
+        errorTally: failures.reduce(addToTally, state.errorTally),
         ...(countsAsFailure && scenario && record
           ? { detective: { ...state.detective, records: { ...state.detective.records, [scenario.id]: registerFailedBoot(record) } } }
           : {}),
@@ -1155,7 +1160,13 @@ export const useAssemblyStore = create<AssemblyStore>()(
       timeSpentSeconds: score.timeSpentSeconds,
       budgetRemaining: score.budgetRemaining,
       // Código verificável com selo SHA-256 (#29): determinístico, o professor confere no painel
-      hashValidation: encodeValidationCode({ teamName: teamName || 'Equipe', totalScore: score.totalScore, timeSpentSeconds: elapsedSeconds }),
+      // + erros por tipo (#34): o professor monta o relatório da turma só com os códigos
+      hashValidation: encodeValidationCode({
+        teamName: teamName || 'Equipe',
+        totalScore: score.totalScore,
+        timeSpentSeconds: elapsedSeconds,
+        errorCounts: tallyToCounts(get().errorTally),
+      }),
     };
   },
 
@@ -1373,6 +1384,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
       elapsedSeconds: 0,
       isTimerRunning: true,
       penaltiesCount: 0,
+      errorTally: {},
       postResult: null,
       isBiosOpen: false,
       isScoreModalOpen: false,
@@ -1529,6 +1541,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
         activeWorkbenchView: s.activeWorkbenchView,
         activeCampaignMissionId: s.activeCampaignMissionId,
         missionErrorLog: s.missionErrorLog,
+        errorTally: s.errorTally,
         postAttempts: s.postAttempts,
         campaignInventory: s.campaignInventory,
         campaignHideHelpers: s.campaignHideHelpers,
@@ -1543,7 +1556,20 @@ export const useAssemblyStore = create<AssemblyStore>()(
         // Ficha do detetive salva por versões antigas (ou corrompida): recomeça o sorteio
         const savedDetective = 'detective' in persisted ? persisted.detective : null;
         const detective = isDetectiveState(savedDetective) ? savedDetective : current.detective;
-        return { ...current, ...persisted, detective, activeDiagnosticScenario: scenario, missionDebrief: null, isCampaignMapOpen: false };
+        const savedTally = 'errorTally' in persisted ? persisted.errorTally : null;
+        const errorTally =
+          typeof savedTally === 'object' && savedTally !== null && Object.values(savedTally).every((n) => typeof n === 'number' && n >= 0)
+            ? (savedTally as ErrorTally)
+            : {};
+        return {
+          ...current,
+          ...persisted,
+          detective,
+          errorTally,
+          activeDiagnosticScenario: scenario,
+          missionDebrief: null,
+          isCampaignMapOpen: false,
+        };
       },
       // Versão nova do formato salvo: descarta o salvamento antigo em vez de quebrar
       migrate: () => ({}),

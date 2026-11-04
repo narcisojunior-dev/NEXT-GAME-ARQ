@@ -6,8 +6,11 @@ import { useShallow } from 'zustand/react/shallow';
 import { certificateBadge } from '@/engine/teacherDashboard';
 import { DecodeResult, decodeValidationCode } from '@/engine/validationCode';
 import { useProgressStore } from '@/store/useProgressStore';
+import { ClassReportPanel } from './ClassReportPanel';
+import { CERTIFICATE_SKILLS } from '@/engine/classReport';
 import {
   GraduationCap,
+  BarChart3,
   Trophy,
   FileCheck2,
   Printer,
@@ -42,7 +45,7 @@ export const TeacherDashboardModal: React.FC = () => {
     }))
   );
 
-  const [activeTab, setActiveTab] = useState<'LEADERBOARD' | 'CERTIFICATE' | 'VALIDATOR'>('LEADERBOARD');
+  const [activeTab, setActiveTab] = useState<'LEADERBOARD' | 'REPORT' | 'CERTIFICATE' | 'VALIDATOR'>('LEADERBOARD');
   const [searchHash, setSearchHash] = useState<string>('');
   const [decoded, setDecoded] = useState<DecodeResult | null>(null);
   const [registerMessage, setRegisterMessage] = useState<string | null>(null);
@@ -120,6 +123,17 @@ export const TeacherDashboardModal: React.FC = () => {
             >
               <Trophy className="w-3.5 h-3.5" />
               <span>Projetor de Sala</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('REPORT')}
+              aria-pressed={activeTab === 'REPORT'}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'REPORT' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Relatório da Turma</span>
             </button>
 
             <button
@@ -259,6 +273,8 @@ export const TeacherDashboardModal: React.FC = () => {
           )}
 
           {/* ABA 2: CERTIFICADO ESCOLAR EM PDF / IMPRESSÃO A4 */}
+          {activeTab === 'REPORT' && <ClassReportPanel />}
+
           {activeTab === 'CERTIFICATE' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between print:hidden p-3 rounded-xl bg-slate-900 border border-slate-800">
@@ -308,18 +324,14 @@ export const TeacherDashboardModal: React.FC = () => {
 
                   {/* Habilidades Práticas Validadas */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[11px] font-sans text-left w-full max-w-2xl py-2">
-                    <div className="p-2 rounded bg-indigo-50/80 border border-indigo-200">
-                      ✓ Proteção Eletrostática (ESD)
-                    </div>
-                    <div className="p-2 rounded bg-indigo-50/80 border border-indigo-200">
-                      ✓ Soquetes LGA1700 / AM5
-                    </div>
-                    <div className="p-2 rounded bg-indigo-50/80 border border-indigo-200">
-                      ✓ Pinos Frontais F_PANEL
-                    </div>
-                    <div className="p-2 rounded bg-indigo-50/80 border border-indigo-200">
-                      ✓ Diagnóstico de Falhas Técnicas
-                    </div>
+                    {CERTIFICATE_SKILLS.map((skill) => (
+                      <div key={skill.id} className="p-2 rounded bg-indigo-50/80 border border-indigo-200">
+                        ✓ {skill.label}
+                        <div className="text-[11px] text-indigo-700 font-mono">
+                          BNCC {skill.bnccComputacao.map((b) => b.code).join(', ')}
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Especificações e Nota Final */}

@@ -23,6 +23,8 @@ export interface LeaderboardEntry {
   timeSpentSeconds: number;
   code: string;
   addedAt: string;
+  /** Erros por tipo trazidos pelo código (#34); ausente em códigos antigos */
+  errorCounts?: number[];
 }
 
 export interface PlayerProgress {
@@ -90,10 +92,19 @@ function sanitizeMissionResult(raw: unknown): MissionResult | null {
 
 function sanitizeLeaderboardEntry(raw: unknown): LeaderboardEntry | null {
   if (!isRecord(raw)) return null;
-  const { teamName, totalScore, timeSpentSeconds, code, addedAt } = raw;
+  const { teamName, totalScore, timeSpentSeconds, code, addedAt, errorCounts } = raw;
   if (typeof teamName !== 'string' || typeof code !== 'string') return null;
   if (!isFiniteNumber(totalScore) || !isFiniteNumber(timeSpentSeconds)) return null;
-  return { teamName, totalScore, timeSpentSeconds, code, addedAt: typeof addedAt === 'string' ? addedAt : '' };
+  const counts =
+    Array.isArray(errorCounts) && errorCounts.every((n) => isFiniteNumber(n) && n >= 0) ? errorCounts.filter(isFiniteNumber) : null;
+  return {
+    teamName,
+    totalScore,
+    timeSpentSeconds,
+    code,
+    addedAt: typeof addedAt === 'string' ? addedAt : '',
+    ...(counts ? { errorCounts: counts } : {}),
+  };
 }
 
 export function sanitizeProgress(raw: unknown): PlayerProgress {
