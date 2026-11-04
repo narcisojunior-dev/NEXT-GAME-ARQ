@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import type { useAssemblyStore } from '../src/store/useAssemblyStore';
 
 // Store exposto em window pela página (hook de teste em src/app/page.tsx)
@@ -6,6 +6,32 @@ declare global {
   interface Window {
     useAssemblyStore: typeof useAssemblyStore;
   }
+}
+
+/** Pinos e âncoras da bancada 3D só existem com uma placa-mãe assentada */
+async function seatMotherboard(page: Page) {
+    await page.evaluate(() => {
+      const store = window.useAssemblyStore.getState();
+      store.dischargeEsd();
+      store.installMotherboard({
+        id: 'mb-b550m-am4',
+        name: 'B550M AM4',
+        category: 'MOTHERBOARD',
+        socket: 'AM4',
+        supportedRam: 'DDR4',
+        formFactor: 'Micro-ATX',
+        ramSlotsCount: 4,
+        m2SlotsCount: 1,
+        pcieSlotsCount: 1,
+        hasIntegratedIoShield: false,
+        chipset: 'B550',
+        price: 0,
+        tdpWatts: 0,
+        description: '',
+        analogy: '',
+        trivia: '',
+      });
+    });
 }
 
 test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
@@ -41,28 +67,7 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
     await btn3D.click();
 
     // As âncoras de cabos só existem com uma placa-mãe assentada na bancada
-    await page.evaluate(() => {
-      const store = window.useAssemblyStore.getState();
-      store.dischargeEsd();
-      store.installMotherboard({
-        id: 'mb-b550m-am4',
-        name: 'B550M AM4',
-        category: 'MOTHERBOARD',
-        socket: 'AM4',
-        supportedRam: 'DDR4',
-        formFactor: 'Micro-ATX',
-        ramSlotsCount: 4,
-        m2SlotsCount: 1,
-        pcieSlotsCount: 1,
-        hasIntegratedIoShield: false,
-        chipset: 'B550',
-        price: 0,
-        tdpWatts: 0,
-        description: '',
-        analogy: '',
-        trivia: '',
-      });
-    });
+    await seatMotherboard(page);
 
     // As âncoras projetadas com data-cable-target devem estar presentes e acessíveis
     const atxAnchor = page.locator('[data-cable-target="ATX_PWR"]');
@@ -122,6 +127,7 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
 
   test('pinos 3D são operáveis só pelo teclado: Tab alcança a ação do tooltip e Esc o dispensa', async ({ page }) => {
     await page.locator('button[title*="Modo 3D da Bancada"]').click();
+    await seatMotherboard(page);
     const pin = page.getByRole('button', { name: 'Painel Frontal', exact: true });
     await expect(pin).toBeAttached({ timeout: 15000 });
 
@@ -131,7 +137,7 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
 
     // O tooltip continua aberto quando o foco entra nele (antes ele sumia no blur do pino)
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Abrir Zoom F_PANEL' })).toBeFocused();
+    await expect(actions.getByRole('button', { name: 'Ligar Painel Frontal (F_PANEL)' })).toBeFocused();
     await expect(actions).toBeVisible();
 
     await page.keyboard.press('Escape');
