@@ -228,10 +228,10 @@
     "semantic_hash": "6e4d6c6e35d4f8532ad4bbc142e7f601"
   },
   "src/components/modals/BIOSSimulatorModal.tsx": {
-    "mtime": 1793751432.4729965,
-    "seen": 1793752129.0730948,
-    "ast_hash": "4039cba36d4ab34cc699f8c6ea799f84",
-    "semantic_hash": "4039cba36d4ab34cc699f8c6ea799f84"
+    "mtime": 1793757908.1599417,
+    "seen": 1793758787.695233,
+    "ast_hash": "257234a454a6115b9b5ea2ec37333141",
+    "semantic_hash": "257234a454a6115b9b5ea2ec37333141"
   },
   "src/components/modals/InspectModal.tsx": {
     "mtime": 1793751432.4731922,
@@ -240,10 +240,10 @@
     "semantic_hash": "f5f9ba8145f1c5f3ae380a29c249fb61"
   },
   "src/components/workbench/MotherboardSvg.tsx": {
-    "mtime": 1793753248.6779263,
-    "seen": 1793755316.199483,
-    "ast_hash": "26521c2616c5eed9246c6ba7ee3a0e97",
-    "semantic_hash": "26521c2616c5eed9246c6ba7ee3a0e97"
+    "mtime": 1793756121.26036,
+    "seen": 1793758787.695533,
+    "ast_hash": "ecf4d71f60ad40c99e9b501ee4ef3bd5",
+    "semantic_hash": "ecf4d71f60ad40c99e9b501ee4ef3bd5"
   },
   "src/components/workbench/WorkbenchMat.tsx": {
     "mtime": 1793753248.6772563,
@@ -276,10 +276,10 @@
     "semantic_hash": "b1ab00d559ade6668dfe940ddaa7599c"
   },
   "src/store/useAssemblyStore.ts": {
-    "mtime": 1793754975.5780313,
-    "seen": 1793755316.19996,
-    "ast_hash": "f25d89b24d2d22f5df00e64709439dae",
-    "semantic_hash": "f25d89b24d2d22f5df00e64709439dae"
+    "mtime": 1793757409.5159924,
+    "seen": 1793758787.6962938,
+    "ast_hash": "20a516e6b558c3a3ad16ec42af608415",
+    "semantic_hash": "20a516e6b558c3a3ad16ec42af608415"
   },
   "tsconfig.json": {
     "mtime": 1793735056.790974,
@@ -294,10 +294,10 @@
     "semantic_hash": "8eab887994ef9fbf027d4f0962b0a16c"
   },
   "src/components/workbench/AssemblyChecklist.tsx": {
-    "mtime": 1793753248.678221,
-    "seen": 1793755316.1994529,
-    "ast_hash": "9a18ae31a186a21b2b205877fa3169e7",
-    "semantic_hash": "9a18ae31a186a21b2b205877fa3169e7"
+    "mtime": 1793757406.1330428,
+    "seen": 1793758787.695476,
+    "ast_hash": "f8d9e38927f20527be12625a7e471401",
+    "semantic_hash": "f8d9e38927f20527be12625a7e471401"
   },
   "src/engine/__tests__/compatibility.test.ts": {
     "mtime": 1793751450.3545969,
@@ -606,10 +606,10 @@
     "semantic_hash": "74c9cf787a5127e8eadcb79e5b1b77ec"
   },
   "src/components/three/Workbench3D.tsx": {
-    "mtime": 1793754059.273851,
-    "seen": 1793755316.199402,
-    "ast_hash": "c1ecac7fce7b035daeab75270d2c8a23",
-    "semantic_hash": "c1ecac7fce7b035daeab75270d2c8a23"
+    "mtime": 1793757467.9559882,
+    "seen": 1793758787.6954088,
+    "ast_hash": "1e8f76089e94c5762eb46c2873dfec55",
+    "semantic_hash": "1e8f76089e94c5762eb46c2873dfec55"
   },
   "src/components/three/webglDetect.ts": {
     "mtime": 1793735056.7868378,
@@ -642,10 +642,10 @@
     "semantic_hash": "f9b5785e7cd23354768469ea34b18914"
   },
   "e2e/lateralMenuAndFrontPanel.spec.ts": {
-    "mtime": 1793735056.751265,
-    "seen": 1793737604.188833,
-    "ast_hash": "bddcd3861cb86157a52ea35c33049cab",
-    "semantic_hash": "bddcd3861cb86157a52ea35c33049cab"
+    "mtime": 1793758719.4273658,
+    "seen": 1793758787.694869,
+    "ast_hash": "e800810d78d04fadbd556b6ae178c565",
+    "semantic_hash": "e800810d78d04fadbd556b6ae178c565"
   },
   "src/components/three/DeskSetup3D.tsx": {
     "mtime": 1793755247.8516207,
@@ -654,10 +654,10 @@
     "semantic_hash": "d613e0ea7cdf628b637bdcedbae2fc08"
   },
   "src/components/workbench/WorkbenchSidebar.tsx": {
-    "mtime": 1793753248.6783504,
-    "seen": 1793755316.1994839,
-    "ast_hash": "0576c45c1e838bc1f8ff3686e1f7ff40",
-    "semantic_hash": "0576c45c1e838bc1f8ff3686e1f7ff40"
+    "mtime": 1793756576.7940025,
+    "seen": 1793758787.6955469,
+    "ast_hash": "53b1927c9c8a575c16578c5683bb7ea4",
+    "semantic_hash": "53b1927c9c8a575c16578c5683bb7ea4"
   },
   "src/engine/__tests__/deskSetup.test.ts": {
     "mtime": 1793741960.6396563,
@@ -678,10 +678,10 @@
     "semantic_hash": "42394ea4a2c80cc4f23d7101e42e7027"
   },
   "src/engine/deskSetup.ts": {
-    "mtime": 1793754687.095732,
-    "seen": 1793755316.199779,
-    "ast_hash": "a4678cdd4a8ce2fb2ec978428a1a75c2",
-    "semantic_hash": "a4678cdd4a8ce2fb2ec978428a1a75c2"
+    "mtime": 1793757406.1333456,
+    "seen": 1793758787.696001,
+    "ast_hash": "14789b5a955237349fce0d21d553959d",
+    "semantic_hash": "14789b5a955237349fce0d21d553959d"
   },
   "src/engine/externalCabling.ts": {
     "mtime": 1793741984.7801487,
@@ -840,10 +840,10 @@
     "semantic_hash": "8e3b402eed535cab2e3af63a00be56ab"
   },
   "src/engine/__tests__/benchGeometry.test.ts": {
-    "mtime": 1793753984.1695645,
-    "seen": 1793755316.199523,
-    "ast_hash": "84cc183aff5d6eea534438f191065f16",
-    "semantic_hash": "84cc183aff5d6eea534438f191065f16"
+    "mtime": 1793757445.3391306,
+    "seen": 1793758787.695588,
+    "ast_hash": "700b3d8ae9e51b49fe604d2e8d174565",
+    "semantic_hash": "700b3d8ae9e51b49fe604d2e8d174565"
   },
   "src/engine/__tests__/campaign.test.ts": {
     "mtime": 1793752862.5361037,
@@ -870,10 +870,10 @@
     "semantic_hash": "a43c810d9a958f3eeb09b53be70b3bf6"
   },
   "src/engine/benchGeometry.ts": {
-    "mtime": 1793754022.418489,
-    "seen": 1793755316.199727,
-    "ast_hash": "89843da45580dc7feab7e3dd05f2e020",
-    "semantic_hash": "89843da45580dc7feab7e3dd05f2e020"
+    "mtime": 1793757445.3388495,
+    "seen": 1793758787.695903,
+    "ast_hash": "472cfcb3d6bfe1355f17d12d5760e337",
+    "semantic_hash": "472cfcb3d6bfe1355f17d12d5760e337"
   },
   "src/engine/campaign.ts": {
     "mtime": 1793752547.1791475,
@@ -934,5 +934,23 @@
     "seen": 1793755316.1999612,
     "ast_hash": "63f69a1bc0376d8035b6206adbab1dfb",
     "semantic_hash": "63f69a1bc0376d8035b6206adbab1dfb"
+  },
+  "e2e/fullAssemblyPhysics.spec.ts": {
+    "mtime": 1793758287.7824163,
+    "seen": 1793758787.6948678,
+    "ast_hash": "e91969c605f30edee36d8ca78f44826c",
+    "semantic_hash": "e91969c605f30edee36d8ca78f44826c"
+  },
+  "src/engine/__tests__/assemblyChecklist.test.ts": {
+    "mtime": 1793757490.0288258,
+    "seen": 1793758787.695574,
+    "ast_hash": "5fc3772d7f367bc27f8c35d137c7e193",
+    "semantic_hash": "5fc3772d7f367bc27f8c35d137c7e193"
+  },
+  "src/engine/assemblyChecklist.ts": {
+    "mtime": 1793757391.7225838,
+    "seen": 1793758787.6958761,
+    "ast_hash": "76878405d20ea903fd33b7792958fc61",
+    "semantic_hash": "76878405d20ea903fd33b7792958fc61"
   }
 }
