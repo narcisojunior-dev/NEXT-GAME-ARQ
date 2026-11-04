@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Space_Grotesk, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { HardwareMaterials } from '@/components/common/HardwareMaterials';
+import { ServiceWorkerUpdater } from '@/components/pwa/ServiceWorkerUpdater';
 
 // Fontes embutidas no build (sem requisição externa em runtime: o PWA continua funcionando offline)
 const displayFont = Space_Grotesk({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
@@ -39,17 +40,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-950">
         <HardwareMaterials />
         {children}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').catch(() => {});
-                });
-              }
-            `,
-          }}
-        />
+        <ServiceWorkerUpdater />
       </body>
     </html>
   );
