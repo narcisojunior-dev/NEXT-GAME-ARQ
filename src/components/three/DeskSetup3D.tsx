@@ -6,7 +6,7 @@ import { OrbitControls, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useAssemblyStore, selectDeskStage } from '@/store/useAssemblyStore';
-import { DESK_SNAP_POINTS } from '@/engine/deskSetup';
+import { DESK_SNAP_POINTS, getDeskWidth, getSnapPointPosition } from '@/engine/deskSetup';
 import { EXTERNAL_CABLES } from '@/engine/externalCabling';
 import { DeskStationScene } from './DeskStationScene';
 import { useDeskPlacementStore } from './deskPlacementStore';
@@ -43,6 +43,28 @@ export const DESK_CAMERA_PRESETS: Record<
   },
 };
 
+type CameraPose = { pos: [number, number, number]; target: [number, number, number] };
+
+/**
+ * Pose do preset na mesa realmente posicionada: a vista das conexões acompanha a torre
+ * (sobre o tampo ou no chão, em mesas compactas) e a do aluno acompanha teclado e monitor.
+ */
+export function resolveDeskCameraPose(preset: DeskCameraPreset, deskWidth: number): CameraPose {
+  if (preset === 'setup-pc') {
+    const [tx, ty, tz] = getSnapPointPosition('PC_TOWER', deskWidth);
+    // Torre no chão (mesa compacta): câmera mais alta e afastada para enxergar a traseira por cima da mesa
+    return ty > 0
+      ? { pos: [tx + 0.75, ty + 0.5, -0.95], target: [tx, ty + 0.15, tz - 0.17] }
+      : { pos: [tx + 0.6, 1.15, -1.15], target: [tx - 0.1, 0.3, tz - 0.17] };
+  }
+  if (preset === 'setup-seat') {
+    const [kx] = getSnapPointPosition('KEYBOARD', deskWidth);
+    const [mx, , mz] = getSnapPointPosition('MONITOR_MAIN', deskWidth);
+    return { pos: [kx, 1.18, 0.58], target: [mx, 0.98, mz] };
+  }
+  return DESK_CAMERA_PRESETS[preset];
+}
+
 /* ====================================================================================
  * CONTROLADOR SUAVE DE CÂMERA COM LERP E ORBITCONTROLS LIVRE
  * ==================================================================================== */
@@ -50,21 +72,23 @@ interface DeskCameraControllerProps {
   preset: DeskCameraPreset;
   /** Incrementado a cada clique: permite re-aplicar o mesmo preset (ex.: "Resetar Câmera" após orbitar) */
   requestId: number;
+  deskWidth: number;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
 }
 
-const DeskCameraController: React.FC<DeskCameraControllerProps> = ({ preset, requestId, controlsRef }) => {
+const DeskCameraController: React.FC<DeskCameraControllerProps> = ({ preset, requestId, deskWidth, controlsRef }) => {
   const { camera } = useThree();
   // Refs (e não estado): a transição roda no loop de frame sem provocar re-render do React
-  const targetPos = useRef(new THREE.Vector3(...DESK_CAMERA_PRESETS[preset].pos));
-  const targetLook = useRef(new THREE.Vector3(...DESK_CAMERA_PRESETS[preset].target));
+  const targetPos = useRef(new THREE.Vector3(...resolveDeskCameraPose(preset, deskWidth).pos));
+  const targetLook = useRef(new THREE.Vector3(...resolveDeskCameraPose(preset, deskWidth).target));
   const isTransitioning = useRef(false);
 
   useEffect(() => {
-    targetPos.current.set(...DESK_CAMERA_PRESETS[preset].pos);
-    targetLook.current.set(...DESK_CAMERA_PRESETS[preset].target);
+    const pose = resolveDeskCameraPose(preset, deskWidth);
+    targetPos.current.set(...pose.pos);
+    targetLook.current.set(...pose.target);
     isTransitioning.current = true;
-  }, [preset, requestId]);
+  }, [preset, requestId, deskWidth]);
 
   useFrame((_, delta) => {
     if (!isTransitioning.current) return;
@@ -331,7 +355,12 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
           <pointLight position={[0, 1.6, -0.45]} color="#38bdf8" intensity={0.8} distance={3} />
 
           {/* Gerenciador de Câmera */}
-          <DeskCameraController preset={activePreset} requestId={cameraRequestId} controlsRef={controlsRef} />
+          <DeskCameraController
+            preset={activePreset}
+            requestId={cameraRequestId}
+            deskWidth={getDeskWidth(deskSetup.placedDeskItems)}
+            controlsRef={controlsRef}
+          />
           <OrbitControls
             ref={controlsRef}
             enableDamping

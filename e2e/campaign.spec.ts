@@ -2,7 +2,7 @@ import { test, expect, Page } from '@playwright/test';
 import type { useAssemblyStore } from '../src/store/useAssemblyStore';
 import { encodeValidationCode } from '../src/engine/validationCode';
 
-// Store exposto em window pela página (hook de teste em src/store/useAssemblyStore.ts)
+// Store exposto em window pela página depois da hidratação (src/app/page.tsx)
 declare global {
   interface Window {
     useAssemblyStore: typeof useAssemblyStore;

@@ -24,6 +24,7 @@ import {
 import { EXTERNAL_PORTS, ExternalPortId, WALL_Z, getExternalPortWorldPosition } from '@/engine/externalCabling';
 import { FittedModel } from './FittedModel';
 import { caseModelUrlFor, deskModelFor, towerHeightFor } from './deskModels';
+import { MOUSEPAD_SIZE } from '@/engine/deskGeometry';
 import { placeHeldItem, useDeskPlacementStore } from './deskPlacementStore';
 import { DeskCablesLayer } from './DeskCablesLayer';
 import { MonitorView } from './MonitorView';
@@ -55,7 +56,10 @@ function footprintFor(snapPointId: DeskSnapPointId, item: PlacedDeskItem | null)
     const width = (item && DESK_WIDTH_BY_ID[item.itemId]) || REFERENCE_DESK_WIDTH;
     return [width, DESK_DEPTH];
   }
-  if (snapPointId === 'MOUSEPAD' && item?.itemId === 'mousepad-control-desk') return [0.8, 0.3];
+  if (snapPointId === 'MOUSEPAD' && item) {
+    const [w, , d] = MOUSEPAD_SIZE[item.itemId] ?? MOUSEPAD_SIZE['mousepad-speed-xl'];
+    return [w, d];
+  }
   return DESK_SNAP_POINTS[snapPointId].footprint;
 }
 
@@ -182,8 +186,7 @@ const ProceduralMousepad: React.FC<{ itemId: string; ghost?: boolean; isRunning?
   const stitchRef = useRef<THREE.LineBasicMaterial>(null);
   useRgbSync(stitchRef, isRunning);
   const isFelt = itemId === 'mousepad-control-desk';
-  const [w, d] = isFelt ? [0.8, 0.3] : [0.9, 0.4];
-  const thickness = isFelt ? 0.003 : 0.004;
+  const [w, thickness, d] = MOUSEPAD_SIZE[itemId] ?? MOUSEPAD_SIZE['mousepad-speed-xl'];
   // Contorno da costura iluminada (criado uma vez por tamanho, não a cada render)
   const stitch = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(w - 0.01, 0.0001, d - 0.01)), [w, d]);
   useEffect(() => () => stitch.dispose(), [stitch]);

@@ -29,16 +29,13 @@ const Model3DModal = dynamic(() => import('@/components/three/Model3DModal').the
 export default function Home() {
   const is3DOpen = useModel3DStore((s) => Boolean(s.modelId) || s.isGalleryOpen);
 
-  // Progresso salvo (#30): hidratado só no cliente, depois do primeiro render (mesmo HTML do servidor)
+  // Progresso salvo (#30): hidratado só no cliente, depois do primeiro render (mesmo HTML do servidor).
+  // A store só é exposta aos testes E2E depois da hidratação: antes disso, o estado salvo ainda
+  // pode substituir o que o teste acabou de montar (e interromper um POST em andamento).
   useEffect(() => {
-    void useAssemblyStore.persist.rehydrate();
-    void useProgressStore.persist.rehydrate();
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).useAssemblyStore = useAssemblyStore;
-    }
+    void Promise.all([useAssemblyStore.persist.rehydrate(), useProgressStore.persist.rehydrate()]).then(() => {
+      Object.assign(window, { useAssemblyStore });
+    });
   }, []);
   return (
     <LazyMotion features={domAnimation} strict>

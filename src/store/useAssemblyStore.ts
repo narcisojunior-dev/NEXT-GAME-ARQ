@@ -1452,10 +1452,6 @@ export const useAssemblyStore = create<AssemblyStore>()(
   )
 );
 
-if (typeof window !== 'undefined') {
-  (window as any).useAssemblyStore = useAssemblyStore;
-}
-
 /**
  * Guarda central de energia da mesa (Fase 4).
  * Se a estação estiver ligada e deixar de cumprir qualquer requisito (cabo puxado, periférico
