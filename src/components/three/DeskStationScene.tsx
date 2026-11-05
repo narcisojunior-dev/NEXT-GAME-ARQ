@@ -21,13 +21,18 @@ import {
   getSnapPointPosition,
   isPcReadyForDesk,
 } from '@/engine/deskSetup';
-import { EXTERNAL_PORTS, ExternalPortId, WALL_Z, getExternalPortWorldPosition } from '@/engine/externalCabling';
 import { FittedModel } from './FittedModel';
 import { caseModelUrlFor, deskModelFor, towerHeightFor } from './deskModels';
 import { MOUSEPAD_SIZE } from '@/engine/deskGeometry';
 import { placeHeldItem, useDeskPlacementStore } from './deskPlacementStore';
 import { DeskCablesLayer } from './DeskCablesLayer';
 import { MonitorView } from './MonitorView';
+import { RoomShell } from '../room3d/RoomShell';
+import { useDecorModeStore } from '../room3d/decorModeStore';
+import { useProgressStore } from '@/store/useProgressStore';
+
+/** Decoração do quarto: baixada só depois que o PC ligou na mesa ou ao abrir o Modo Decorar (#87) */
+const DecorScene = React.lazy(() => import('../room3d/DecorScene'));
 
 /* ====================================================================================
  * Constantes de interação (metros)
@@ -62,47 +67,6 @@ function footprintFor(snapPointId: DeskSnapPointId, item: PlacedDeskItem | null)
   }
   return DESK_SNAP_POINTS[snapPointId].footprint;
 }
-
-/* ====================================================================================
- * Sala do laboratório: piso antiestático, parede e régua de tomadas/rede
- * As tomadas ficam exatamente nas posições das portas WALL_* do motor de cabeamento.
- * ==================================================================================== */
-const WALL_PORTS: ExternalPortId[] = ['WALL_OUTLET_1', 'WALL_OUTLET_2', 'WALL_RJ45'];
-
-const LaboratoryRoom: React.FC = () => (
-  <group>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <planeGeometry args={[8, 8]} />
-      <meshStandardMaterial color="#0a1020" roughness={0.85} metalness={0.1} />
-    </mesh>
-    <gridHelper args={[8, 32, '#0e7490', '#162033']} position={[0, 0.001, 0]} />
-    <mesh position={[0, 1.5, WALL_Z - 0.01]} receiveShadow>
-      <planeGeometry args={[8, 3]} />
-      <meshStandardMaterial color="#0b1222" roughness={0.95} />
-    </mesh>
-    {/* Rodapé técnico com canaleta */}
-    <mesh position={[0, 0.05, WALL_Z + 0.01]}>
-      <boxGeometry args={[8, 0.1, 0.02]} />
-      <meshStandardMaterial color="#111a2e" roughness={0.6} />
-    </mesh>
-    {WALL_PORTS.map((id) => {
-      const [x, y, z] = getExternalPortWorldPosition(id);
-      const isNetwork = EXTERNAL_PORTS[id].portType === 'RJ45';
-      return (
-        <group key={id} position={[x, y, z + 0.012]}>
-          <mesh>
-            <boxGeometry args={[0.09, 0.11, 0.02]} />
-            <meshStandardMaterial color={isNetwork ? '#1e293b' : '#e2e8f0'} roughness={0.5} />
-          </mesh>
-          <mesh position={[0, 0, 0.011]}>
-            <boxGeometry args={isNetwork ? [0.03, 0.025, 0.004] : [0.045, 0.045, 0.004]} />
-            <meshStandardMaterial color={isNetwork ? '#eab308' : '#334155'} />
-          </mesh>
-        </group>
-      );
-    })}
-  </group>
-);
 
 /** Sincronização RGB: com o sistema em execução, as fitas de LED percorrem o espectro */
 function useRgbSync(materialRef: React.RefObject<THREE.MeshStandardMaterial | THREE.LineBasicMaterial | null>, isRunning: boolean) {
@@ -570,10 +534,18 @@ export const DeskStationScene: React.FC<DeskStationSceneProps> = ({ isRunning })
   }, [holdItem]);
 
   const monitorZ = getSnapPointPosition('MONITOR_MAIN', deskWidth)[2];
+  const roomTheme = useAssemblyStore((s) => s.selectedRoomTheme);
+  const decorOpen = useDecorModeStore((s) => s.isOpen);
+  const showDecor = useProgressStore((s) => Boolean(s.deskRunningAt)) || decorOpen;
 
   return (
     <group>
-      <LaboratoryRoom />
+      <RoomShell theme={roomTheme} />
+      {showDecor && (
+        <Suspense fallback={null}>
+          <DecorScene interactive={decorOpen} />
+        </Suspense>
+      )}
 
       {DESK_SNAP_POINT_IDS.map((id) => {
         const item = placedDeskItems[id];
@@ -586,7 +558,7 @@ export const DeskStationScene: React.FC<DeskStationSceneProps> = ({ isRunning })
             isRunning={isRunning}
             poweredAt={poweredAt}
             monitorZ={monitorZ}
-            onSelect={(snap) => (heldItem ? undefined : inspect(snap))}
+            onSelect={(snap) => (heldItem || decorOpen ? undefined : inspect(snap))}
           />
         ) : null;
       })}

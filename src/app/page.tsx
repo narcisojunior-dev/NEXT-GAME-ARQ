@@ -34,7 +34,7 @@ export default function Home() {
   // pode substituir o que o teste acabou de montar (e interromper um POST em andamento).
   useEffect(() => {
     void Promise.all([useAssemblyStore.persist.rehydrate(), useProgressStore.persist.rehydrate()]).then(() => {
-      Object.assign(window, { useAssemblyStore });
+      Object.assign(window, { useAssemblyStore, useProgressStore });
     });
   }, []);
   return (

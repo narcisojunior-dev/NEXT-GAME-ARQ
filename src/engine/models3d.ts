@@ -28,7 +28,22 @@ export type Model3DCategory =
   | 'WEBCAM'
   | 'MICROPHONE'
   | 'CHAIR'
-  | 'DESK';
+  | 'DESK'
+  // Decoração do quarto (#83)
+  | 'FURNITURE'
+  | 'LIGHTING'
+  | 'WALL_ART'
+  | 'FLOOR'
+  | 'PLANT'
+  | 'PERSONAL'
+  | 'GAMER'
+  | 'NERD'
+  | 'MUSEUM';
+
+export type Model3DGroup = 'COMPONENT' | 'PERIPHERAL' | 'DECOR';
+
+/** Item de decoração não pode custar mais que uma peça de hardware (docs/modelos-3d-decoracao.md) */
+export const MAX_DECOR_MODEL_FACES = 20000;
 
 export interface Model3D {
   id: string;
@@ -38,7 +53,7 @@ export interface Model3D {
   author: string;
   license: Model3DLicense;
   faces: number;
-  group: 'COMPONENT' | 'PERIPHERAL';
+  group: Model3DGroup;
   category: Model3DCategory;
   /** Ids do catálogo (hardware ou periféricos) representados por este modelo */
   targets: string[];
@@ -79,6 +94,15 @@ export const CATEGORY_3D_LABELS: Record<Model3DCategory, string> = {
   MICROPHONE: 'Microfones',
   CHAIR: 'Cadeiras',
   DESK: 'Mesas',
+  FURNITURE: 'Móveis',
+  LIGHTING: 'Iluminação',
+  WALL_ART: 'Quadros e parede',
+  FLOOR: 'Tapetes',
+  PLANT: 'Plantas',
+  PERSONAL: 'Objetos pessoais',
+  GAMER: 'Universo gamer',
+  NERD: 'Nerd & Ciência',
+  MUSEUM: 'Museu do PC',
 };
 
 export const LICENSE_LABELS: Record<Model3DLicense, string> = {
@@ -91,6 +115,9 @@ export const LICENSE_LABELS: Record<Model3DLicense, string> = {
 export function findModel3D(catalogId: string): Model3D | null {
   return MODELS_3D.find((model) => model.targets.includes(catalogId)) ?? null;
 }
+
+/** Modelos de decoração do quarto (Modo Decorar, #83) */
+export const DECOR_MODELS: Model3D[] = MODELS_3D.filter((model) => model.group === 'DECOR');
 
 export function isModelAvailable(modelId: string, available: ReadonlySet<string> = AVAILABLE_MODEL_IDS): boolean {
   return available.has(modelId);

@@ -27,6 +27,8 @@ const monitorStatus = (page: Page) => panel(page).getByRole('status').filter({ h
 
 test.describe('Jornada completa da Fase 4: bancada → mesa → cabos → boot (Issue 06)', () => {
   test('o erro clássico do cabo de vídeo mostra SEM SINAL e o AcademyOS sobe ao ligar na GPU', async ({ page }) => {
+    // Jornada longa (8 itens, 5 cabos, liga, troca o cabo a quente): no CI, com WebGL por software, passa de 60 s
+    test.setTimeout(120_000);
     await page.goto('/');
     await page.waitForFunction(() => typeof window.useAssemblyStore !== 'undefined');
 

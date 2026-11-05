@@ -10,7 +10,9 @@ import { DESK_SNAP_POINTS, getDeskWidth, getSnapPointPosition } from '@/engine/d
 import { EXTERNAL_CABLES } from '@/engine/externalCabling';
 import { DeskStationScene } from './DeskStationScene';
 import { useDeskPlacementStore } from './deskPlacementStore';
-import { Eye, ArrowUpFromLine, Monitor, User, ZoomIn, ZoomOut, RotateCw, Wrench } from 'lucide-react';
+import { Eye, ArrowUpFromLine, Monitor, User, ZoomIn, ZoomOut, RotateCw, Wrench, Sofa, LogOut } from 'lucide-react';
+import { useProgressStore } from '@/store/useProgressStore';
+import { ROOM_VIEWS, useDecorModeStore } from '../room3d/decorModeStore';
 import { useShallow } from 'zustand/react/shallow';
 
 /* ====================================================================================
@@ -70,13 +72,15 @@ export function resolveDeskCameraPose(preset: DeskCameraPreset, deskWidth: numbe
  * ==================================================================================== */
 interface DeskCameraControllerProps {
   preset: DeskCameraPreset;
+  /** Vista do Modo Decorar (substitui o preset da mesa) */
+  override?: CameraPose | null;
   /** Incrementado a cada clique: permite re-aplicar o mesmo preset (ex.: "Resetar Câmera" após orbitar) */
   requestId: number;
   deskWidth: number;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
 }
 
-const DeskCameraController: React.FC<DeskCameraControllerProps> = ({ preset, requestId, deskWidth, controlsRef }) => {
+const DeskCameraController: React.FC<DeskCameraControllerProps> = ({ preset, override, requestId, deskWidth, controlsRef }) => {
   const { camera } = useThree();
   // Refs (e não estado): a transição roda no loop de frame sem provocar re-render do React
   const targetPos = useRef(new THREE.Vector3(...resolveDeskCameraPose(preset, deskWidth).pos));
@@ -84,11 +88,12 @@ const DeskCameraController: React.FC<DeskCameraControllerProps> = ({ preset, req
   const isTransitioning = useRef(false);
 
   useEffect(() => {
-    const pose = resolveDeskCameraPose(preset, deskWidth);
+    const pose = override ?? resolveDeskCameraPose(preset, deskWidth);
     targetPos.current.set(...pose.pos);
     targetLook.current.set(...pose.target);
     isTransitioning.current = true;
-  }, [preset, requestId, deskWidth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- a vista do quarto é reaplicada pela nonce em requestId
+  }, [preset, requestId, deskWidth, override === null || override === undefined]);
 
   useFrame((_, delta) => {
     if (!isTransitioning.current) return;
@@ -164,6 +169,17 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
   const activePreset = deskSetup.deskCameraPreset;
   const [cameraRequestId, setCameraRequestId] = useState(0);
 
+  // Modo Decorar o Quarto (#87): abre com o PC ligado e o AcademyOS em execução
+  const decorOpen = useDecorModeStore((s) => s.isOpen);
+  const decorView = useDecorModeStore((s) => s.view);
+  const decorDragging = useDecorModeStore((s) => s.isDragging);
+  useEffect(() => {
+    if (deskStage === 'RUNNING') useProgressStore.getState().recordDeskRunning();
+  }, [deskStage]);
+  // Sair da mesa fecha o modo
+  useEffect(() => () => useDecorModeStore.getState().close(), []);
+  const canDecorate = deskStage === 'RUNNING' || decorOpen;
+
   const applyPreset = (preset: DeskCameraPreset) => {
     setDeskCameraPreset(preset);
     setCameraRequestId((id) => id + 1);
@@ -191,7 +207,20 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
   };
 
   const handleResetCamera = () => {
-    applyPreset('setup-wide');
+    if (decorOpen) useDecorModeStore.getState().setView(0);
+    else applyPreset('setup-wide');
+  };
+
+  const toggleDecor = () => {
+    if (decorOpen) {
+      useDecorModeStore.getState().close();
+      applyPreset('setup-wide');
+      return;
+    }
+    holdItem(null);
+    holdCable(null);
+    inspect(null);
+    useDecorModeStore.getState().open();
   };
 
   const handleBack = () => {
@@ -238,7 +267,9 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
                 : 'text-slate-400'
             }`}
           >
-            {deskStage === 'RUNNING'
+            {decorOpen
+              ? 'Modo Decorar o Quarto'
+              : deskStage === 'RUNNING'
               ? 'AcademyOS em Execução ✓'
               : postFailed
               ? 'Falha no POST'
@@ -256,7 +287,37 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
 
         {/* Presets de Câmera e Ações */}
         <div className="flex flex-wrap items-center justify-end gap-2 pointer-events-auto">
-          {/* Botões de Preset com nomes exatos */}
+          {canDecorate && (
+            <button
+              type="button"
+              onClick={toggleDecor}
+              aria-pressed={decorOpen}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold shadow-lg transition-all cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-fuchsia-300 ${
+                decorOpen ? 'bg-slate-900/90 border-fuchsia-400/70 text-fuchsia-200 hover:bg-slate-800' : 'bg-fuchsia-600 border-fuchsia-400 text-white hover:bg-fuchsia-500'
+              }`}
+            >
+              {decorOpen ? <LogOut className="w-3.5 h-3.5" aria-hidden /> : <Sofa className="w-3.5 h-3.5" aria-hidden />}
+              <span>{decorOpen ? 'Sair do Modo Decorar' : 'Decorar o quarto'}</span>
+            </button>
+          )}
+
+          {decorOpen ? (
+            <div role="group" aria-label="Vistas do quarto" className="bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700/80 p-1 flex items-center gap-1 shadow-lg">
+              {ROOM_VIEWS.map((v, i) => (
+                <button
+                  key={v.label}
+                  type="button"
+                  onClick={() => useDecorModeStore.getState().setView(i as 0 | 1 | 2)}
+                  aria-pressed={decorView.angle === i}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono whitespace-nowrap cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400 ${
+                    decorView.angle === i ? 'bg-fuchsia-500 text-white font-bold' : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          ) : (
           <div
             role="group"
             aria-label="Presets de câmera da mesa"
@@ -280,6 +341,7 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
               </button>
             ))}
           </div>
+          )}
 
           {/* Zoom e Reset */}
           <div className="bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700/80 p-1 flex items-center gap-1 shadow-lg">
@@ -357,7 +419,8 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
           {/* Gerenciador de Câmera */}
           <DeskCameraController
             preset={activePreset}
-            requestId={cameraRequestId}
+            override={decorOpen ? ROOM_VIEWS[decorView.angle] : null}
+            requestId={cameraRequestId + decorView.nonce}
             deskWidth={getDeskWidth(deskSetup.placedDeskItems)}
             controlsRef={controlsRef}
           />
@@ -365,9 +428,12 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
             ref={controlsRef}
             enableDamping
             dampingFactor={0.06}
-            enabled={!isDragging}
+            enabled={!isDragging && !decorDragging}
             minDistance={0.5}
-            maxDistance={4.5}
+            maxDistance={decorOpen ? 6.5 : 4.5}
+            // No quarto a câmera fica do lado aberto: não atravessa a parede do fundo nem a da janela
+            minAzimuthAngle={decorOpen ? -0.2 : -Infinity}
+            maxAzimuthAngle={decorOpen ? 1.75 : Infinity}
             maxPolarAngle={Math.PI / 2 - 0.05}
           />
 
@@ -387,7 +453,7 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
         </Canvas>
 
         {/* Item em mãos: instrução de encaixe (anunciada a leitores de tela) */}
-        {heldItem && (
+        {heldItem && !decorOpen && (
           <div
             role="status"
             aria-live="polite"
@@ -407,7 +473,7 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
         )}
 
         {/* Cabo em mãos: instrução de conexão */}
-        {heldCable && (
+        {heldCable && !decorOpen && (
           <div
             role="status"
             aria-live="polite"
@@ -429,7 +495,7 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
         )}
 
         {/* Item posicionado selecionado com o mouse: retirar da mesa */}
-        {!heldItem && inspectedSnap && inspectedItem && (
+        {!heldItem && !decorOpen && inspectedSnap && inspectedItem && (
           <div className="absolute bottom-3 left-3 z-40 w-[260px] p-3 rounded-xl bg-slate-950/95 border border-slate-700 text-xs font-mono shadow-xl backdrop-blur-md">
             <div className="text-[11px] uppercase tracking-wider text-slate-500">{DESK_SNAP_POINTS[inspectedSnap].label}</div>
             <div className="text-slate-100 font-bold mt-0.5">{inspectedItem.name}</div>

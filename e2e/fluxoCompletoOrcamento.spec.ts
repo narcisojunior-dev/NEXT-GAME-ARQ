@@ -4,6 +4,7 @@ import { findCatalogComponent } from '../src/engine/campaign';
 import { calculateTotalSpent } from '../src/engine/compatibility';
 import type { CaseComponent, GpuComponent, MotherboardComponent, StorageComponent } from '../src/engine/types';
 import { UiBuild, assembleViaUi, powerOn, sidebar, snapshot } from './support/benchUi';
+import './support/windowStores';
 
 /**
  * Fluxo completo do sistema com as funcionalidades novas, só pela interface:
@@ -45,7 +46,7 @@ test('fluxo completo: Desafio de Orçamento do cliente até o PC na mesa (montan
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
-  await page.waitForFunction(() => typeof (window as unknown as { useAssemblyStore?: unknown }).useAssemblyStore !== 'undefined');
+  await page.waitForFunction(() => typeof window.useAssemblyStore !== 'undefined');
 
   // 1. Campanha → trilha Desafio → Desafio de Orçamento com a prévia do analyzeBudget
   await page.getByRole('button', { name: 'Campanha' }).click();
@@ -113,10 +114,10 @@ test('saldo do cliente: estourar o orçamento muda cor, ícone e texto e zera o 
   const profile = BUDGET_PROFILES.JOGOS_1080P;
   const analysis = analyzeBudget(BUDGET, profile.requirements, profile.resolution);
   await page.goto('/');
-  await page.waitForFunction(() => typeof (window as unknown as { useAssemblyStore?: unknown }).useAssemblyStore !== 'undefined');
+  await page.waitForFunction(() => typeof window.useAssemblyStore !== 'undefined');
   await page.evaluate(
     (budget) =>
-      (window as unknown as { useAssemblyStore: { getState: () => { startBudgetChallenge: (c: object) => unknown } } }).useAssemblyStore
+      window.useAssemblyStore
         .getState()
         .startBudgetChallenge({ budget, profile: 'JOGOS_1080P', resolution: '1080p', targetTimeSeconds: 600 }),
     BUDGET
@@ -125,7 +126,7 @@ test('saldo do cliente: estourar o orçamento muda cor, ícone e texto e zera o 
   const { assembly, motherboard } = buildAssemblyFromIds(analysis.reference!.build);
   const priciest = name('gpu-rtx-4090') as GpuComponent;
   await page.evaluate(
-    ({ a, mb }) => (window as unknown as { useAssemblyStore: { setState: (s: object) => void } }).useAssemblyStore.setState({ assembly: a, selectedMotherboard: mb }),
+    ({ a, mb }) => window.useAssemblyStore.setState({ assembly: a, selectedMotherboard: mb }),
     { a: { ...assembly, gpuInstalled: priciest }, mb: motherboard }
   );
   const balance = page.getByRole('status').filter({ hasText: 'Saldo do cliente' });

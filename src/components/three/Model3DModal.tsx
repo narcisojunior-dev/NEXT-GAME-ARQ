@@ -11,6 +11,8 @@ import {
   Model3D,
   getAvailableModels,
   modelAuthorUrl,
+  DECOR_MODELS,
+  isModelAvailable,
   modelFileUrl,
   modelSourceUrl,
 } from '@/engine/models3d';
@@ -180,6 +182,29 @@ export const Model3DModal: React.FC = () => {
             </p>
           )}
         </div>
+
+        {isGalleryOpen && (
+          <details className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-xs text-slate-300">
+            <summary className="cursor-pointer font-bold text-slate-200">Créditos da decoração do quarto ({DECOR_MODELS.length} modelos, CC BY 4.0)</summary>
+            <p className="mt-2 text-[11px] text-slate-400">
+              O Modo Decorar usa estes modelos do Sketchfab. Enquanto um modelo não é baixado, o jogo desenha uma versão simples feita por código.
+            </p>
+            <ul className="mt-2 grid max-h-48 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
+              {DECOR_MODELS.map((m) => (
+                <li key={m.id} className="truncate">
+                  <a href={modelSourceUrl(m)} target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:underline">
+                    {m.name}
+                  </a>{' '}
+                  de{' '}
+                  <a href={modelAuthorUrl(m)} target="_blank" rel="noopener noreferrer" className="text-cyan-300 hover:underline">
+                    {m.author}
+                  </a>{' '}
+                  · {LICENSE_LABELS[m.license]} · <span className="text-slate-500">{isModelAvailable(m.id) ? 'baixado' : 'versão por código'}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
 
         <a
           href="https://creativecommons.org/licenses/by/4.0/deed.pt-br"

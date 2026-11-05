@@ -30,6 +30,10 @@ interface ProgressStore extends PlayerProgress {
   setSoundMuted: (muted: boolean) => void;
   setTeacherUnlockAll: (unlock: boolean) => void;
   setQualityPreference: (preference: QualityPreference) => void;
+  /** Conquistas que liberam a decoração do quarto (#85) */
+  recordDeskRunning: () => void;
+  recordPostFirstTry: () => void;
+  recordDiagnosticResolved: (scenarioId: string) => void;
   resetProgress: () => void;
 }
 
@@ -69,6 +73,10 @@ export const useProgressStore = create<ProgressStore>()(
 
       setTeacherUnlockAll: (unlock) => set({ teacherUnlockAll: unlock }),
       setQualityPreference: (qualityPreference) => set({ qualityPreference }),
+      recordDeskRunning: () => set((st) => (st.deskRunningAt ? st : { deskRunningAt: new Date().toISOString() })),
+      recordPostFirstTry: () => set((st) => ({ postFirstTryCount: st.postFirstTryCount + 1 })),
+      recordDiagnosticResolved: (scenarioId) =>
+        set((st) => (st.diagnosticsResolved.includes(scenarioId) ? st : { diagnosticsResolved: [...st.diagnosticsResolved, scenarioId] })),
 
       resetProgress: () => {
         soundEngine.setMuted(false);
@@ -88,6 +96,9 @@ export const useProgressStore = create<ProgressStore>()(
         soundMuted: st.soundMuted,
         teacherUnlockAll: st.teacherUnlockAll,
         qualityPreference: st.qualityPreference,
+        deskRunningAt: st.deskRunningAt,
+        postFirstTryCount: st.postFirstTryCount,
+        diagnosticsResolved: st.diagnosticsResolved,
       }),
       // Qualquer versão antiga ou dado corrompido passa pela sanitização do motor
       migrate: (persisted) => sanitizeProgress(persisted),

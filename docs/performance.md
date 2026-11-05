@@ -29,3 +29,29 @@ lia a sessão inteira (com o cronômetro) mesmo sem missão ativa.
   software e não representa uma GPU integrada). Roteiro: abrir a bancada 3D em 1366x768, DevTools →
   Rendering → Frame Rendering Stats, girar a câmera por 10 s com a montagem completa e anotar
   o FPS médio por nível de qualidade.
+
+## Modo Decorar o Quarto (#91)
+**Bundle.** Build de produção antes e depois da feature: o JS inicial da página `/` foi de
+291 kB para 292 kB (First Load). O catálogo, as regras, a cena e a gaveta ficam em chunks baixados
+sob demanda (12 a 15 kB gzip cada): a cena só depois que o PC liga na mesa, a gaveta só ao abrir o
+modo. Na página inicial entram apenas o store efêmero do modo (item em mãos, seleção) e o nome da
+chave do `localStorage`.
+
+**Orçamento por nível de qualidade** (verificado em `canPlace`, que recusa com `LIMITE_DO_QUARTO`):
+
+| Limite | Alta | Leve (vídeo integrado) |
+|---|---:|---:|
+| Itens no quarto | 24 | 12 |
+| Faces somadas dos modelos | 150 mil | 75 mil |
+| Textura dos pôsteres | 512 px | 512 px |
+| Itens animados | 4 | 4 |
+
+Com movimento reduzido nenhuma peça anima. Peças repetidas e estáticas viram uma `InstancedMesh`
+por primitiva (os 12 hexágonos são sempre uma só), e geometrias, materiais e texturas de canvas são
+liberados ao sair da mesa. Enquanto os modelos do Sketchfab não são baixados, cada peça é uma
+versão por código de até 30 primitivas.
+
+**Medição pendente no hardware da escola.** Roteiro: 1366x768, nível Leve, quarto cheio (12 itens,
+incluindo 4 animados), DevTools → Rendering → Frame Rendering Stats, girar a câmera por 10 s em cada
+uma das três vistas e anotar o FPS médio; em seguida, Memory → heap snapshot ao entrar e ao sair do
+Modo Decorar, para conferir a liberação.
