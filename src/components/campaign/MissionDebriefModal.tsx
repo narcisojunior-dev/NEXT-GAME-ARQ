@@ -3,10 +3,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { CheckCircle2, Star, XCircle } from 'lucide-react';
-import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { missionById, useAssemblyStore } from '@/store/useAssemblyStore';
 import { useProgressStore } from '@/store/useProgressStore';
 import { getMissionStatus } from '@/engine/campaign';
-import { findMission, missionsOfTrack } from '@/engine/campaignMissions';
+import { missionsOfTrack } from '@/engine/campaignMissions';
 
 /**
  * Debriefing da missão (#44, #27): reação do cliente, objetivos cumpridos e não cumpridos
@@ -28,15 +28,17 @@ export const MissionDebriefModal: React.FC = () => {
   // Cada entrega abre um debriefing novo: a pergunta volta a ficar sem resposta
   useEffect(() => setAnswer(null), [debrief]);
 
-  const mission = debrief ? findMission(debrief.missionId) : null;
+  const mission = useAssemblyStore((s) => (debrief ? missionById(s, debrief.missionId) : null));
+  const budgetReference = useAssemblyStore((s) => s.budgetChallenge?.reference ?? null);
   const next = useMemo(() => {
-    if (!mission) return null;
+    // Desafio de Orçamento é avulso: não abre a próxima missão da trilha
+    if (!mission || debrief?.budgetScore) return null;
     const track = missionsOfTrack(mission.track);
     const candidate = track.find((m) => m.order === mission.order + 1) ?? null;
     if (!candidate) return null;
     const completed = new Set(Object.keys(missionResults));
     return getMissionStatus(candidate, track, completed, null, teacherUnlockAll) === 'LOCKED' ? null : candidate;
-  }, [mission, missionResults, teacherUnlockAll]);
+  }, [mission, missionResults, teacherUnlockAll, debrief]);
 
   if (!debrief || !mission) return null;
   const { evaluation } = debrief;
@@ -65,6 +67,57 @@ export const MissionDebriefModal: React.FC = () => {
             </p>
           )}
         </header>
+
+        {debrief.budgetScore && (
+          <section aria-labelledby="pontos-orcamento" className="rounded-xl border border-amber-700/50 bg-amber-950/20 p-3 text-sm">
+            <h3 id="pontos-orcamento" className="font-black text-amber-200">
+              Pontuação do Desafio de Orçamento: {debrief.budgetScore.total.toLocaleString('pt-BR')} / 10.000
+              {!debrief.budgetScore.completed && <span className="block text-xs font-normal text-rose-300">Não concluído: fica abaixo de todos os concluídos no ranking.</span>}
+            </h3>
+            <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1">
+              {debrief.budgetScore.parts.map((part) => (
+                <React.Fragment key={part.key}>
+                  <dt className="text-slate-200">
+                    {part.label}
+                    <span className="block text-xs text-slate-400">{part.explanation}</span>
+                  </dt>
+                  <dd className="font-mono text-amber-100 text-right">
+                    {part.points.toLocaleString('pt-BR')} / {part.max.toLocaleString('pt-BR')}
+                  </dd>
+                </React.Fragment>
+              ))}
+            </dl>
+            {budgetReference && (
+              <table className="mt-3 w-full text-xs text-slate-300">
+                <caption className="text-left font-bold text-white mb-1">Sua montagem × melhor PC possível com esse orçamento</caption>
+                <thead>
+                  <tr className="text-slate-400">
+                    <th scope="col" className="text-left font-normal" />
+                    <th scope="col" className="text-right font-normal">Você</th>
+                    <th scope="col" className="text-right font-normal">Referência</th>
+                  </tr>
+                </thead>
+                <tbody className="font-mono">
+                  <tr>
+                    <th scope="row" className="text-left font-normal">Gasto</th>
+                    <td className="text-right">R$ {debrief.budgetScore.totalSpent.toLocaleString('pt-BR')}</td>
+                    <td className="text-right">R$ {budgetReference.cost.toLocaleString('pt-BR')}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" className="text-left font-normal">FPS médio</th>
+                    <td className="text-right">{debrief.budgetScore.benchmark.avgFps}</td>
+                    <td className="text-right">{budgetReference.avgFps}</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" className="text-left font-normal">Gargalo</th>
+                    <td className="text-right">{debrief.budgetScore.benchmark.bottleneckPercent}%</td>
+                    <td className="text-right">{budgetReference.bottleneckPercent}%</td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
+          </section>
+        )}
 
         <section aria-label="Objetivos">
           <ul className="flex flex-col gap-1.5">

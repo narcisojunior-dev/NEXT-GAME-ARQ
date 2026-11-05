@@ -3,9 +3,8 @@
 import React, { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { CheckCircle2, Circle, Flag, Map, Star } from 'lucide-react';
-import { useAssemblyStore, selectMissionSession } from '@/store/useAssemblyStore';
+import { missionById, useAssemblyStore, selectMissionSession } from '@/store/useAssemblyStore';
 import { evaluateMission } from '@/engine/campaign';
-import { findMission } from '@/engine/campaignMissions';
 
 /**
  * Missão ativa: objetivos atualizados ao vivo (atende / não atende), orçamento gasto e
@@ -20,10 +19,11 @@ export const ActiveMissionPanel: React.FC = () => {
       openMap: s.openCampaignMap,
     }))
   );
-  // A sessão depende do cronômetro: o objeto muda a cada segundo, mas a avaliação é barata
-  const session = useAssemblyStore(useShallow(selectMissionSession));
-  const mission = activeId ? findMission(activeId) : null;
-  const evaluation = useMemo(() => (mission ? evaluateMission(mission, session) : null), [mission, session]);
+  // A sessão inclui o cronômetro (objetivos de tempo): só é lida com uma missão em andamento,
+  // senão o painel (vazio) re-renderizava a cada segundo (#31)
+  const session = useAssemblyStore(useShallow((s) => (s.activeCampaignMissionId ? selectMissionSession(s) : null)));
+  const mission = useAssemblyStore((s) => missionById(s, activeId));
+  const evaluation = useMemo(() => (mission && session ? evaluateMission(mission, session) : null), [mission, session]);
 
   if (!mission || !evaluation) return null;
   const done = evaluation.required.filter((r) => r.met).length;
@@ -35,7 +35,7 @@ export const ActiveMissionPanel: React.FC = () => {
           <span className="text-2xl" aria-hidden>{mission.client.avatar}</span>
           <div className="min-w-0">
             <p className="text-[11px] font-mono text-cyan-400 uppercase tracking-wider">
-              Missão {mission.order} • {mission.lesson}
+              {mission.order > 0 ? `Missão ${mission.order}` : 'Desafio livre'} • {mission.lesson}
             </p>
             <h2 className="text-sm font-black text-white truncate">{mission.title}</h2>
           </div>
@@ -61,6 +61,13 @@ export const ActiveMissionPanel: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Briefing do cliente (Desafio de Orçamento: requisitos, valor e tempo-alvo) */}
+      {mission.id.startsWith('orcamento-') && (
+        <p className="mt-2 text-xs text-slate-300">
+          <strong className="text-white">{mission.client.name}</strong> ({mission.client.role}): {mission.briefing}
+        </p>
+      )}
 
       <div role="status" aria-live="polite" className="mt-3 grid gap-1.5 sm:grid-cols-2">
         <p className="sm:col-span-2 text-[11px] font-mono text-slate-400">

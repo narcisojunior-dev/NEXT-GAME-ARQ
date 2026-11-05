@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useShallow } from 'zustand/react/shallow';
-import { DIAGNOSTIC_SCENARIOS, DiagnosticScenario } from '@/engine/diagnosticCases';
+import { DIAGNOSTIC_CAUSES, DIAGNOSTIC_SCENARIOS, DiagnosticCauseId } from '@/engine/diagnosticCases';
+import { detectiveScore, hypothesisOptions, phaseOf, startRecord, symptomFor } from '@/engine/detective';
 import {
   Stethoscope,
   AlertTriangle,
@@ -14,6 +15,8 @@ import {
   ShieldAlert,
   Award,
   Sparkles,
+  Search,
+  Shuffle,
 } from 'lucide-react';
 
 export const DiagnosticBench: React.FC = () => {
@@ -22,28 +25,43 @@ export const DiagnosticBench: React.FC = () => {
     activeDiagnosticScenario,
     selectDiagnosticScenario,
     resolvedScenarioIds,
+    detective,
+    submitHypothesis,
+    revealHint,
+    drawCases,
   } = useAssemblyStore(
     useShallow((s) => ({
       gameMode: s.gameMode,
       activeDiagnosticScenario: s.activeDiagnosticScenario,
       selectDiagnosticScenario: s.selectDiagnosticScenario,
       resolvedScenarioIds: s.resolvedScenarioIds,
+      detective: s.detective,
+      submitHypothesis: s.submitDiagnosticHypothesis,
+      revealHint: s.revealDiagnosticHint,
+      drawCases: s.drawDiagnosticCases,
     }))
   );
 
-  const [showHint, setShowHint] = useState(false);
+  const [choice, setChoice] = useState<DiagnosticCauseId | null>(null);
 
   if (gameMode !== 'DIAGNOSTICO') return null;
 
   const current = activeDiagnosticScenario || DIAGNOSTIC_SCENARIOS[0];
   const isCurrentResolved = resolvedScenarioIds.includes(current.id);
+  // Chamados na ordem sorteada (#32)
+  const ordered = detective.order.map((id) => DIAGNOSTIC_SCENARIOS.find((s) => s.id === id)).filter((s) => s !== undefined);
+  const record = detective.records[current.id] ?? startRecord(current, detective.seed);
+  const phase = isCurrentResolved ? 'SOLVED' : phaseOf(record);
+  const showHint = record.hintUsed;
+  const caseValue = record.points ?? detectiveScore(current, record);
+  const options = hypothesisOptions(current, detective.seed);
 
-  const currentIndex = DIAGNOSTIC_SCENARIOS.findIndex((s) => s.id === current.id);
-  const nextScenario = DIAGNOSTIC_SCENARIOS[currentIndex + 1] || null;
+  const currentIndex = ordered.findIndex((s) => s.id === current.id);
+  const nextScenario = ordered[currentIndex + 1] || null;
 
   const handleNext = () => {
     if (nextScenario) {
-      setShowHint(false);
+      setChoice(null);
       selectDiagnosticScenario(nextScenario.id);
     }
   };
@@ -69,7 +87,7 @@ export const DiagnosticBench: React.FC = () => {
                 Assistência Técnica de Hardware
               </span>
               <span className="text-xs text-slate-400">
-                {resolvedScenarioIds.length}/{DIAGNOSTIC_SCENARIOS.length} Casos Resolvidos
+                {resolvedScenarioIds.length}/{DIAGNOSTIC_SCENARIOS.length} Chamados Resolvidos
               </span>
             </div>
             <h2 className="text-lg font-black text-white mt-0.5">
@@ -80,6 +98,18 @@ export const DiagnosticBench: React.FC = () => {
 
         {/* Botão de Próximo / Reiniciar Caso */}
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setChoice(null);
+              drawCases();
+            }}
+            className="flex min-h-[40px] items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+            title="Nova ordem de chamados e novos relatos dos clientes"
+          >
+            <Shuffle className="w-3.5 h-3.5" />
+            <span>Sortear Chamados</span>
+          </button>
           <button
             onClick={handleReset}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
@@ -103,7 +133,7 @@ export const DiagnosticBench: React.FC = () => {
 
       {/* Carrossel / Grade de Casos Disponíveis */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-thin scrollbar-thumb-slate-800">
-        {DIAGNOSTIC_SCENARIOS.map((scenario, index) => {
+        {ordered.map((scenario, index) => {
           const isResolved = resolvedScenarioIds.includes(scenario.id);
           const isSelected = scenario.id === current.id;
 
@@ -111,9 +141,10 @@ export const DiagnosticBench: React.FC = () => {
             <button
               key={scenario.id}
               onClick={() => {
-                setShowHint(false);
+                setChoice(null);
                 selectDiagnosticScenario(scenario.id);
               }}
+              aria-pressed={isSelected}
               className={`flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-bold shrink-0 transition-all cursor-pointer border ${
                 isSelected
                   ? 'bg-rose-950/80 border-rose-500 text-white shadow-lg shadow-rose-950 ring-2 ring-rose-500/30'
@@ -123,7 +154,7 @@ export const DiagnosticBench: React.FC = () => {
               }`}
             >
               <span>{scenario.clientAvatar}</span>
-              <span>Caso #{index + 1}</span>
+              <span>Chamado {index + 1}</span>
               {isResolved && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
             </button>
           );
@@ -154,9 +185,12 @@ export const DiagnosticBench: React.FC = () => {
                 }`}>
                   Dificuldade: {current.difficulty}
                 </span>
-                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-yellow-950/80 text-yellow-300 border border-yellow-800/60 flex items-center gap-1">
+                <span
+                  className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-yellow-950/80 text-yellow-300 border border-yellow-800/60 flex items-center gap-1"
+                  title={`Recompensa cheia: ${current.rewardPoints} XP. Hipótese errada −25%, tentativa de ligar que falha −15%, dica −20%.`}
+                >
                   <Award className="w-3 h-3" />
-                  +{current.rewardPoints} XP
+                  {record.points !== null ? `+${record.points} XP` : `Vale ${caseValue} XP`}
                 </span>
               </div>
             </div>
@@ -174,7 +208,7 @@ export const DiagnosticBench: React.FC = () => {
                   <span>Sintoma Observado</span>
                 </div>
                 <div className="text-xs font-semibold text-slate-200">
-                  {current.symptomSummary}
+                  {symptomFor(current, record.variant)}
                 </div>
               </div>
 
@@ -189,6 +223,65 @@ export const DiagnosticBench: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Etapa de hipótese: antes de abrir a máquina (#32) */}
+          {phase === 'HYPOTHESIS' ? (
+            <form
+              className="p-4 rounded-2xl bg-slate-950/80 border border-cyan-800/60 space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (choice && submitHypothesis(choice)) setChoice(null);
+              }}
+            >
+              <fieldset className="space-y-2">
+                <legend className="text-xs font-bold text-cyan-300 flex items-center gap-1.5 mb-2">
+                  <Search className="w-3.5 h-3.5" />
+                  Hipótese: qual é a causa mais provável? (a bancada abre depois da hipótese certa)
+                </legend>
+                {record.wrongHypotheses > 0 && (
+                  <p role="status" className="text-[11px] text-rose-300">
+                    {record.wrongHypotheses} hipótese{record.wrongHypotheses > 1 ? 's' : ''} descartada{record.wrongHypotheses > 1 ? 's' : ''}. Releia o relato e a telemetria.
+                  </p>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {options.map((cause) => (
+                    <label
+                      key={cause}
+                      className={`flex min-h-[44px] items-center gap-2 rounded-xl border px-3 py-2 text-xs cursor-pointer transition-colors ${
+                        choice === cause ? 'border-cyan-400 bg-cyan-950/60 text-white' : 'border-slate-800 bg-slate-900 text-slate-300 hover:border-slate-600'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="hipotese"
+                        value={cause}
+                        checked={choice === cause}
+                        onChange={() => setChoice(cause)}
+                        className="accent-cyan-400"
+                      />
+                      {DIAGNOSTIC_CAUSES[cause]}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <button
+                type="submit"
+                disabled={!choice}
+                className="min-h-[44px] px-4 rounded-xl text-xs font-black bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 cursor-pointer"
+              >
+                Registrar hipótese
+              </button>
+            </form>
+          ) : (
+            <div className="p-3 rounded-2xl bg-slate-950/80 border border-emerald-800/50 text-xs text-emerald-200 flex items-center gap-2">
+              <Search className="w-3.5 h-3.5 text-emerald-400" />
+              <span>
+                Hipótese: <strong>{DIAGNOSTIC_CAUSES[record.hypothesis ?? current.cause]}</strong>
+                {phase === 'INVESTIGATING' && ' — confirme na bancada e conserte.'}
+                {record.failedBoots > 0 && ` · ${record.failedBoots} tentativa${record.failedBoots > 1 ? 's' : ''} de ligar sem sucesso`}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Coluna 3: Status da Resolução e Dica Pedagógica */}
@@ -233,11 +326,13 @@ export const DiagnosticBench: React.FC = () => {
               </div>
             ) : (
               <button
-                onClick={() => setShowHint(true)}
+                type="button"
+                onClick={revealHint}
+                title="A dica custa 20% do valor do chamado"
                 className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-800 transition-colors cursor-pointer"
               >
                 <HelpCircle className="w-3.5 h-3.5" />
-                <span>Pedir Dica Pedagógica</span>
+                <span>Pedir Dica Pedagógica (−20%)</span>
               </button>
             )}
           </div>

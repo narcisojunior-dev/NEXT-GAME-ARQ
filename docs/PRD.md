@@ -204,6 +204,7 @@ Para a bancada 3D (Fase 2) seguem previstas a ASUS Prime H510M-K (CC BY, 406 mil
 1. **Fase 1 — Visualizador 3D das peças (#36):** na ficha didática do card e no customizador de periféricos, o aluno gira e aproxima a peça; uma **vitrine 3D** reúne todos os modelos baixados, inclusive os que ainda não estão no catálogo. Carregado sob demanda; se o computador não suportar WebGL, a ilustração 2D continua aparecendo.
 2. **Fase 2 — Bancada 3D (#37):** placa-mãe em 3D com câmera de cima para montar e cabear. Slots e conectores são marcados como pontos âncora no modelo e projetados na tela como os mesmos alvos usados hoje, reaproveitando regras, arrastar e soltar, clique e teclado.
 3. **Fase 3 — Polimento (#38):** animação de encaixe em 3D, vista explodida e ventoinhas girando no teste de boot.
+4. **Fase 4 — Modo "Abrir o PC" (#59–#63):** depois do POST, o aluno abre o PC que montou, vê a vista explodida, isola um subsistema (CPU e cooler, fonte, memória, placa de vídeo, armazenamento) e lê temperatura, watts, RPM e gargalo calculados pelo mesmo modelo que posiciona as peças; um tour percorre os subsistemas quando ninguém interage; níveis de qualidade seguram 60 FPS em vídeo integrado. Decisão técnica: [ADR-013](./adr/ADR-013-modo-abrir-o-pc.md).
 
 ### 6.4 Requisitos
 * Cena com no máximo ~200 mil faces no total; cada modelo otimizado com até ~2 MB (geometria comprimida e texturas de até 1024 px).

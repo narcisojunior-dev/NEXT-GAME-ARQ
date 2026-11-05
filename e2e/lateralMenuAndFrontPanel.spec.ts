@@ -1,9 +1,18 @@
 import { test, expect } from '@playwright/test';
+import type { useAssemblyStore } from '../src/store/useAssemblyStore';
+
+// Store exposto em window pela página depois da hidratação (src/app/page.tsx)
+declare global {
+  interface Window {
+    useAssemblyStore: typeof useAssemblyStore;
+  }
+}
 
 test.describe('Menu Lateral de Escolha de Componentes e Verificação do Painel Frontal', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('body')).toBeVisible();
+    // Espera a hidratação: antes dela, o HTML do servidor aparece mas os cliques não têm efeito
+    await page.waitForFunction(() => typeof window.useAssemblyStore !== 'undefined');
   });
 
   test('renderiza o menu lateral de componentes ao lado da bancada e permite alternar abas e categorias', async ({ page }) => {

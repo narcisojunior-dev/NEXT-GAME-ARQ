@@ -1,10 +1,12 @@
 /**
  * Código de validação verificável (#29), sem servidor.
  *
- * Formato legível e digitável pelo professor:  PCA-<EQUIPE>-<PONTOS>-<TEMPO>-<SELO>
+ * Formato legível e digitável pelo professor:  PCA-<EQUIPE>-<PONTOS>-<TEMPO>[-E<ERROS>]-<SELO>
  *   EQUIPE  nome normalizado (A–Z, 0–9 e _; até 16 caracteres)
  *   PONTOS  pontuação em base 36
  *   TEMPO   segundos em base 36
+ *   ERROS   (opcional, #34) um dígito base 36 por tipo de erro, na ordem de ERROR_TYPES
+ *           (máx. 35 por tipo; zeros do fim omitidos). Códigos antigos, sem ERROS, continuam válidos.
  *   SELO    6 primeiros dígitos hex do SHA-256 do conteúdo + sal da aplicação
  *
  * Protege contra fraude casual (alterar pontuação/tempo à mão invalida o selo). Como o sal
@@ -80,7 +82,17 @@ export interface ValidationPayload {
   teamName: string;
   totalScore: number;
   timeSpentSeconds: number;
+  /** Erros por tipo (ordem de ERROR_TYPES em classReport.ts); ausente em códigos antigos */
+  errorCounts?: number[];
 }
+
+/** Contagens → dígitos base 36 (máx. 35 cada), sem os zeros do fim */
+function encodeCounts(counts: readonly number[]): string {
+  const digits = counts.map((c) => Math.min(35, Math.max(0, Math.round(c))).toString(36).toUpperCase()).join('');
+  return digits.replace(/0+$/, '') || '0';
+}
+
+const decodeCounts = (digits: string): number[] => [...digits].map((d) => parseInt(d, 36));
 
 /** Nome de equipe no alfabeto do código (sem acentos, maiúsculas, espaços como _) */
 export function normalizeTeamName(name: string): string {
@@ -94,14 +106,16 @@ export function normalizeTeamName(name: string): string {
   return folded || 'EQUIPE';
 }
 
-const seal = (team: string, score: number, time: number) =>
-  sha256Hex(`${APP_SALT}|${team}|${score}|${time}`).slice(0, SEAL_LENGTH).toUpperCase();
+const seal = (team: string, score: number, time: number, errors?: string) =>
+  sha256Hex(`${APP_SALT}|${team}|${score}|${time}${errors === undefined ? '' : `|E${errors}`}`).slice(0, SEAL_LENGTH).toUpperCase();
 
 export function encodeValidationCode(payload: ValidationPayload): string {
   const team = normalizeTeamName(payload.teamName);
   const score = Math.max(0, Math.round(payload.totalScore));
   const time = Math.max(0, Math.round(payload.timeSpentSeconds));
-  return `PCA-${team}-${score.toString(36).toUpperCase()}-${time.toString(36).toUpperCase()}-${seal(team, score, time)}`;
+  const errors = payload.errorCounts ? encodeCounts(payload.errorCounts) : undefined;
+  const errorsSegment = errors === undefined ? '' : `-E${errors}`;
+  return `PCA-${team}-${score.toString(36).toUpperCase()}-${time.toString(36).toUpperCase()}${errorsSegment}-${seal(team, score, time, errors)}`;
 }
 
 export type DecodeResult =
@@ -109,12 +123,22 @@ export type DecodeResult =
   | { valid: false; reason: 'FORMAT' | 'SEAL' };
 
 export function decodeValidationCode(code: string): DecodeResult {
-  const match = /^PCA-([A-Z0-9_]{1,16})-([0-9A-Z]{1,8})-([0-9A-Z]{1,7})-([0-9A-F]{6})$/.exec(code.trim().toUpperCase());
+  const match = /^PCA-([A-Z0-9_]{1,16})-([0-9A-Z]{1,8})-([0-9A-Z]{1,7})(?:-E([0-9A-Z]{1,24}))?-([0-9A-F]{6})$/.exec(
+    code.trim().toUpperCase()
+  );
   if (!match) return { valid: false, reason: 'FORMAT' };
-  const [, team, scoreB36, timeB36, givenSeal] = match;
+  const [, team, scoreB36, timeB36, errors, givenSeal] = match;
   const score = parseInt(scoreB36, 36);
   const time = parseInt(timeB36, 36);
   if (!Number.isFinite(score) || !Number.isFinite(time)) return { valid: false, reason: 'FORMAT' };
-  if (seal(team, score, time) !== givenSeal) return { valid: false, reason: 'SEAL' };
-  return { valid: true, payload: { teamName: team.replace(/_/g, ' '), totalScore: score, timeSpentSeconds: time } };
+  if (seal(team, score, time, errors) !== givenSeal) return { valid: false, reason: 'SEAL' };
+  return {
+    valid: true,
+    payload: {
+      teamName: team.replace(/_/g, ' '),
+      totalScore: score,
+      timeSpentSeconds: time,
+      ...(errors === undefined ? {} : { errorCounts: decodeCounts(errors) }),
+    },
+  };
 }

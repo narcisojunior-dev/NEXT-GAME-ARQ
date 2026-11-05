@@ -11,7 +11,8 @@ export default defineConfig({
   },
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  // WebGL por software no runner de 2 núcleos: uma nova tentativa no CI, com trace gravado nela
+  retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: 'list',
   use: {
@@ -23,8 +24,24 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      // Resolução escolar padrão (o preset "Desktop Chrome" trocaria para 1280x720)
+      grepInvert: /@375/,
       use: {
         ...devices['Desktop Chrome'],
+        viewport: { width: 1366, height: 768 },
+        launchOptions: {
+          args: ['--enable-webgl', '--use-gl=angle', '--use-angle=swiftshader', '--no-sandbox'],
+        },
+      },
+    },
+    {
+      // Celular: só os testes marcados com @375 (#33)
+      name: 'mobile-375',
+      grep: /@375/,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 375, height: 812 },
+        hasTouch: true,
         launchOptions: {
           args: ['--enable-webgl', '--use-gl=angle', '--use-angle=swiftshader', '--no-sandbox'],
         },

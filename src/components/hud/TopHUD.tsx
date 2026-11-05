@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useAssemblyStore, GameMode, selectCurrentPhase } from '@/store/useAssemblyStore';
 import { useShallow } from 'zustand/react/shallow';
 import { calculateTotalSpent } from '@/engine/compatibility';
@@ -20,7 +20,11 @@ import {
   Map as MapIcon,
   Volume2,
   VolumeX,
+  Wallet,
+  AlertTriangle,
+  XCircle,
 } from 'lucide-react';
+import { soundEngine } from '@/engine/audio/soundEngine';
 import { useProgressStore } from '@/store/useProgressStore';
 import { hasAvailableModels } from '@/engine/models3dIndex';
 import { PHASE_LABELS } from '@/engine/phases';
@@ -30,12 +34,76 @@ const HAS_3D_MODELS = hasAvailableModels();
 const PHASES = PHASE_LABELS;
 
 
+const formatTime = (totalSeconds: number) => {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
+/**
+ * Relógio isolado (#31): só ESTE componente re-renderiza a cada segundo. Antes, o HUD inteiro
+ * (e tudo que lia elapsedSeconds) era redesenhado no tique do cronômetro.
+ */
+const HudClock: React.FC = () => {
+  const elapsedSeconds = useAssemblyStore((s) => s.elapsedSeconds);
+  const tickTimer = useAssemblyStore((s) => s.tickTimer);
+  useEffect(() => {
+    const interval = setInterval(tickTimer, 1000);
+    return () => clearInterval(interval);
+  }, [tickTimer]);
+  return (
+    <div className="text-xs font-mono font-bold" aria-label={`Tempo de montagem: ${formatTime(elapsedSeconds)}`}>
+      {formatTime(elapsedSeconds)}
+    </div>
+  );
+};
+
+/** Faixa do saldo do Desafio de Orçamento: normal, acima de 90% do valor e estourado */
+export type BudgetBand = 'OK' | 'ALERTA' | 'ESTOURO';
+export const budgetBand = (spent: number, budget: number): BudgetBand =>
+  spent > budget ? 'ESTOURO' : spent >= budget * 0.9 ? 'ALERTA' : 'OK';
+
+/**
+ * Saldo ao vivo do Desafio de Orçamento (#70). Equivalência multimodal (AGENTS.md): a mudança de
+ * faixa tem cor, ícone, texto (anunciado por leitor de tela) e um som procedural curto.
+ */
+const BudgetBalance: React.FC = () => {
+  const budget = useAssemblyStore((s) => s.budgetChallenge?.config.budget ?? null);
+  const spent = useAssemblyStore((s) => calculateTotalSpent(s.assembly, s.selectedMotherboard));
+  const band = budget === null ? 'OK' : budgetBand(spent, budget);
+  const previous = useRef<BudgetBand>(band);
+  useEffect(() => {
+    if (band !== previous.current && band !== 'OK') soundEngine.playBudgetAlert(band === 'ESTOURO');
+    previous.current = band;
+  }, [band]);
+  if (budget === null) return null;
+  const left = budget - spent;
+  const tone =
+    band === 'ESTOURO'
+      ? 'bg-rose-950/80 border-rose-600 text-rose-200'
+      : band === 'ALERTA'
+      ? 'bg-amber-950/80 border-amber-500 text-amber-200'
+      : 'bg-emerald-950/60 border-emerald-700 text-emerald-200';
+  const Icon = band === 'ESTOURO' ? XCircle : band === 'ALERTA' ? AlertTriangle : Wallet;
+  return (
+    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${tone}`} role="status" aria-live="polite">
+      <Icon className="w-4 h-4" aria-hidden />
+      <div>
+        <div className="text-[11px] uppercase font-bold opacity-80">Saldo do cliente</div>
+        <div className="text-xs font-mono font-bold">
+          {band === 'ESTOURO'
+            ? `Orçamento estourado em R$ ${(-left).toLocaleString('pt-BR')}`
+            : `R$ ${left.toLocaleString('pt-BR')}${band === 'ALERTA' ? ' · mais de 90% gasto' : ''}`}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const TopHUD: React.FC = () => {
   const {
     gameMode,
     setGameMode,
-    elapsedSeconds,
-    tickTimer,
     activeMission,
     assembly,
     selectedMotherboard,
@@ -48,8 +116,6 @@ export const TopHUD: React.FC = () => {
     useShallow((s) => ({
       gameMode: s.gameMode,
       setGameMode: s.setGameMode,
-      elapsedSeconds: s.elapsedSeconds,
-      tickTimer: s.tickTimer,
       activeMission: s.activeMission,
       assembly: s.assembly,
       selectedMotherboard: s.selectedMotherboard,
@@ -67,27 +133,14 @@ export const TopHUD: React.FC = () => {
   const openGallery = useModel3DStore((s) => s.openGallery);
   const currentPhaseNumber = PHASES.find((p) => p.id === currentPhase)?.number ?? 1;
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      tickTimer();
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [tickTimer]);
-
-  const formatTime = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const totalSpent = calculateTotalSpent(assembly, selectedMotherboard);
   const budgetRemaining = activeMission ? activeMission.budgetMax - totalSpent : null;
 
   return (
-    <header className="w-full bg-slate-950/90 border-b border-slate-800 p-4 sticky top-0 z-40 backdrop-blur-md">
+    <header className="w-full bg-slate-950/90 border-b border-slate-800 p-4 md:sticky md:top-0 z-40 backdrop-blur-md">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Título e Seletor de Modo */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 max-w-full">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-lg">
               <Cpu className="w-5 h-5" aria-hidden="true" />
@@ -100,7 +153,7 @@ export const TopHUD: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center bg-slate-900 rounded-xl p-1 border border-slate-800">
+          <div className="flex flex-wrap items-center justify-center bg-slate-900 rounded-xl p-1 border border-slate-800">
             <button
               onClick={() => setGameMode('OFICINA')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -152,7 +205,7 @@ export const TopHUD: React.FC = () => {
         </div>
 
         {/* Métricas: Orçamento e Cronômetro */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 max-w-full">
           {/* Campanha: missões sequenciais por módulo de jogo */}
           <button
             type="button"
@@ -227,6 +280,7 @@ export const TopHUD: React.FC = () => {
             <span>Meu Setup & Sala</span>
           </button>
 
+          <BudgetBalance />
           {budgetRemaining !== null && (
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${
               budgetRemaining >= 0
@@ -247,7 +301,7 @@ export const TopHUD: React.FC = () => {
             <Clock className="w-4 h-4 text-cyan-400" />
             <div>
               <div className="text-[11px] uppercase font-bold text-slate-400">Tempo</div>
-              <div className="text-xs font-mono font-bold">{formatTime(elapsedSeconds)}</div>
+              <HudClock />
             </div>
           </div>
 

@@ -159,9 +159,9 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
   }
 
   return (
-    <div className="relative w-full aspect-4/3 max-w-4xl mx-auto bg-slate-950/90 rounded-3xl border-2 border-slate-800 p-4 shadow-2xl backdrop-blur-md overflow-hidden select-none">
-      {/* Informações da Placa-Mãe Ativa */}
-      <div className="absolute top-4 right-4 z-20 flex items-center gap-2 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-lg text-[11px] text-slate-300">
+    <div className="relative w-full sm:aspect-4/3 max-w-4xl mx-auto bg-slate-950/90 rounded-3xl border-2 border-slate-800 p-2 sm:p-4 shadow-2xl backdrop-blur-md overflow-hidden select-none">
+      {/* Informações da Placa-Mãe Ativa: no celular fica acima da placa (sobre ela cobria o ATX_PWR) */}
+      <div className="relative mb-2 sm:mb-0 sm:absolute sm:top-4 sm:right-4 z-20 flex flex-wrap items-center gap-2 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-lg text-[11px] text-slate-300">
         <CircuitBoard className="w-3.5 h-3.5 text-cyan-400" />
         <span className="font-bold text-white">{selectedMotherboard.name}</span>
         <span className="font-mono text-cyan-300 bg-slate-800 px-1.5 py-0.5 rounded text-[11px]">
@@ -200,7 +200,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
         data-testid="workbench-2d"
         role="group"
         aria-label={`Bancada 2D: placa-mãe ${selectedMotherboard.name}`}
-        className="w-full h-full drop-shadow-2xl"
+        className="w-full h-auto sm:h-full drop-shadow-2xl"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >

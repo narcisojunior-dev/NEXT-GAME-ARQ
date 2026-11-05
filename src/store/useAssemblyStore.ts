@@ -4,7 +4,12 @@ import { STORAGE_KEYS, safeStateStorage } from './safeStorage';
 import { useProgressStore } from './useProgressStore';
 import { encodeValidationCode } from '../engine/validationCode';
 import { buildAssemblyChecklist, pendingBenchSteps } from '../engine/assemblyChecklist';
+import { calculateGroupScore } from '../engine/score';
+import { BudgetBuildSummary, BudgetChallengeConfig, analyzeBudget, buildBudgetMission, requirementsOf } from '../engine/budgetChallenge';
+import { BudgetScoreBreakdown, scoreBudgetSubmission } from '../engine/scoring';
+import { ErrorTally, addToTally, tallyToCounts } from '../engine/classReport';
 import {
+  CampaignMission,
   MissionEvaluation,
   MissionSession,
   buildMissionInitialState,
@@ -31,7 +36,17 @@ import {
   ComponentCategory,
 } from '../engine/types';
 import { MOTHERBOARDS, CLIENT_MISSIONS } from '../engine/hardwareCatalog';
-import { DiagnosticScenario, DIAGNOSTIC_SCENARIOS } from '../engine/diagnosticCases';
+import { DiagnosticCauseId, DiagnosticScenario, DIAGNOSTIC_SCENARIOS } from '../engine/diagnosticCases';
+import {
+  DetectiveRecord,
+  drawCaseOrder,
+  phaseOf,
+  registerFailedBoot,
+  registerHint,
+  solveRecord,
+  startRecord,
+  submitHypothesis,
+} from '../engine/detective';
 import { FPanelConnectorId, ValidationResult, validateConnectorPlacement, connectionsFromAssembly } from '../engine/frontPanel';
 import { StudentSetupConfig, DEFAULT_STUDENT_SETUP, PeripheralItem } from '../engine/peripheralsCatalog';
 import { RoomThemeId } from '../engine/roomThemes';
@@ -119,6 +134,14 @@ interface AssemblyStore {
   activeMission: ClientMission | null;
   activeDiagnosticScenario: DiagnosticScenario | null;
   resolvedScenarioIds: string[];
+  /** Modo detetive (#32): semente do sorteio, ordem dos chamados e a ficha de cada um */
+  detective: { seed: number; order: string[]; records: Record<string, DetectiveRecord> };
+  /** Registra a hipótese da causa; a bancada só abre com a hipótese certa. Retorna se acertou. */
+  submitDiagnosticHypothesis: (cause: DiagnosticCauseId) => boolean;
+  /** Mostra a dica do professor (custa pontos do chamado) */
+  revealDiagnosticHint: () => void;
+  /** Sorteia uma nova ordem de chamados e novos relatos de sintoma */
+  drawDiagnosticCases: (seed?: number) => void;
   teamName: string;
   elapsedSeconds: number;
   isTimerRunning: boolean;
@@ -217,13 +240,19 @@ interface AssemblyStore {
   activeCampaignMissionId: string | null;
   /** Títulos dos erros cometidos na missão atual (objetivos "sem o erro X") */
   missionErrorLog: string[];
+  /** Erros da montagem atual por tipo pedagógico (#34): viajam no código verificável da equipe */
+  errorTally: ErrorTally;
   postAttempts: number;
   /** Peças do cliente (custo zero) e categorias que podem ser compradas na missão */
   campaignInventory: { clientPartIds: string[]; purchasableCategories: ComponentCategory[] | null } | null;
   campaignHideHelpers: boolean;
   isCampaignMapOpen: boolean;
   /** Resultado exibido no debriefing */
-  missionDebrief: { missionId: string; evaluation: MissionEvaluation } | null;
+  missionDebrief: { missionId: string; evaluation: MissionEvaluation; budgetScore?: BudgetScoreBreakdown } | null;
+  /** Desafio de Orçamento em andamento (#70): configuração, referência congelada e a missão gerada */
+  budgetChallenge: ActiveBudgetChallenge | null;
+  /** Começa um Desafio de Orçamento sem turma; recusa orçamentos que não atendem o cliente */
+  startBudgetChallenge: (config: BudgetChallengeConfig) => { ok: true } | { ok: false; cheapestCost: number };
   openCampaignMap: () => void;
   closeCampaignMap: () => void;
   startCampaignMission: (missionId: string) => void;
@@ -233,6 +262,41 @@ interface AssemblyStore {
   closeMissionDebrief: () => void;
   /** Zera montagem, campanha e progresso salvo (#30 "Começar do zero") */
   startFromScratch: () => void;
+}
+
+function isDetectiveState(value: unknown): value is AssemblyStore['detective'] {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.seed === 'number' &&
+    Array.isArray(v.order) &&
+    v.order.every((id) => typeof id === 'string' && DIAGNOSTIC_SCENARIOS.some((sc) => sc.id === id)) &&
+    typeof v.records === 'object' &&
+    v.records !== null
+  );
+}
+
+/** Modo diagnóstico: a bancada fica lacrada até o aluno registrar a hipótese certa (#32) */
+export const selectDiagnosticBenchLocked = (s: AssemblyStore): boolean =>
+  s.gameMode === 'DIAGNOSTICO' &&
+  s.activeDiagnosticScenario !== null &&
+  !s.resolvedScenarioIds.includes(s.activeDiagnosticScenario.id) &&
+  phaseOf(s.detective.records[s.activeDiagnosticScenario.id]) === 'HYPOTHESIS';
+
+export interface ActiveBudgetChallenge {
+  config: BudgetChallengeConfig;
+  reference: BudgetBuildSummary;
+  cheapestCost: number;
+  ceilingCost: number;
+  catalogRev: string;
+  mission: CampaignMission;
+}
+
+/** Missão por id: a do Desafio de Orçamento em andamento ou a da campanha */
+export function missionById(state: Pick<AssemblyStore, 'budgetChallenge'>, id: string | null): CampaignMission | null {
+  if (!id) return null;
+  if (state.budgetChallenge?.mission.id === id) return state.budgetChallenge.mission;
+  return findMission(id) ?? null;
 }
 
 /** Referência estável: um [] novo a cada leitura faria seletores rasos re-renderizarem em loop */
@@ -308,6 +372,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
     set((state) => ({
       penaltiesCount: penalize ? state.penaltiesCount + 1 : state.penaltiesCount,
       missionErrorLog: [...state.missionErrorLog, issue.title].slice(-50),
+      errorTally: addToTally(state.errorTally, issue.title),
       activeAlert: {
         type: 'error',
         title: issue.title,
@@ -328,6 +393,8 @@ export const useAssemblyStore = create<AssemblyStore>()(
   activeWorkbenchView: 'bench',
   activeCampaignMissionId: null,
   missionErrorLog: [],
+  errorTally: {},
+  budgetChallenge: null,
   postAttempts: 0,
   campaignInventory: null,
   campaignHideHelpers: false,
@@ -337,6 +404,8 @@ export const useAssemblyStore = create<AssemblyStore>()(
   activeMission: null,
   activeDiagnosticScenario: null,
   resolvedScenarioIds: [],
+  // Semente fixa no primeiro render (mesmo HTML no servidor); o modo diagnóstico sorteia ao entrar
+  detective: { seed: 1, order: DIAGNOSTIC_SCENARIOS.map((sc) => sc.id), records: {} },
   teamName: 'Equipe Alfa',
   elapsedSeconds: 0,
   isTimerRunning: false,
@@ -367,8 +436,43 @@ export const useAssemblyStore = create<AssemblyStore>()(
     if (mode === 'MISSAO') {
       set({ activeMission: CLIENT_MISSIONS[0] });
     } else if (mode === 'DIAGNOSTICO') {
-      get().selectDiagnosticScenario(DIAGNOSTIC_SCENARIOS[0].id);
+      // Chamados sorteados a cada entrada no laboratório (#32)
+      get().drawDiagnosticCases();
     }
+  },
+
+  drawDiagnosticCases: (seed) => {
+    const next = seed ?? (Date.now() % 2147483647);
+    const order = drawCaseOrder(DIAGNOSTIC_SCENARIOS.map((sc) => sc.id), next);
+    set({ detective: { seed: next, order, records: {} }, resolvedScenarioIds: [] });
+    get().selectDiagnosticScenario(order[0]);
+  },
+
+  submitDiagnosticHypothesis: (cause) => {
+    const { activeDiagnosticScenario: scenario, detective } = get();
+    if (!scenario) return false;
+    const current = detective.records[scenario.id] ?? startRecord(scenario, detective.seed);
+    const { record, correct } = submitHypothesis(current, scenario, cause);
+    if (correct) soundEngine.playSuccessChime();
+    else soundEngine.playErrorBuzz();
+    set((st) => ({
+      detective: { ...st.detective, records: { ...st.detective.records, [scenario.id]: record } },
+      activeAlert: correct
+        ? { type: 'success', title: 'Hipótese registrada', message: 'Boa linha de investigação! A bancada foi liberada: confirme e conserte o defeito.' }
+        : {
+            type: 'error',
+            title: 'Hipótese descartada',
+            message: 'Os sintomas não batem com essa causa. Releia o relato e a leitura da telemetria (o chamado perdeu 25% do valor).',
+          },
+    }));
+    return correct;
+  },
+
+  revealDiagnosticHint: () => {
+    const { activeDiagnosticScenario: scenario, detective } = get();
+    if (!scenario) return;
+    const current = detective.records[scenario.id] ?? startRecord(scenario, detective.seed);
+    set((st) => ({ detective: { ...st.detective, records: { ...st.detective.records, [scenario.id]: registerHint(current) } } }));
   },
 
   setActiveWorkbenchView: (view) => set({ activeWorkbenchView: view }),
@@ -383,7 +487,12 @@ export const useAssemblyStore = create<AssemblyStore>()(
 
   selectDiagnosticScenario: (scenarioId) => {
     const scenario = DIAGNOSTIC_SCENARIOS.find((s) => s.id === scenarioId) || DIAGNOSTIC_SCENARIOS[0];
+    const { detective } = get();
     set({
+      // Ficha do chamado (mantém a hipótese já registrada ao reiniciar o caso)
+      detective: detective.records[scenario.id]
+        ? detective
+        : { ...detective, records: { ...detective.records, [scenario.id]: startRecord(scenario, detective.seed) } },
       activeDiagnosticScenario: scenario,
       selectedMotherboard: scenario.motherboard,
       assembly: { ...scenario.initialAssembly },
@@ -406,12 +515,18 @@ export const useAssemblyStore = create<AssemblyStore>()(
     if (activeDiagnosticScenario.isResolved(assembly, selectedMotherboard)) {
       if (!resolvedScenarioIds.includes(activeDiagnosticScenario.id)) {
         soundEngine.playSuccessChime();
+        const { detective } = get();
+        const solved = solveRecord(
+          detective.records[activeDiagnosticScenario.id] ?? startRecord(activeDiagnosticScenario, detective.seed),
+          activeDiagnosticScenario
+        );
         set((state) => ({
           resolvedScenarioIds: [...state.resolvedScenarioIds, activeDiagnosticScenario.id],
+          detective: { ...state.detective, records: { ...state.detective.records, [activeDiagnosticScenario.id]: solved } },
           activeAlert: {
             type: 'success',
             title: '🎯 DEFEITO RESOLVIDO COM SUCESSO!',
-            message: `Excelente diagnóstico! ${activeDiagnosticScenario.defectExplanation} (+${activeDiagnosticScenario.rewardPoints} XP)`,
+            message: `Excelente diagnóstico! ${activeDiagnosticScenario.defectExplanation} (+${solved.points ?? activeDiagnosticScenario.rewardPoints} XP)`,
           },
         }));
         return true;
@@ -546,13 +661,12 @@ export const useAssemblyStore = create<AssemblyStore>()(
       return result;
     } else {
       soundEngine.playErrorBuzz();
-      set({
-        activeAlert: {
-          type: 'error',
-          title: result.isPolarityInverted ? 'Polaridade Invertida (+/-)' : 'Pinos Incorretos',
-          message: result.message,
-        },
-      });
+      const title = result.isPolarityInverted ? 'Polaridade Invertida (+/-)' : 'Pinos Incorretos';
+      set((state) => ({
+        errorTally: addToTally(state.errorTally, title),
+        missionErrorLog: [...state.missionErrorLog, title].slice(-50),
+        activeAlert: { type: 'error', title, message: result.message },
+      }));
       return result;
     }
   },
@@ -997,10 +1111,20 @@ export const useAssemblyStore = create<AssemblyStore>()(
 
     const result = evaluatePostTest(assembly, selectedMotherboard);
     const failures = result.issues.filter((i) => i.type === 'ERROR').map((i) => i.title);
-    set((state) => ({
-      postAttempts: state.postAttempts + 1,
-      missionErrorLog: [...state.missionErrorLog, ...failures].slice(-50),
-    }));
+    set((state) => {
+      // Modo detetive: ligar sem ter consertado custa pontos do chamado (#32)
+      const scenario = state.gameMode === 'DIAGNOSTICO' ? state.activeDiagnosticScenario : null;
+      const record = scenario ? state.detective.records[scenario.id] : undefined;
+      const countsAsFailure = Boolean(scenario && record && !result.bootSuccess && phaseOf(record) === 'INVESTIGATING');
+      return {
+        postAttempts: state.postAttempts + 1,
+        missionErrorLog: [...state.missionErrorLog, ...failures].slice(-50),
+        errorTally: failures.reduce(addToTally, state.errorTally),
+        ...(countsAsFailure && scenario && record
+          ? { detective: { ...state.detective, records: { ...state.detective.records, [scenario.id]: registerFailedBoot(record) } } }
+          : {}),
+      };
+    });
 
     if (result.canPowerOn) {
       soundEngine.playFanSpinUp();
@@ -1040,41 +1164,33 @@ export const useAssemblyStore = create<AssemblyStore>()(
 
   calculateFinalScore: () => {
     const { elapsedSeconds, penaltiesCount, assembly, selectedMotherboard, activeMission, teamName } = get();
-    let precision = 4000 - penaltiesCount * 500;
-    if (precision < 500) precision = 500;
-
-    // Bônus de tempo (meta de 300 segundos)
-    const timeDelta = Math.max(0, 300 - elapsedSeconds);
-    const speedPoints = Math.min(1500, Math.round(timeDelta * 5));
-
-    // Bônus de orçamento (se estiver em missão)
-    let budgetPoints = 2500;
-    let budgetRemaining = 0;
-    if (activeMission) {
-      const spent = calculateTotalSpent(assembly, selectedMotherboard);
-      budgetRemaining = activeMission.budgetMax - spent;
-      if (budgetRemaining < 0) {
-        budgetPoints = 0;
-      } else {
-        budgetPoints = Math.round(1500 + (budgetRemaining / activeMission.budgetMax) * 1000);
-      }
-    }
-
-    const benchmarkPoints = assembly.gpuInstalled ? 2000 : 800;
-    const totalScore = precision + speedPoints + budgetPoints + benchmarkPoints;
-
-    return {
+    // Pontuação pura do motor (#26): benchmark real contra a meta, alertas do POST e gargalo
+    const score = calculateGroupScore({
+      assembly,
+      motherboard: selectedMotherboard,
+      elapsedSeconds,
+      penaltiesCount,
+      mission: activeMission,
       teamName,
-      totalScore,
-      precisionPoints: precision,
-      budgetPoints,
-      benchmarkPoints,
-      speedPoints,
-      penaltyPoints: penaltiesCount * 500,
-      timeSpentSeconds: elapsedSeconds,
-      budgetRemaining,
+    });
+    return {
+      teamName: score.teamName,
+      totalScore: score.totalScore,
+      precisionPoints: score.precisionPoints,
+      budgetPoints: score.budgetPoints,
+      benchmarkPoints: score.benchmarkPoints,
+      speedPoints: score.speedPoints,
+      penaltyPoints: score.penaltyPoints,
+      timeSpentSeconds: score.timeSpentSeconds,
+      budgetRemaining: score.budgetRemaining,
       // Código verificável com selo SHA-256 (#29): determinístico, o professor confere no painel
-      hashValidation: encodeValidationCode({ teamName: teamName || 'Equipe', totalScore, timeSpentSeconds: elapsedSeconds }),
+      // + erros por tipo (#34): o professor monta o relatório da turma só com os códigos
+      hashValidation: encodeValidationCode({
+        teamName: teamName || 'Equipe',
+        totalScore: score.totalScore,
+        timeSpentSeconds: elapsedSeconds,
+        errorCounts: tallyToCounts(get().errorTally),
+      }),
     };
   },
 
@@ -1292,6 +1408,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
       elapsedSeconds: 0,
       isTimerRunning: true,
       penaltiesCount: 0,
+      errorTally: {},
       postResult: null,
       isBiosOpen: false,
       isScoreModalOpen: false,
@@ -1307,9 +1424,30 @@ export const useAssemblyStore = create<AssemblyStore>()(
   openCampaignMap: () => set({ isCampaignMapOpen: true }),
   closeCampaignMap: () => set({ isCampaignMapOpen: false }),
 
+  startBudgetChallenge: (config) => {
+    const requirements = config.requirements ?? requirementsOf(config.profile);
+    const analysis = analyzeBudget(config.budget, requirements, config.resolution);
+    if (!analysis.feasible || !analysis.reference) return { ok: false, cheapestCost: analysis.cheapestCost };
+    const mission = buildBudgetMission({ ...config, requirements }, analysis);
+    set({
+      budgetChallenge: {
+        config: { ...config, requirements },
+        reference: analysis.reference,
+        cheapestCost: analysis.cheapestCost,
+        ceilingCost: analysis.ceilingCost,
+        catalogRev: analysis.catalogRev,
+        mission,
+      },
+    });
+    get().startCampaignMission(mission.id);
+    return { ok: true };
+  },
+
   startCampaignMission: (missionId) => {
-    const mission = findMission(missionId);
+    const mission = missionById(get(), missionId);
     if (!mission) return;
+    // Missão da campanha encerra um Desafio de Orçamento anterior
+    if (get().budgetChallenge?.mission.id !== mission.id) set({ budgetChallenge: null });
     const { setup } = mission;
     get().resetAssembly();
 
@@ -1370,6 +1508,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
 
   abandonCampaignMission: () =>
     set({
+      budgetChallenge: null,
       activeCampaignMissionId: null,
       campaignInventory: null,
       campaignHideHelpers: false,
@@ -1380,9 +1519,24 @@ export const useAssemblyStore = create<AssemblyStore>()(
 
   finishCampaignMission: () => {
     const state = get();
-    const mission = state.activeCampaignMissionId ? findMission(state.activeCampaignMissionId) : null;
+    const mission = missionById(state, state.activeCampaignMissionId);
     if (!mission) return null;
     const evaluation = evaluateMission(mission, selectMissionSession(state));
+    // Desafio de Orçamento: detalhamento dos pontos contra a referência, logo após a entrega (#70)
+    const challenge = state.budgetChallenge?.mission.id === mission.id ? state.budgetChallenge : null;
+    const budgetScore = challenge
+      ? scoreBudgetSubmission({
+          assembly: state.assembly,
+          motherboard: state.selectedMotherboard,
+          penaltiesCount: state.penaltiesCount,
+          elapsedSeconds: state.elapsedSeconds,
+          completed: evaluation.completed,
+          budget: challenge.config.budget,
+          targetTimeSeconds: challenge.config.targetTimeSeconds,
+          resolution: challenge.config.resolution,
+          reference: challenge.reference,
+        })
+      : undefined;
     if (evaluation.completed && evaluation.stars > 0) {
       useProgressStore.getState().recordMissionResult(mission.id, {
         stars: evaluation.stars === 3 ? 3 : evaluation.stars === 2 ? 2 : 1,
@@ -1393,7 +1547,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
     } else {
       soundEngine.playErrorBuzz();
     }
-    set({ missionDebrief: { missionId: mission.id, evaluation }, isTimerRunning: !evaluation.completed });
+    set({ missionDebrief: { missionId: mission.id, evaluation, budgetScore }, isTimerRunning: !evaluation.completed });
     return evaluation;
   },
 
@@ -1407,7 +1561,14 @@ export const useAssemblyStore = create<AssemblyStore>()(
   startFromScratch: () => {
     get().abandonCampaignMission();
     get().resetAssembly();
-    set({ gameMode: 'OFICINA', resolvedScenarioIds: [], activeMission: null, activeDiagnosticScenario: null, teamName: '' });
+    set({
+      gameMode: 'OFICINA',
+      resolvedScenarioIds: [],
+      detective: { seed: 1, order: DIAGNOSTIC_SCENARIOS.map((sc) => sc.id), records: {} },
+      activeMission: null,
+      activeDiagnosticScenario: null,
+      teamName: '',
+    });
     useProgressStore.getState().resetProgress();
     void useAssemblyStore.persist.clearStorage();
     void useProgressStore.persist.clearStorage();
@@ -1427,6 +1588,7 @@ export const useAssemblyStore = create<AssemblyStore>()(
         // O caso de diagnóstico tem funções (isResolved): persiste só o id e reconstrói ao carregar
         activeDiagnosticScenarioId: s.activeDiagnosticScenario?.id ?? null,
         resolvedScenarioIds: s.resolvedScenarioIds,
+        detective: s.detective,
         teamName: s.teamName,
         elapsedSeconds: s.elapsedSeconds,
         penaltiesCount: s.penaltiesCount,
@@ -1440,9 +1602,11 @@ export const useAssemblyStore = create<AssemblyStore>()(
         activeWorkbenchView: s.activeWorkbenchView,
         activeCampaignMissionId: s.activeCampaignMissionId,
         missionErrorLog: s.missionErrorLog,
+        errorTally: s.errorTally,
         postAttempts: s.postAttempts,
         campaignInventory: s.campaignInventory,
         campaignHideHelpers: s.campaignHideHelpers,
+        budgetChallenge: s.budgetChallenge,
       }),
       merge: (persisted, current) => {
         if (typeof persisted !== 'object' || persisted === null) return current;
@@ -1451,7 +1615,23 @@ export const useAssemblyStore = create<AssemblyStore>()(
             ? persisted.activeDiagnosticScenarioId
             : null;
         const scenario = DIAGNOSTIC_SCENARIOS.find((d) => d.id === scenarioId) ?? null;
-        return { ...current, ...persisted, activeDiagnosticScenario: scenario, missionDebrief: null, isCampaignMapOpen: false };
+        // Ficha do detetive salva por versões antigas (ou corrompida): recomeça o sorteio
+        const savedDetective = 'detective' in persisted ? persisted.detective : null;
+        const detective = isDetectiveState(savedDetective) ? savedDetective : current.detective;
+        const savedTally = 'errorTally' in persisted ? persisted.errorTally : null;
+        const errorTally =
+          typeof savedTally === 'object' && savedTally !== null && Object.values(savedTally).every((n) => typeof n === 'number' && n >= 0)
+            ? (savedTally as ErrorTally)
+            : {};
+        return {
+          ...current,
+          ...persisted,
+          detective,
+          errorTally,
+          activeDiagnosticScenario: scenario,
+          missionDebrief: null,
+          isCampaignMapOpen: false,
+        };
       },
       // Versão nova do formato salvo: descarta o salvamento antigo em vez de quebrar
       migrate: () => ({}),

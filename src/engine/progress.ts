@@ -2,6 +2,8 @@
  * Progresso salvo do aluno (#30): missões concluídas, estrelas, melhores tempos, recordes por
  * equipe, placar do professor e preferências. Puro: a persistência fica no store.
  */
+import { QualityPreference } from './qualityTier';
+
 export const PROGRESS_VERSION = 1;
 
 export interface MissionResult {
@@ -23,6 +25,8 @@ export interface LeaderboardEntry {
   timeSpentSeconds: number;
   code: string;
   addedAt: string;
+  /** Erros por tipo trazidos pelo código (#34); ausente em códigos antigos */
+  errorCounts?: number[];
 }
 
 export interface PlayerProgress {
@@ -33,6 +37,8 @@ export interface PlayerProgress {
   soundMuted: boolean;
   /** Modo professor: libera todas as missões da campanha */
   teacherUnlockAll: boolean;
+  /** Qualidade da bancada 3D escolhida pelo aluno (#63) */
+  qualityPreference: QualityPreference;
 }
 
 export function createEmptyProgress(): PlayerProgress {
@@ -43,6 +49,7 @@ export function createEmptyProgress(): PlayerProgress {
     leaderboard: [],
     soundMuted: false,
     teacherUnlockAll: false,
+    qualityPreference: 'AUTO',
   };
 }
 
@@ -90,10 +97,19 @@ function sanitizeMissionResult(raw: unknown): MissionResult | null {
 
 function sanitizeLeaderboardEntry(raw: unknown): LeaderboardEntry | null {
   if (!isRecord(raw)) return null;
-  const { teamName, totalScore, timeSpentSeconds, code, addedAt } = raw;
+  const { teamName, totalScore, timeSpentSeconds, code, addedAt, errorCounts } = raw;
   if (typeof teamName !== 'string' || typeof code !== 'string') return null;
   if (!isFiniteNumber(totalScore) || !isFiniteNumber(timeSpentSeconds)) return null;
-  return { teamName, totalScore, timeSpentSeconds, code, addedAt: typeof addedAt === 'string' ? addedAt : '' };
+  const counts =
+    Array.isArray(errorCounts) && errorCounts.every((n) => isFiniteNumber(n) && n >= 0) ? errorCounts.filter(isFiniteNumber) : null;
+  return {
+    teamName,
+    totalScore,
+    timeSpentSeconds,
+    code,
+    addedAt: typeof addedAt === 'string' ? addedAt : '',
+    ...(counts ? { errorCounts: counts } : {}),
+  };
 }
 
 export function sanitizeProgress(raw: unknown): PlayerProgress {
@@ -128,5 +144,6 @@ export function sanitizeProgress(raw: unknown): PlayerProgress {
     leaderboard,
     soundMuted: raw.soundMuted === true,
     teacherUnlockAll: raw.teacherUnlockAll === true,
+    qualityPreference: raw.qualityPreference === 'LEVE' || raw.qualityPreference === 'ALTA' ? raw.qualityPreference : 'AUTO',
   };
 }

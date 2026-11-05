@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { selectDiagnosticBenchLocked, useAssemblyStore } from '@/store/useAssemblyStore';
 import { useShallow } from 'zustand/react/shallow';
 import { MotherboardSvg } from './MotherboardSvg';
 import { CableTray } from './CableTray';
@@ -27,6 +27,8 @@ import dynamic from 'next/dynamic';
 import { Box } from 'lucide-react';
 import { isWebGLAvailable } from '@/components/three/webglDetect';
 import { DeskInventoryPanel } from '@/components/workbench/DeskInventoryPanel';
+import { CutawayPanel } from '@/components/workbench/CutawayPanel';
+import { useCutawayStore } from '@/components/three/cutawayStore';
 
 const DeskSetup3D = dynamic(() => import('@/components/three/DeskSetup3D'), {
   ssr: false,
@@ -61,6 +63,17 @@ const SlotThumb: React.FC<{ component: HardwareComponent | null; icon: React.Rea
 );
 
 export const WorkbenchMat: React.FC = () => {
+  const isBenchLocked = useAssemblyStore(selectDiagnosticBenchLocked);
+  // Modo "Abrir o PC" (#61): só depois de um POST bem-sucedido
+  const bootSuccess = useAssemblyStore((s) => Boolean(s.postResult?.bootSuccess));
+  const cutawayMode = useCutawayStore((s) => s.mode);
+  const setCutawayMode = useCutawayStore((s) => s.setMode);
+  const [cutawayHint, setCutawayHint] = React.useState(false);
+  // Montagem reiniciada ou POST refeito sem sucesso: sai do modo (a bancada volta como estava)
+  React.useEffect(() => {
+    if (!bootSuccess && cutawayMode === 'OPEN') setCutawayMode('OFF');
+    if (bootSuccess) setCutawayHint(false);
+  }, [bootSuccess, cutawayMode, setCutawayMode]);
   const [is3DMode, setIs3DMode] = React.useState<boolean>(false);
   const [hasWebGL, setHasWebGL] = React.useState<boolean>(true);
 
@@ -131,6 +144,20 @@ export const WorkbenchMat: React.FC = () => {
   const isSataTarget = selectedComponentForPlacement?.category === 'STORAGE';
   const sataStorage =
     assembly.storageInstalled && assembly.storageInstalled.storageType !== 'NVMe_M2' ? assembly.storageInstalled : null;
+
+  if (isBenchLocked) {
+    return (
+      <section
+        aria-label="Bancada lacrada"
+        className="w-full rounded-3xl border-2 border-dashed border-cyan-800/60 bg-slate-950/80 p-8 text-center text-sm text-slate-300"
+      >
+        <p className="font-bold text-cyan-300">🔒 Máquina lacrada para investigação</p>
+        <p className="mt-1 text-xs text-slate-400">
+          Registre a hipótese da causa no chamado acima. Um bom técnico pensa antes de abrir o gabinete.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <div className="relative w-full rounded-3xl bg-slate-900 border-2 border-slate-800 p-6 shadow-2xl overflow-hidden">
@@ -241,6 +268,34 @@ export const WorkbenchMat: React.FC = () => {
             <span>LIGAR O PC (TESTE DE BOOT)</span>
           </button>
 
+          {/* Abrir o PC (#61): vista explodida e subsistemas do PC que o aluno montou */}
+          <button
+            type="button"
+            aria-pressed={cutawayMode === 'OPEN'}
+            aria-describedby={!bootSuccess ? 'abrir-pc-dica' : undefined}
+            onClick={() => {
+              if (!bootSuccess) {
+                setCutawayHint(true);
+                return;
+              }
+              setCutawayMode(cutawayMode === 'OPEN' ? 'OFF' : 'OPEN');
+            }}
+            className={`flex min-h-[44px] items-center gap-1.5 px-4 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+              !bootSuccess
+                ? 'border-slate-800 bg-slate-900 text-slate-500'
+                : cutawayMode === 'OPEN'
+                ? 'border-cyan-400 bg-cyan-500 text-slate-950'
+                : 'border-cyan-700 bg-slate-900 text-cyan-300 hover:bg-cyan-950'
+            }`}
+          >
+            Abrir o PC
+          </button>
+          {!bootSuccess && (
+            <span id="abrir-pc-dica" role={cutawayHint ? 'status' : undefined} className={`text-[11px] ${cutawayHint ? 'text-amber-300' : 'sr-only'}`}>
+              Disponível depois do POST: termine a montagem, ligue o PC e passe no teste de boot.
+            </span>
+          )}
+
           {/* Alternador 3D / 2D da Bancada */}
           <div className="bg-slate-950/80 rounded-xl border border-slate-800 p-1 flex items-center gap-1">
             <button
@@ -317,7 +372,15 @@ export const WorkbenchMat: React.FC = () => {
           ) : is3DMode ? (
             <Workbench3D onToggle2D={() => setIs3DMode(false)} />
           ) : (
-            <MotherboardSvg />
+            <>
+              {/* Modo 2D leve: o mesmo estado vira uma vista esquemática, sem WebGL */}
+              {cutawayMode === 'OPEN' && (
+                <div className="mb-4">
+                  <CutawayPanel variant="2d" />
+                </div>
+              )}
+              <MotherboardSvg />
+            </>
           )}
         </div>
         <div className="w-full">

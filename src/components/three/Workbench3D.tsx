@@ -8,9 +8,15 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useCableDragStore } from '@/components/workbench/cableDragStore';
 import { CABLES, CableSpec, CableTargetId, cableTargetById } from '@/engine/cabling';
-import { MotherboardComponent } from '@/engine/types';
+import { AssemblyState, MotherboardComponent } from '@/engine/types';
 import { workbenchModelUrl } from '@/engine/workbenchModels';
-import { AIO_PUMP_MM, benchPartPlacements } from '@/engine/benchGeometry';
+import { AIO_PUMP_MM, BenchPartId, benchPartPlacements } from '@/engine/benchGeometry';
+import { calculateBenchmark } from '@/engine/benchmark';
+import { CutawayPartId, SUBSYSTEM_LABELS as SUBSYSTEM_LABELS_3D, poseCutaway } from '@/engine/cutaway';
+import { QUALITY_LABELS, QUALITY_SETTINGS, QualityPreference, resolveQualityTier } from '@/engine/qualityTier';
+import { useProgressStore } from '@/store/useProgressStore';
+import { useCutawayStore } from './cutawayStore';
+import { CutawayPanel } from '@/components/workbench/CutawayPanel';
 import {
   Cpu,
   Layers,
@@ -36,7 +42,7 @@ import {
 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
-import { isWebGLAvailable } from './webglDetect';
+import { getWebGLRenderer, isWebGLAvailable } from './webglDetect';
 import { caseModelUrlFor } from './deskModels';
 export { isWebGLAvailable };
 
@@ -121,6 +127,8 @@ interface AutoNormalizedPartProps {
   isSpinning?: boolean;
   /** Identificador da peça na sonda de geometria (testes E2E de encaixe) */
   benchPart?: string;
+  /** Opacidade (modo "Abrir o PC": peças fora do subsistema isolado ficam esmaecidas) */
+  opacity?: number;
 }
 
 const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
@@ -130,6 +138,7 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
   rotation = NO_ROTATION,
   isSpinning = false,
   benchPart,
+  opacity = 1,
 }) => {
   const { scene } = useGLTF(modelUrl);
   const fanGroupRef = useRef<THREE.Group>(null);
@@ -172,6 +181,31 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
 
     return wrapper;
   }, [scene, targetSize, rx, ry, rz]);
+
+  // Esmaecer clona os materiais (os do cache do useGLTF são compartilhados) e devolve os originais ao sair
+  useEffect(() => {
+    if (opacity >= 1) return;
+    const originals = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+    const fade = (m: THREE.Material) => {
+      const faded = m.clone();
+      faded.transparent = true;
+      faded.opacity = opacity;
+      faded.depthWrite = false;
+      return faded;
+    };
+    preparedScene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        originals.set(child, child.material);
+        child.material = Array.isArray(child.material) ? child.material.map(fade) : fade(child.material);
+      }
+    });
+    return () => {
+      originals.forEach((material, mesh) => {
+        (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).forEach((m) => m.dispose());
+        mesh.material = material;
+      });
+    };
+  }, [preparedScene, opacity]);
 
   useFrame((_, delta) => {
     if (isSpinning && fanGroupRef.current) {
@@ -298,8 +332,8 @@ const CaseEnclosure: React.FC<CaseEnclosureProps> = ({
     clone.rotation.set(0, Math.PI / 2, -Math.PI / 2);
     clone.updateMatrixWorld(true);
 
-    let box = new THREE.Box3().setFromObject(clone);
-    let size = box.getSize(new THREE.Vector3());
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
 
     // Centraliza o chassi em X e Z, assentando a bandeja interna em Y=0
@@ -654,6 +688,141 @@ const SmoothCameraController: React.FC<{
 /* ====================================================================================
  * COMPONENTE PRINCIPAL: Workbench3D
  * ==================================================================================== */
+/** prefers-reduced-motion (RNF09): mola vira corte, ventoinhas param, câmera não se desloca */
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReduced(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  return reduced;
+}
+
+/** Encaixe com mola (#38): a peça recém-instalada desce até o slot e assenta com um leve quique */
+const SpringDrop: React.FC<{ animate: boolean; children: React.ReactNode }> = ({ animate, children }) => {
+  const ref = useRef<THREE.Group>(null);
+  const state = useRef({ y: animate ? 1.4 : 0, v: 0 });
+  useFrame((_, delta) => {
+    const s = state.current;
+    if (Math.abs(s.y) < 1e-4 && Math.abs(s.v) < 1e-4) return;
+    const dt = Math.min(delta, 1 / 30);
+    s.v += (-220 * s.y - 18 * s.v) * dt;
+    s.y += s.v * dt;
+    if (Math.abs(s.y) < 1e-4 && Math.abs(s.v) < 1e-3) {
+      s.y = 0;
+      s.v = 0;
+    }
+    if (ref.current) ref.current.position.y = s.y;
+  });
+  return (
+    <group ref={ref} position={[0, state.current.y, 0]}>
+      {children}
+    </group>
+  );
+};
+
+/** Hélice girando sobre a face frontal (+Z) de uma peça: ventoinhas no teste de boot (#38) */
+const FanRotor: React.FC<{ position: [number, number, number]; radius: number; spinning: boolean }> = ({ position, radius, spinning }) => {
+  const ref = useRef<THREE.Group>(null);
+  useFrame((_, delta) => {
+    if (spinning && ref.current) ref.current.rotation.z -= delta * 18;
+  });
+  return (
+    <group position={position}>
+      <group ref={ref}>
+        {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+          <mesh key={i} rotation={[0, 0, (i * Math.PI * 2) / 7]} position={[0, 0, 0.004]}>
+            <boxGeometry args={[radius * 0.32, radius * 0.92, 0.008]} />
+            <meshStandardMaterial color="#334155" transparent opacity={spinning ? 0.55 : 0} depthWrite={false} />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  );
+};
+
+/** LEDs de diagnóstico (EZ Debug) na própria placa: acendem no teste de boot (#38) */
+const DebugLeds3D: React.FC<{ position: [number, number, number]; states: ('GREEN' | 'RED' | 'OFF' | undefined)[] }> = ({ position, states }) => (
+  <group position={position}>
+    {states.map((state, i) => (
+      <mesh key={i} position={[0, 0.03, i * 0.16 - 0.24]}>
+        <boxGeometry args={[0.1, 0.05, 0.08]} />
+        <meshStandardMaterial
+          color={state === 'GREEN' ? '#34d399' : state === 'RED' ? '#f43f5e' : '#1e293b'}
+          emissive={state === 'GREEN' ? '#10b981' : state === 'RED' ? '#e11d48' : '#000000'}
+          emissiveIntensity={state === 'GREEN' || state === 'RED' ? 2.2 : 0}
+        />
+      </mesh>
+    ))}
+  </group>
+);
+
+/** Fonte ATX no tamanho real: só aparece na vista explodida (#60) */
+const PsuBlock: React.FC<{ box: { min: [number, number, number]; max: [number, number, number] } }> = ({ box }) => {
+  const size: [number, number, number] = [box.max[0] - box.min[0], box.max[1] - box.min[1], box.max[2] - box.min[2]];
+  return (
+    <group position={[(box.min[0] + box.max[0]) / 2, box.min[1] + size[1] / 2, (box.min[2] + box.max[2]) / 2]}>
+      <mesh castShadow>
+        <boxGeometry args={size} />
+        <meshStandardMaterial color="#1f2937" metalness={0.5} roughness={0.5} />
+      </mesh>
+      <mesh position={[0, size[1] / 2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[Math.min(size[0], size[2]) * 0.38, 32]} />
+        <meshStandardMaterial color="#0f172a" />
+      </mesh>
+    </group>
+  );
+};
+
+/**
+ * Anima o número de abertura com mola e aplica a pose do motor (poseCutaway) a cada peça:
+ * a vista explodida (#38) e o modo "Abrir o PC" (#61) leem a MESMA pose.
+ */
+const CutawayRig: React.FC<{
+  groups: React.MutableRefObject<Map<CutawayPartId, THREE.Group>>;
+  assembly: AssemblyState;
+  motherboard: MotherboardComponent | null;
+  reducedMotion: boolean;
+}> = ({ groups, assembly, motherboard, reducedMotion }) => {
+  const mode = useCutawayStore((s) => s.mode);
+  const selection = useCutawayStore((s) => s.selection);
+  const benchmark = useMemo(() => calculateBenchmark(assembly, motherboard), [assembly, motherboard]);
+  const anim = useRef({ opening: 0, v: 0 });
+  const last = useRef<{ key: string; assembly: AssemblyState | null }>({ key: '', assembly: null });
+
+  useFrame((_, delta) => {
+    const target = mode === 'OFF' ? 0 : 1;
+    const a = anim.current;
+    if (reducedMotion) {
+      a.opening = target;
+      a.v = 0;
+    } else if (a.opening !== target || a.v !== 0) {
+      const dt = Math.min(delta, 1 / 30);
+      a.v += (-90 * (a.opening - target) - 17 * a.v) * dt;
+      a.opening += a.v * dt;
+      if (Math.abs(a.opening - target) < 1e-3 && Math.abs(a.v) < 1e-3) {
+        a.opening = target;
+        a.v = 0;
+      }
+    }
+    const isolated = mode === 'OPEN' ? selection : null;
+    const key = `${a.opening.toFixed(4)}|${isolated}`;
+    if (key === last.current.key && last.current.assembly === assembly) return;
+    last.current = { key, assembly };
+    const pose = poseCutaway(assembly, motherboard, benchmark, isolated, Math.max(0, a.opening));
+    pose.parts.forEach((p) => {
+      const group = groups.current.get(p.part);
+      if (group) group.position.set(p.position[0] - p.basePosition[0], p.position[1] - p.basePosition[1], p.position[2] - p.basePosition[2]);
+    });
+    const psu = groups.current.get('PSU');
+    if (psu) psu.visible = a.opening > 0.02;
+  });
+  return null;
+};
+
 /**
  * Sonda de geometria (apenas fora de produção): expõe as caixas REAIS das peças desenhadas na
  * cena, medidas pelo three.js, para o teste E2E comparar com a física de encaixe do motor.
@@ -740,8 +909,62 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
   // encaixe percorrem em todas as montagens do catálogo — o que é desenhado é o que foi verificado
   const placements = useMemo(() => benchPartPlacements(assembly, targetMb), [assembly, targetMb]);
   const layout = placements.board.layout;
+
+  // Vista explodida (#38) e modo "Abrir o PC" (#61): mesma pose do motor (poseCutaway)
+  const reducedMotion = usePrefersReducedMotion();
+  const cutawayMode = useCutawayStore((s) => s.mode);
+  const cutawaySelection = useCutawayStore((s) => s.selection);
+  const setCutawayMode = useCutawayStore((s) => s.setMode);
+  const benchmark = useMemo(() => calculateBenchmark(assembly, targetMb), [assembly, targetMb]);
+  const openPose = useMemo(
+    () => poseCutaway(assembly, targetMb, benchmark, cutawayMode === 'OPEN' ? cutawaySelection : null, 1),
+    [assembly, targetMb, benchmark, cutawayMode, cutawaySelection]
+  );
+  const psuBox = useMemo(
+    () => poseCutaway(assembly, targetMb, benchmark, null, 0).parts.find((p) => p.part === 'PSU')?.box ?? null,
+    [assembly, targetMb, benchmark]
+  );
+  const partGroups = useRef(new Map<CutawayPartId, THREE.Group>());
+  const registerPart = (id: CutawayPartId) => (group: THREE.Group | null) => {
+    if (group) partGroups.current.set(id, group);
+    else partGroups.current.delete(id);
+  };
+  const opacityOf = (id: CutawayPartId) => (cutawayMode === 'OPEN' ? openPose.parts.find((p) => p.part === id)?.opacity ?? 1 : 1);
+
+  // Encaixe com mola só para peças instaladas depois do primeiro render (recarregar a página não faz tudo cair)
+  const seenParts = useRef<Set<BenchPartId> | null>(null);
+  if (seenParts.current === null) seenParts.current = new Set(placements.parts.map((p) => p.part));
+  useEffect(() => {
+    seenParts.current = new Set(placements.parts.map((p) => p.part));
+  }, [placements]);
+
+  // Nível de qualidade (#63): pelo renderer do WebGL ou pela escolha do aluno (salva no progresso)
+  const qualityPreference = useProgressStore((s) => s.qualityPreference);
+  const setQualityPreference = useProgressStore((s) => s.setQualityPreference);
+  const renderer = useMemo(() => getWebGLRenderer(), []);
+  const qualityTier = resolveQualityTier(renderer, qualityPreference);
+  const quality = QUALITY_SETTINGS[qualityTier];
+  const isSpinning = Boolean(postResult?.bootSuccess) && !reducedMotion;
   const mbModelUrl = workbenchModelUrl(placements.board.modelId);
   const ihsTopY = placements.ihsTopY;
+
+  // Câmera acompanha o modo "Abrir o PC" (sem deslocamento com movimento reduzido)
+  const previousCutawayMode = useRef(cutawayMode);
+  useEffect(() => {
+    const leaving = cutawayMode === 'OFF' && previousCutawayMode.current !== 'OFF';
+    previousCutawayMode.current = cutawayMode;
+    if (reducedMotion) return;
+    if (cutawayMode === 'OFF') {
+      // Sair do modo devolve o enquadramento da bancada
+      if (leaving) setTransitionTarget(PRESET_VIEWS.iso);
+      return;
+    }
+    setTransitionTarget(
+      cutawaySelection
+        ? { pos: new THREE.Vector3(7.2, 7.6, 9.4), target: new THREE.Vector3(0, 2, 0) }
+        : { pos: new THREE.Vector3(8.6, 10.2, 9.6), target: new THREE.Vector3(0, 1.2, 0) }
+    );
+  }, [cutawayMode, cutawaySelection, reducedMotion]);
 
   // Aciona preset de câmera
   const applyViewPreset = (view: 'iso' | 'top' | 'front') => {
@@ -898,6 +1121,45 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             <span>{viewMode === 'case' ? 'No Gabinete' : 'Levar ao Gabinete'}</span>
           </button>
 
+          {/* Vista explodida para estudar a ordem de montagem (#38) */}
+          <button
+            type="button"
+            aria-pressed={cutawayMode === 'EXPLODED'}
+            disabled={placements.parts.length === 0 || cutawayMode === 'OPEN'}
+            onClick={() => setCutawayMode(cutawayMode === 'EXPLODED' ? 'OFF' : 'EXPLODED')}
+            className={`px-3 py-1.5 rounded-xl backdrop-blur-md text-xs font-mono border shadow-lg cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+              cutawayMode === 'EXPLODED'
+                ? 'bg-cyan-950/90 border-cyan-400 text-cyan-200 ring-2 ring-cyan-400/40'
+                : 'bg-slate-900/90 border-slate-700/80 text-slate-300 hover:text-cyan-300'
+            }`}
+            title="Separa as peças na ordem de montagem (de cima para baixo)"
+          >
+            Vista Explodida
+          </button>
+
+          {/* Nível de qualidade (#63) */}
+          <label className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-slate-900/90 border border-slate-700/80 text-[11px] font-mono text-slate-300 shadow-lg">
+            <span>Qualidade</span>
+            <select
+              value={qualityPreference}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === 'AUTO' || value === 'LEVE' || value === 'ALTA') setQualityPreference(value);
+              }}
+              className="bg-slate-950 text-slate-200 rounded-md px-1 py-0.5 border border-slate-700"
+              aria-describedby="nivel-qualidade-ativo"
+            >
+              {(Object.keys(QUALITY_LABELS) as QualityPreference[]).map((key) => (
+                <option key={key} value={key}>
+                  {QUALITY_LABELS[key]}
+                </option>
+              ))}
+            </select>
+            <span id="nivel-qualidade-ativo" className="sr-only">
+              Nível ativo: {qualityTier === 'LEVE' ? 'leve' : 'alta'}
+            </span>
+          </label>
+
           {viewMode === 'case' && (
             <button
               onClick={() => setIsGlassOpen((prev) => !prev)}
@@ -925,11 +1187,18 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
        * CENA THREE.JS COM ORBIT CONTROLS LIVRE E ENQUADRAMENTO AUTOMÁTICO
        * ================================================================================== */}
       <div className="flex-1 w-full h-full relative">
+        {cutawayMode === 'OPEN' && (
+          <div className="absolute right-3 top-28 z-40">
+            <CutawayPanel variant="3d" />
+          </div>
+        )}
         <Canvas
+          // Antialias é atributo do contexto WebGL: trocar de nível recria o Canvas
+          key={qualityTier}
           camera={{ position: [6.2, 8.2, 7.2], fov: 42 }}
-          gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-          // Telas Retina/4K em PCs escolares: limita a 1.5x para manter 60 FPS com sombras ativas
-          dpr={[1, 1.5]}
+          gl={{ antialias: quality.antialias, alpha: false, powerPreference: 'high-performance' }}
+          // Nível leve (vídeo integrado): pixel ratio 1; alto: até 1,5 (Retina/4K)
+          dpr={quality.dpr}
           shadows
         >
           <color attach="background" args={['#070b14']} />
@@ -948,6 +1217,9 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
           />
 
           <BenchSceneProbe />
+          {selectedMotherboard && (
+            <CutawayRig groups={partGroups} assembly={assembly} motherboard={targetMb} reducedMotion={reducedMotion} />
+          )}
 
           <SmoothCameraController
             transitionTarget={transitionTarget}
@@ -962,7 +1234,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             intensity={1.8}
             color="#ffffff"
             castShadow
-            shadow-mapSize={[1024, 1024]}
+            shadow-mapSize={[quality.shadowMapSize, quality.shadowMapSize]}
           />
           <directionalLight position={[-8, 10, -8]} intensity={0.6} color="#38bdf8" />
           <pointLight position={[0, 4, 0]} intensity={1.4} color="#38bdf8" distance={10} />
@@ -1069,30 +1341,77 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                   )}
 
             {/* 2. Peças Físicas Instaladas (posições, tamanhos reais e rotações do motor) */}
-            {placements.parts.map((p) =>
-              p.modelId ? (
-                <AutoNormalizedPart
-                  key={p.part}
-                  modelUrl={workbenchModelUrl(p.modelId)}
-                  targetSize={p.targetSize}
-                  position={p.position}
-                  rotation={p.rotation}
-                  benchPart={p.part}
-                />
-              ) : p.part === 'SATA_DRIVE' ? (
-                <group key={p.part} userData={{ benchPart: p.part }}>
-                  <SataDriveBlock box={p.box} isHdd={assembly.storageInstalled?.storageType === 'SATA_HDD'} />
+            {placements.parts.map((p) => {
+              const width = p.box.max[0] - p.box.min[0];
+              const height = p.box.max[1] - p.box.min[1];
+              const centerY = (p.box.min[1] + p.box.max[1]) / 2;
+              const frontZ = p.box.max[2] + 0.012;
+              return (
+                // Grupo externo: deslocamento da vista explodida (CutawayRig); interno: mola do encaixe
+                <group key={p.part} ref={registerPart(p.part)}>
+                  <SpringDrop animate={!reducedMotion && !seenParts.current?.has(p.part)}>
+                    {p.modelId ? (
+                      <AutoNormalizedPart
+                        modelUrl={workbenchModelUrl(p.modelId)}
+                        targetSize={p.targetSize}
+                        position={p.position}
+                        rotation={p.rotation}
+                        benchPart={p.part}
+                        opacity={opacityOf(p.part)}
+                      />
+                    ) : p.part === 'SATA_DRIVE' ? (
+                      <group userData={{ benchPart: p.part }}>
+                        <SataDriveBlock box={p.box} isHdd={assembly.storageInstalled?.storageType === 'SATA_HDD'} />
+                      </group>
+                    ) : (
+                      <group userData={{ benchPart: p.part }}>
+                        <AioPumpBlock position={p.position} scale={width / AIO_PUMP_BASE} isRunning={isSpinning} />
+                      </group>
+                    )}
+                    {/* Ventoinhas girando no teste de boot (face frontal do cooler e da GPU) */}
+                    {p.part === 'COOLER' && p.modelId && (
+                      <FanRotor position={[p.position[0], centerY, frontZ]} radius={Math.min(width, height) * 0.45} spinning={isSpinning} />
+                    )}
+                    {p.part === 'GPU' &&
+                      [0.27, 0.7].map((f) => (
+                        <FanRotor key={f} position={[p.box.min[0] + width * f, centerY, frontZ]} radius={height * 0.36} spinning={isSpinning} />
+                      ))}
+                  </SpringDrop>
                 </group>
-              ) : (
-                <group key={p.part} userData={{ benchPart: p.part }}>
-                  <AioPumpBlock
-                    position={p.position}
-                    scale={(p.box.max[0] - p.box.min[0]) / AIO_PUMP_BASE}
-                    isRunning={Boolean(postResult?.bootSuccess)}
-                  />
-                </group>
-              )
+              );
+            })}
+
+            {/* Fonte: só na vista explodida, no tamanho real */}
+            {psuBox && (
+              <group ref={registerPart('PSU')} visible={false}>
+                <PsuBlock box={psuBox} />
+              </group>
             )}
+
+            {/* LEDs EZ Debug na placa: acendem com o resultado do POST */}
+            <DebugLeds3D
+              position={layout.DEBUG_LEDS}
+              states={[postResult?.debugLed.cpu, postResult?.debugLed.dram, postResult?.debugLed.vga, postResult?.debugLed.boot]}
+            />
+
+            {/* Callout do subsistema isolado: nome e leituras da mesma pose que posiciona as peças */}
+            {cutawayMode === 'OPEN' && openPose.selection && (() => {
+              const focused = openPose.parts.filter((x) => x.focus);
+              if (focused.length === 0) return null;
+              const top = Math.max(...focused.map((x) => x.box.max[1]));
+              return (
+                <Html position={[0, top + 0.6, 0]} center distanceFactor={5} zIndexRange={[20, 0]}>
+                  <div role="note" className="pointer-events-none min-w-[180px] rounded-xl border border-cyan-500/60 bg-slate-950/95 p-2 text-[11px] font-mono text-slate-200 shadow-2xl">
+                    <div className="font-bold text-cyan-300">{SUBSYSTEM_LABELS_3D[openPose.selection]}</div>
+                    {(openPose.readings[openPose.selection] ?? []).map((r) => (
+                      <div key={r.key}>
+                        {r.label}: <strong>{r.key === 'dualChannel' ? (r.value ? 'Sim' : 'Não') : `${r.value.toLocaleString('pt-BR')} ${r.unit}`}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </Html>
+              );
+            })()}
 
             {/* Pasta Térmica: gota do tamanho de uma ervilha exatamente sobre o IHS da CPU */}
             {assembly.cpuInstalled && assembly.thermalPasteApplied && !assembly.coolerInstalled && (
@@ -1112,7 +1431,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
           {/* ==============================================================================
            * HOTSPOTS TÁTEIS (PINS) NOS QUADRANTES FÍSICOS DA PLACA (Apenas com placa assentada)
            * ============================================================================== */}
-          {selectedMotherboard && (
+          {selectedMotherboard && cutawayMode === 'OFF' && (
             <>
               {/* 1. Hotspot: Soquete CPU */}
               <WorkbenchPin

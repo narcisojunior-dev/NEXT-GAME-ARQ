@@ -1,10 +1,10 @@
-# 🛠️ PC Builder Academy (v2.0)
+# 🛠️ PC Builder Academy (v3.0)
 
 [![Next.js 15](https://img.shields.io/badge/Next.js-15.2.1-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React 19](https://img.shields.io/badge/React-19.0.0-blue?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.2-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.0.9-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
-[![Vitest Tests](https://img.shields.io/badge/Vitest-184%2F184%20Passed-green?style=for-the-badge&logo=vitest)](https://vitest.dev/)
+[![Vitest Tests](https://img.shields.io/badge/Vitest-%2B500%20testes-green?style=for-the-badge&logo=vitest)](https://vitest.dev/)
 [![Playwright E2E](https://img.shields.io/badge/Playwright_E2E-Verified-blue?style=for-the-badge&logo=playwright)](https://playwright.dev/)
 [![Three.js 3D](https://img.shields.io/badge/Three.js-Interactive_3D_Bench-black?style=for-the-badge&logo=three.js)](https://threejs.org/)
 [![Hardware Catalog](https://img.shields.io/badge/Hardware-70%2B%20Real%20Components-blue?style=for-the-badge&logo=intel)](./src/engine/hardwareCatalog.ts)
@@ -23,6 +23,24 @@ O **PC Builder Academy** foi projetado para transformar o ensino de **Arquitetur
 Nas escolas, o ensino de montagem de computadores costuma enfrentar barreiras críticas: alto custo de peças, risco de queima de componentes por eletricidade estática ou pinos entortados, escassez de laboratórios equipados e computadores desatualizados. 
 
 O **PC Builder Academy** soluciona esse gargalo oferecendo uma experiência imersiva, tátil e 100% segura, com fidelidade física real, cálculo de gargalo de processamento (*bottleneck*), minigame de alta precisão para conectores do painel frontal (`F_PANEL`), resolução de defeitos de assistência técnica e personalização de setups completos com exportação de fotos Full HD.
+
+---
+
+## 🆕 Novidades da v2.1 à v3.0
+
+| Área | O que mudou | Documentação |
+| :--- | :--- | :--- |
+| Regras e conteúdo (v2.1) | Fases derivadas do estado, F_PANEL com polaridade real, cabeamento completo da placa, ilustrações orientadas por dados, catálogo com +70 peças com todos os campos das regras validados em teste (#19–#23) | [ADR-008](./docs/adr/ADR-008-fases-derivadas-e-regras-de-montagem.md), [ADR-009](./docs/adr/ADR-009-ilustracoes-orientadas-por-dados.md), [ADR-010](./docs/adr/ADR-010-cabeamento-e-arrastar-e-soltar.md) |
+| Bancada 3D | Medidas reais dos GLBs, encaixe verificado em 743.808 montagens, todos os conectores também no 3D, alavanca do soquete, GPU parafusada, disco SATA na baia | [ADR-011](./docs/adr/ADR-011-visualizacao-3d-hibrida.md) |
+| Mesa Battlestation | Periféricos, cabos externos, tela viva e arranjo verificado em 24.192 combinações | [ADR-012](./docs/adr/ADR-012-mesa-battlestation-e-cabeamento-externo.md) |
+| Campanha | 35 missões sequenciais em 5 trilhas, progresso salvo, código verificável com SHA-256 | [ADR-005](./docs/adr/ADR-005-gamificacao-e-desafio-em-grupos.md) |
+| Pontuação | Pontuação pura com benchmark real, gargalo e alertas do POST (#26) | ADR-005 |
+| Diagnóstico | Modo detetive: hipótese antes de abrir a máquina, pontos por tentativa, chamados sorteados, casos de cabeamento (#32) | — |
+| Professor | Relatório de erros da turma, CSV e habilidades do certificado ligadas à BNCC Computação (#34) | — |
+| Abrir o PC | Vista explodida, isolamento de subsistemas com leituras do benchmark, tour por ociosidade e níveis de qualidade para vídeo integrado (#38, #59–#63) | [ADR-013](./docs/adr/ADR-013-modo-abrir-o-pc.md) |
+| **Modo Orçamento** | Desafio de Orçamento sem turma: perfis de cliente, prévia de viabilidade, saldo ao vivo, "cabe no saldo" nos cards, pontuação de custo-benefício e ranking puro (#66–#70) | [Relatório da feature](./docs/relatorio-modo-orcamento.md) |
+| PWA e desempenho | Cache versionado pelo build com aviso de nova versão, `/api/` fora do cache, relógio isolado do HUD (#24, #31, #66) | [pwa-atualizacao.md](./docs/pwa-atualizacao.md), [performance.md](./docs/performance.md) |
+| Qualidade | ESLint no CI, Playwright com arraste real, teclado e tela de 375 px (#33) | `.github/workflows/ci.yml` |
 
 ---
 
@@ -173,42 +191,19 @@ graph TD
 ### Estrutura de Diretórios
 
 ```
-d:\dev\NEXT-ARQ/
-├── docs/                      # Documentação de Engenharia e Design
-│   ├── PRD.md                 # Product Requirements Document v2.0
-│   ├── design-system.md       # Design System Cyber-Industrial & Ambientes
-│   └── adr/                   # Architecture Decision Records (ADR-001 a ADR-007)
-├── public/                    # Manifest PWA, Service Worker e Ícones
-│   ├── manifest.json          # Configuração PWA instalável
-│   ├── sw.js                  # Service Worker com cache offline
-│   └── icons/                 # Ícones 192x192 e 512x512
+NEXT-GAME-ARQ/
+├── docs/                      # PRD, ADRs (001 a 013), design system, relatórios e roteiros de teste
+├── e2e/                       # Playwright (1366x768 e 375 px); e2e/support com os passos de interface
+├── public/                    # PWA (manifest, sw.js versionado pelo build), modelos GLB e ícones
+├── scripts/                   # Otimização e medição dos modelos 3D (npm run models:optimize / models:measure)
 ├── src/
-│   ├── app/                   # App Router Next.js 15
-│   │   ├── layout.tsx         # Layout principal com registro do Service Worker
-│   │   ├── page.tsx           # Hub de Navegação (Bancada, Diagnóstico, Sala, etc.)
-│   │   └── globals.css        # Tailwind CSS v4 e estilos de impressão A4
-│   ├── components/            # Componentes Modulares da Interface
-│   │   ├── Workbench.tsx      # Bancada de montagem com seleção de placa-mãe
-│   │   ├── MotherboardView.tsx# Placa-mãe vetorial interativa em SVG
-│   │   ├── FrontPanelMinigame.tsx # Minigame com zoom nos 9 pinos do F_PANEL
-│   │   ├── DiagnosticBench.tsx# Bancada do Modo Diagnóstico
-│   │   ├── AcademyOS.tsx      # Sistema operacional desktop simulado
-│   │   ├── BenchmarkModal.tsx # Benchmark CyberRacer 3D e gráfico de frametime
-│   │   ├── SetupCustomizer.tsx# Customizador de gabinete e periféricos
-│   │   ├── VirtualRoomView.tsx# Sala virtual do aluno e exportador 1080p
-│   │   └── TeacherDashboard.tsx# Painel do Professor, Leaderboard e Certificados
-│   ├── engine/                # Motor de Regras e Lógica em TypeScript Puro
-│   │   ├── rules.ts           # Validador de soquetes, TDP, memórias e montagem
-│   │   ├── sound.ts           # Sintetizador procedural Web Audio API
-│   │   ├── diagnostic.ts      # Casos de assistência técnica e injeção de falhas
-│   │   ├── benchmark.ts       # Fórmulas de FPS, latência e gargalo CPU/GPU
-│   │   ├── setupAndRoom.ts    # Configuração de periféricos, salas e selo
-│   │   ├── teacher.ts         # Pontuações escolares, hash e certificados A4
-│   │   ├── store.ts           # Máquina de estados global em Zustand
-│   │   └── __tests__/         # 35 Testes Unitários e de Integração em Vitest
-│   └── types/                 # Definições de Tipos TypeScript
-│       └── hardware.ts        # Interfaces completas de componentes e estados
-└── package.json               # Dependências e scripts de execução
+│   ├── app/                   # App Router (layout, página principal, CSS global)
+│   ├── components/            # Interface: bancada 2D/3D, mesa, campanha, diagnóstico, professor, HUD, PWA
+│   ├── engine/                # Regras puras em TypeScript (sem React): compatibilidade, fases, benchmark,
+│   │                          #   geometria 3D, campanha, orçamento, pontuação, ranking, detetive, corte
+│   │   └── __tests__/         # Testes do motor (Vitest)
+│   └── store/                 # Zustand: montagem (persistida), progresso e armazenamento seguro
+└── .github/workflows/ci.yml   # tsc, ESLint, Vitest, build e Playwright
 ```
 
 ---
@@ -222,21 +217,14 @@ O projeto segue rigorosamente o princípio de **Test-Driven Development (TDD)** 
 npm test
 ```
 
-### Cobertura de Testes (184 testes unitários e de integração + Suíte E2E Playwright):
-* **Vitest (184 testes em 15 arquivos):**
-  * `hardwareMatrix.test.ts` & `allCombinationsHardwarePeripherals.test.ts`: Testes combinatórios exaustivos de todos os componentes de hardware, periféricos e gabinetes.
-  * `compatibility.test.ts`: Soquetes AM4 vs AM5 vs LGA1700, DDR4 vs DDR5, trava de memória, pasta térmica e travas de soquete.
-  * `frontPanel.test.ts`: Mapeamento de pinos, conexões corretas de POWER SW, HDD LED com polaridade (+/-) e retenção de estado.
-  * `diagnostic.test.ts`: 6 cenários reais de assistência técnica, validação de correções e verificação de máquina saudável.
-  * `benchmark.test.ts`: Fórmulas matemáticas de FPS, detecção de gargalo (*Bottleneck*) de CPU vs GPU e limites de frametime.
-  * `setupAndRoom.test.ts`: Seleção de periféricos, cálculo de consumo de periféricos e temas de sala virtual.
-  * `teacher.test.ts`: Cálculo de pontuação escolar (0 a 10.000 pts), geração e validação de hash criptográfico de certificado (`PCA-XXXXXX`).
-  * `models3d.test.ts`: Integridade dos metadados e modelos 3D GLB normalizados.
-  * `cabling.test.ts`: Validação de regras e compatibilidade de cabeamento interno.
-* **Playwright E2E (Testes no Navegador Real):**
-  * Montagem 3D completa de ponta a ponta com Intel e AMD.
-  * Alternância e persistência de estado 2D leve <-> 3D interativo.
-  * Menu lateral, filtros de categorias e verificação de Q-Connector do F_PANEL.
+### Cobertura de testes
+* **Vitest (mais de 500 testes em 40 arquivos):** regras de compatibilidade, fases e checklist, benchmark, geometria da bancada (743.808 montagens) e da mesa (24.192 combinações), campanha, detetive, pontuação, Modo Orçamento (busca exaustiva comparada com força bruta, < 200 ms), ranking, relatório da turma, código verificável e service worker.
+* **Playwright (mais de 40 testes):** montagem completa só pela interface (AMD e Intel) com a física conferida na cena 3D, fluxo completo do Desafio de Orçamento até o PC na mesa, Abrir o PC, mesa e cabos externos, arraste real, teclado, campanha, detetive, relatório do professor e tela de 375 px.
+
+```bash
+npm test               # Vitest
+npm run test:e2e       # Playwright (sobe o servidor de desenvolvimento)
+```
 
 ---
 

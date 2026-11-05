@@ -5,6 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { CheckCircle2, Lock, Play, RotateCcw, Star, X } from 'lucide-react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useProgressStore } from '@/store/useProgressStore';
+import { BudgetChallengeSetup } from './BudgetChallengeSetup';
 import { CampaignMission, CampaignTrackId, MissionStatus, getMissionStatus } from '@/engine/campaign';
 import { CAMPAIGN_TRACKS, missionsOfTrack } from '@/engine/campaignMissions';
 
@@ -100,6 +101,7 @@ export const CampaignMapModal: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto grid md:grid-cols-[minmax(0,1fr)_380px] gap-4 p-4">
           {/* Missões da trilha, em ordem */}
+          <div className="flex flex-col gap-4 min-w-0">
           <ol className="flex flex-col gap-2" aria-label={`Missões: ${CAMPAIGN_TRACKS.find((t) => t.id === trackId)?.title}`}>
             {missions.map((m) => {
               const status = statusOf(m);
@@ -133,6 +135,9 @@ export const CampaignMapModal: React.FC = () => {
               );
             })}
           </ol>
+          {/* Modo Orçamento sem turma (#70) */}
+          {trackId === 'DESAFIO' && <BudgetChallengeSetup />}
+          </div>
 
           {/* Briefing da missão selecionada */}
           <section aria-label="Briefing da missão" className="rounded-2xl border border-slate-800 bg-slate-900 p-4 flex flex-col gap-3 h-fit">
