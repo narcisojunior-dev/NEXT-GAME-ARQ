@@ -305,7 +305,7 @@ export const FrontPanelZoomModal: React.FC = () => {
               <h3 className="text-[11px] font-mono uppercase tracking-wider text-slate-400">Cabos do gabinete</h3>
               <button
                 onClick={autoConnectAllFPanel}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 text-[10px] font-mono font-bold transition-all cursor-pointer shadow-sm hover:scale-105"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 text-[11px] font-mono font-bold transition-all cursor-pointer shadow-sm hover:scale-105"
                 title="Encaixar todos os 4 conectores de uma só vez usando o adaptador Q-Connector"
               >
                 <Sparkles className="w-3 h-3 text-cyan-400" />
@@ -440,7 +440,7 @@ export const FrontPanelZoomModal: React.FC = () => {
                       style={{ gridColumn: pin.col, gridRow: pin.row === 'TOP' ? 2 : 3 }}
                     >
                       <span className="h-4 w-4 rounded-[3px] bg-gradient-to-br from-amber-100 via-amber-400 to-amber-700 shadow-[0_0_6px_rgba(245,158,11,0.35)]" />
-                      <span className="absolute bottom-0.5 right-1 text-[9px] font-mono text-slate-500">{pin.id}</span>
+                      <span className="absolute bottom-0.5 right-1 text-[11px] font-mono text-slate-500">{pin.id}</span>
                     </button>
                   )
                 )}

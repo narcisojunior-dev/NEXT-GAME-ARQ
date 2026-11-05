@@ -452,7 +452,7 @@ export const VirtualRoomModal: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold tracking-widest uppercase px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60">
+                <span className="text-[11px] font-mono font-bold tracking-widest uppercase px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60">
                   Sala Virtual & Periféricos
                 </span>
                 <span className="text-xs text-slate-400">
@@ -554,7 +554,7 @@ export const VirtualRoomModal: React.FC = () => {
             <div className="space-y-2.5 flex-1 overflow-y-auto pr-1">
               {activeTab === 'THEME' && (
                 <div className="space-y-2">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold mb-2">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-bold mb-2">
                     Escolha a Sala Virtual do Aluno:
                   </div>
                   {ROOM_THEMES.map((theme) => {
@@ -604,7 +604,7 @@ export const VirtualRoomModal: React.FC = () => {
                             {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
                           </span>
                         </div>
-                        <span className="inline-block text-[10px] font-mono text-cyan-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
+                        <span className="inline-block text-[11px] font-mono text-cyan-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
                           {item.featureBadge}
                         </span>
                         <p className="text-[11px] text-slate-400 mt-1">{item.description}</p>
@@ -633,7 +633,7 @@ export const VirtualRoomModal: React.FC = () => {
                             {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
                           </span>
                         </div>
-                        <span className="inline-block text-[10px] font-mono text-purple-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
+                        <span className="inline-block text-[11px] font-mono text-purple-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
                           {item.featureBadge}
                         </span>
                         <p className="text-[11px] text-slate-400 mt-1">{item.description}</p>
@@ -662,7 +662,7 @@ export const VirtualRoomModal: React.FC = () => {
                             {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
                           </span>
                         </div>
-                        <span className="inline-block text-[10px] font-mono text-emerald-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
+                        <span className="inline-block text-[11px] font-mono text-emerald-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
                           {item.featureBadge}
                         </span>
                         <p className="text-[11px] text-slate-400 mt-1">{item.description}</p>
@@ -691,7 +691,7 @@ export const VirtualRoomModal: React.FC = () => {
                             {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
                           </span>
                         </div>
-                        <span className="inline-block text-[10px] font-mono text-blue-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
+                        <span className="inline-block text-[11px] font-mono text-blue-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
                           {item.featureBadge}
                         </span>
                         <p className="text-[11px] text-slate-400 mt-1">{item.description}</p>
@@ -720,7 +720,7 @@ export const VirtualRoomModal: React.FC = () => {
                             {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
                           </span>
                         </div>
-                        <span className="inline-block text-[10px] font-mono text-amber-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
+                        <span className="inline-block text-[11px] font-mono text-amber-300 bg-slate-900 px-2 py-0.5 rounded mt-1">
                           {item.featureBadge}
                         </span>
                         <p className="text-[11px] text-slate-400 mt-1">{item.description}</p>

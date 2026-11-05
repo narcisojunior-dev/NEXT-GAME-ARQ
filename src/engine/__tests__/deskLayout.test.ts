@@ -9,6 +9,7 @@ import {
   evaluateDeskSnapPoints,
   getDeskWidth,
   getSnapPointPosition,
+  isTowerOnFloor,
 } from '../deskSetup';
 import { EXTERNAL_PORTS, ExternalPortId, WALL_Z, getExternalPortWorldPosition } from '../externalCabling';
 import { DEFAULT_STUDENT_SETUP, DESKS, KEYBOARDS, MONITOR_STANDS, MOUSEPADS } from '../peripheralsCatalog';
@@ -41,10 +42,16 @@ describe('1. Layout físico da mesa (metros: 1 unidade de mundo = 1 m)', () => {
       const top: [number, number, number, number] = [-width / 2, width / 2, -DESK_DEPTH / 2, DESK_DEPTH / 2];
 
       it('todo item de tampo fica inteiro dentro do tampo e apoiado na altura do tampo', () => {
-        ON_DESK_TOP.forEach((id) => {
+        ON_DESK_TOP.filter((id) => id !== 'PC_TOWER' || !isTowerOnFloor(width)).forEach((id) => {
           expect(contains(top, footprintRect(id, width)), `${id} dentro do tampo`).toBe(true);
           expect(getSnapPointPosition(id, width)[1]).toBeGreaterThanOrEqual(DESK_TOP_HEIGHT);
         });
+      });
+
+      it('em mesa compacta a torre fica no chão, ao lado direito e fora da projeção do tampo', () => {
+        if (!isTowerOnFloor(width)) return;
+        expect(getSnapPointPosition('PC_TOWER', width)[1]).toBe(0);
+        expect(footprintRect('PC_TOWER', width)[0]).toBeGreaterThan(width / 2);
       });
 
       it('o gabinete não invade monitor, mousepad, teclado, mouse nem headset', () => {
@@ -76,8 +83,9 @@ describe('1. Layout físico da mesa (metros: 1 unidade de mundo = 1 m)', () => {
             expect(x, id).toBeGreaterThanOrEqual(pc[0]);
             expect(x, id).toBeLessThanOrEqual(pc[1]);
             expect(z, id).toBeCloseTo(pc[2], 2);
-            expect(y, id).toBeGreaterThan(DESK_TOP_HEIGHT);
-            expect(y, id).toBeLessThan(DESK_TOP_HEIGHT + 0.5);
+            const base = getSnapPointPosition('PC_TOWER', width)[1];
+            expect(y, id).toBeGreaterThan(base);
+            expect(y, id).toBeLessThan(base + 0.5);
           });
       });
 

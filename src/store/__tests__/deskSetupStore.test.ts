@@ -1,6 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useAssemblyStore, selectDeskStage } from '../useAssemblyStore';
-import { DESKS, KEYBOARDS } from '../../engine/peripheralsCatalog';
+import {
+  AUDIO_DEVICES,
+  CHAIRS,
+  DEFAULT_STUDENT_SETUP,
+  DESKS,
+  KEYBOARDS,
+  MICE,
+  MONITORS,
+  MONITOR_STANDS,
+  MOUSEPADS,
+  StudentSetupConfig,
+} from '../../engine/peripheralsCatalog';
+import { buildDeskInventory } from '../../engine/deskSetup';
 import { READY_MB, buildReadyAssembly, deskItem } from '../../engine/__tests__/fixtures/readyPc';
 
 const store = () => useAssemblyStore.getState();
@@ -119,5 +131,37 @@ describe('useAssemblyStore - Integração da Mesa de Setup (Fase 4)', () => {
     expect(store().assembly).toBe(assemblyBefore);
     expect(store().deskSetup.placedDeskItems.DESK_BASE).toBeDefined();
     expect(store().activeWorkbenchView).toBe('desk');
+  });
+});
+
+describe('useAssemblyStore - todas as combinações de periféricos montadas pela store', () => {
+  it('a store aceita o inventário completo na ordem física e desmonta na ordem inversa', () => {
+    let total = 0;
+    const failures: string[] = [];
+    for (const desk of DESKS)
+      for (const chair of CHAIRS)
+        for (const monitor of MONITORS)
+          for (const keyboardItem of KEYBOARDS)
+            for (const mouse of MICE)
+              for (const stand of MONITOR_STANDS)
+                for (const audio of AUDIO_DEVICES)
+                  for (const mousepad of MOUSEPADS) {
+                    const setup: StudentSetupConfig = { ...DEFAULT_STUDENT_SETUP, desk, chair, monitor, keyboard: keyboardItem, mouse, stand, audio, mousepad };
+                    store().resetAssembly();
+                    useAssemblyStore.setState({ assembly: buildReadyAssembly(), selectedMotherboard: READY_MB, studentSetup: setup });
+                    const inventory = buildDeskInventory(setup);
+                    inventory.forEach(({ targetSnapPoint, item }) => {
+                      if (!store().placeDeskItem(targetSnapPoint, item)) failures.push(`${monitor.id}/${stand.id}: ${targetSnapPoint} recusado`);
+                    });
+                    total++;
+                    if (selectDeskStage(store()) !== 'CABLING') failures.push(`${desk.id}/${monitor.id}: etapa ${selectDeskStage(store())}`);
+                    [...inventory].reverse().forEach(({ targetSnapPoint }) => {
+                      if (!store().removeDeskItem(targetSnapPoint)) failures.push(`${desk.id}: remoção de ${targetSnapPoint} recusada`);
+                    });
+                    if (Object.keys(store().deskSetup.placedDeskItems).length > 0) failures.push(`${desk.id}: sobrou item na mesa`);
+                    if (store().penaltiesCount > 0) failures.push(`${desk.id}/${monitor.id}: penalidade indevida`);
+                  }
+    expect(total).toBe(DESKS.length * CHAIRS.length * MONITORS.length * KEYBOARDS.length * MICE.length * MONITOR_STANDS.length * AUDIO_DEVICES.length * MOUSEPADS.length);
+    expect(failures.slice(0, 10)).toEqual([]);
   });
 });

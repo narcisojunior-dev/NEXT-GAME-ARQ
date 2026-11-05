@@ -18,6 +18,8 @@ export const DidacticCompanion: React.FC = () => {
     }))
   );
   const currentPhase = useAssemblyStore(selectCurrentPhase);
+  // Prova final da campanha: tutor desligado (os alertas de erro continuam aparecendo)
+  const hideHelpers = useAssemblyStore((s) => s.campaignHideHelpers);
 
   const getPhaseAdvice = () => {
     switch (currentPhase) {
@@ -72,6 +74,8 @@ export const DidacticCompanion: React.FC = () => {
 
   const advice = getPhaseAdvice();
 
+  if (hideHelpers && !activeAlert) return null;
+
   return (
     <div className="w-full bg-slate-950/70 border border-slate-800 rounded-3xl p-4 shadow-xl backdrop-blur-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
       <div className="flex items-start gap-3">
@@ -83,7 +87,7 @@ export const DidacticCompanion: React.FC = () => {
             <span className="text-xs font-bold text-cyan-400 font-mono tracking-wider uppercase">
               Byte — Tutor Didático
             </span>
-            <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-[11px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-medium">
               {advice.title}
             </span>
           </div>

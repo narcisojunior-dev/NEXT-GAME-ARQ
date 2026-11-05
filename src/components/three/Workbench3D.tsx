@@ -8,13 +8,9 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useCableDragStore } from '@/components/workbench/cableDragStore';
 import { CABLES, CableSpec, CableTargetId, cableTargetById } from '@/engine/cabling';
-import { HardwareComponent, MotherboardComponent } from '@/engine/types';
-import {
-  WORKBENCH_CPU_HEIGHTS,
-  resolveWorkbenchModelId,
-  workbenchModelRotation,
-  workbenchModelUrl,
-} from '@/engine/workbenchModels';
+import { MotherboardComponent } from '@/engine/types';
+import { workbenchModelUrl } from '@/engine/workbenchModels';
+import { AIO_PUMP_MM, benchPartPlacements } from '@/engine/benchGeometry';
 import {
   Cpu,
   Layers,
@@ -36,74 +32,13 @@ import {
   Box,
   Layers as BoxLayers,
   CircuitBoard,
+  Lock,
 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 
 import { isWebGLAvailable } from './webglDetect';
 import { caseModelUrlFor } from './deskModels';
 export { isWebGLAvailable };
-
-/* ====================================================================================
- * LAYOUTS FÍSICOS CALIBRADOS POR MODELO DE PLACA-MÃE (Escala Normalizada: ~7.2)
- * Cada placa-mãe possui coordenadas dedicadas para alinhamento fidedigno de peças e pinos
- * ==================================================================================== */
-export interface MotherboardLayout {
-  /** Centro do soquete; Y = altura onde a base da CPU assenta */
-  CPU_SOCKET: [number, number, number];
-  CPU_FAN_HEADER: [number, number, number];
-  ATX12V_HEADER: [number, number, number];
-  RAM_SLOT_2: [number, number, number];
-  RAM_SLOT_4: [number, number, number];
-  M2_SLOT: [number, number, number];
-  PCIE_SLOT: [number, number, number];
-  ATX24P_HEADER: [number, number, number];
-  FPANEL_HEADER: [number, number, number];
-  DEBUG_LEDS: [number, number, number];
-  GPU_POWER_HEADER: [number, number, number];
-  /** Comprimento do pente DIMM (133 mm) na escala desta placa, para assentar entre as travas */
-  RAM_STICK_LENGTH: number;
-}
-
-/*
- * CALIBRAÇÃO MEDIDA (não estimada): soquete e slots DIMM foram localizados por um mapa de altura
- * (vista superior) gerado a partir da geometria dos GLBs, já com a mesma normalização de
- * AutoNormalizedMotherboard (largura 7.2, base em Y=0, rotação Z-up → Y-up quando necessário).
- * Validação cruzada: nas duas placas o centro dos slots DIMM coincide em Z com o centro do soquete,
- * como nas placas reais. Y dos slots = fundo do canal do DIMM (o pente "entra" no slot).
- */
-export const MOTHERBOARD_LAYOUTS: Record<'AMD_AM4_AM5' | 'INTEL_LGA1700', MotherboardLayout> = {
-  // 1. AMD AM4 / AM5 (mb-b550m.glb): soquete AM4 x∈[-0.28, 1.12] com alavanca à direita; 2 slots DIMM
-  AMD_AM4_AM5: {
-    CPU_SOCKET: [0.42, 0.22, -1.13],
-    CPU_FAN_HEADER: [-0.20, 0.22, -2.45],
-    ATX12V_HEADER: [-2.75, 0.22, -3.10],
-    RAM_SLOT_2: [2.38, 0.19, -1.12],
-    RAM_SLOT_4: [2.72, 0.19, -1.12],
-    RAM_STICK_LENGTH: 3.7,
-    M2_SLOT: [-0.50, 0.22, 0.25],
-    PCIE_SLOT: [-0.55, 0.22, 1.45],
-    ATX24P_HEADER: [3.10, 0.22, -0.60],
-    FPANEL_HEADER: [2.85, 0.22, 3.10],
-    DEBUG_LEDS: [2.90, 0.22, -2.80],
-    GPU_POWER_HEADER: [1.35, 0.95, 1.45],
-  },
-  // 2. Intel LGA1700 (mb-z790-atx.glb): ILM x∈[-0.40, 1.00] z∈[-2.70, -0.68]; 4 slots DIMM
-  //    (A1 1.875 | A2 2.125 | B1 2.388 | B2 2.65). Dual channel = A2 + B2.
-  INTEL_LGA1700: {
-    CPU_SOCKET: [0.30, 0.25, -1.69],
-    CPU_FAN_HEADER: [0.45, 0.22, -2.85],
-    ATX12V_HEADER: [-1.90, 0.22, -3.20],
-    RAM_SLOT_2: [2.125, 0.18, -1.66],
-    RAM_SLOT_4: [2.65, 0.18, -1.66],
-    RAM_STICK_LENGTH: 3.85,
-    M2_SLOT: [-0.40, 0.22, 0.20],
-    PCIE_SLOT: [-0.50, 0.22, 1.35],
-    ATX24P_HEADER: [3.15, 0.22, -0.65],
-    FPANEL_HEADER: [2.85, 0.22, 3.35],
-    DEBUG_LEDS: [2.95, 0.22, -2.90],
-    GPU_POWER_HEADER: [1.35, 0.95, 1.35],
-  },
-};
 
 /* ====================================================================================
  * COMPONENTE: Placa-Mãe Auto-Normalizada
@@ -174,12 +109,6 @@ const AutoNormalizedMotherboard: React.FC<{ modelUrl: string }> = ({ modelUrl })
 
 const NO_ROTATION: [number, number, number] = [0, 0, 0];
 
-/** Tamanho (maior dimensão) da CPU no soquete: ~39 mm na escala das placas */
-const CPU_TARGET_SIZE = 1.15;
-
-/** Espessura da camada de pasta espalhada pela pressão do cooler */
-const PASTE_LAYER = 0.01;
-
 /* ====================================================================================
  * COMPONENTE: Peça Auto-Normalizada com Animação Opcional de Fan
  * Dimensiona peças para encaixe perfeito nas proporções físicas da placa
@@ -190,6 +119,8 @@ interface AutoNormalizedPartProps {
   position: [number, number, number];
   rotation?: [number, number, number];
   isSpinning?: boolean;
+  /** Identificador da peça na sonda de geometria (testes E2E de encaixe) */
+  benchPart?: string;
 }
 
 const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
@@ -198,6 +129,7 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
   position,
   rotation = NO_ROTATION,
   isSpinning = false,
+  benchPart,
 }) => {
   const { scene } = useGLTF(modelUrl);
   const fanGroupRef = useRef<THREE.Group>(null);
@@ -248,7 +180,7 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
   });
 
   return (
-    <group position={position}>
+    <group position={position} userData={{ benchPart }}>
       <group ref={fanGroupRef}>
         <primitive object={preparedScene} />
       </group>
@@ -261,8 +193,16 @@ const AutoNormalizedPart: React.FC<AutoNormalizedPartProps> = ({
  * O GLB cooler-aio-240 contém apenas um fragmento (placa de 0.03 × 0.39 × 0.12) e, normalizado,
  * virava uma lâmina fina em pé sobre a CPU. A bomba é procedural: base de cobre + corpo + rotor.
  * ==================================================================================== */
-const AioPumpBlock: React.FC<{ position: [number, number, number]; isRunning?: boolean }> = ({
+/** Largura da base de cobre da bomba desenhada abaixo (a escala ajusta para 60 mm reais) */
+const AIO_PUMP_BASE = 0.82;
+/** Altura total da bomba na mesma escala: 40 mm reais para 60 mm de base (AIO_PUMP_MM do motor) */
+const AIO_PUMP_HEIGHT = (AIO_PUMP_BASE * AIO_PUMP_MM[1]) / AIO_PUMP_MM[0];
+/** Topo do corpo, onde ficam a tampa iluminada e as conexões das mangueiras */
+const AIO_PUMP_BODY_TOP = 0.43;
+
+const AioPumpBlock: React.FC<{ position: [number, number, number]; scale?: number; isRunning?: boolean }> = ({
   position,
+  scale = 1,
   isRunning = false,
 }) => {
   const rotorRef = useRef<THREE.Group>(null);
@@ -273,36 +213,62 @@ const AioPumpBlock: React.FC<{ position: [number, number, number]; isRunning?: b
     }
   });
 
+  // Tudo cabe na caixa física da bomba (60 × 40 × 60 mm): o teste E2E compara a caixa desenhada com a do motor
+  const fittingHeight = AIO_PUMP_HEIGHT - AIO_PUMP_BODY_TOP;
   return (
-    <group position={position}>
+    <group position={position} scale={scale}>
       {/* Base de cobre (cold plate) em contato com a pasta */}
       <mesh position={[0, 0.015, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.82, 0.03, 0.82]} />
+        <boxGeometry args={[AIO_PUMP_BASE, 0.03, AIO_PUMP_BASE]} />
         <meshStandardMaterial color="#b87333" metalness={0.85} roughness={0.3} />
       </mesh>
       {/* Corpo da bomba */}
-      <mesh position={[0, 0.17, 0]} castShadow>
-        <cylinderGeometry args={[0.38, 0.4, 0.28, 40]} />
+      <mesh position={[0, (0.03 + AIO_PUMP_BODY_TOP) / 2, 0]} castShadow>
+        <cylinderGeometry args={[0.38, 0.4, AIO_PUMP_BODY_TOP - 0.03, 40]} />
         <meshStandardMaterial color="#111827" metalness={0.4} roughness={0.45} />
       </mesh>
-      {/* Tampa com anel de LED e rotor (gira apenas com o PC ligado) */}
-      <group ref={rotorRef} position={[0, 0.315, 0]}>
-        <mesh>
-          <torusGeometry args={[0.28, 0.025, 12, 40]} />
+      {/* Tampa com anel de LED deitado e rotor (gira apenas com o PC ligado) */}
+      <group ref={rotorRef} position={[0, AIO_PUMP_BODY_TOP + 0.01, 0]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.24, 0.02, 12, 40]} />
           <meshStandardMaterial color="#22d3ee" emissive="#0891b2" emissiveIntensity={isRunning ? 1.2 : 0.25} />
         </mesh>
-        <mesh rotation={[0, 0, 0]}>
-          <boxGeometry args={[0.42, 0.012, 0.06]} />
+        <mesh>
+          <boxGeometry args={[0.38, 0.012, 0.06]} />
           <meshStandardMaterial color="#334155" metalness={0.6} roughness={0.3} />
         </mesh>
       </group>
-      {/* Mangueiras saindo para o radiador */}
+      {/* Conexões das mangueiras no topo (as mangueiras seguem até o radiador, fora da placa) */}
       {[-0.14, 0.14].map((z) => (
-        <mesh key={z} position={[0.42, 0.2, z]} rotation={[0, 0, Math.PI / 2]} castShadow>
-          <cylinderGeometry args={[0.045, 0.045, 0.22, 16]} />
+        <mesh key={z} position={[0.3, AIO_PUMP_BODY_TOP + fittingHeight / 2, z]} castShadow>
+          <cylinderGeometry args={[0.045, 0.045, fittingHeight, 16]} />
           <meshStandardMaterial color="#0b0f19" roughness={0.8} />
         </mesh>
       ))}
+    </group>
+  );
+};
+
+/* ====================================================================================
+ * COMPONENTE: Disco SATA (SSD 2,5" ou HD 3,5") deitado no tapete, no tamanho real do motor
+ * ==================================================================================== */
+const SataDriveBlock: React.FC<{ box: { min: [number, number, number]; max: [number, number, number] }; isHdd: boolean }> = ({
+  box,
+  isHdd,
+}) => {
+  const size: [number, number, number] = [box.max[0] - box.min[0], box.max[1] - box.min[1], box.max[2] - box.min[2]];
+  const center: [number, number, number] = [(box.min[0] + box.max[0]) / 2, box.min[1] + size[1] / 2, (box.min[2] + box.max[2]) / 2];
+  return (
+    <group position={center}>
+      <mesh castShadow receiveShadow>
+        <boxGeometry args={size} />
+        <meshStandardMaterial color={isHdd ? '#9ca3af' : '#1f2937'} metalness={isHdd ? 0.7 : 0.3} roughness={0.45} />
+      </mesh>
+      {/* Etiqueta no topo (fica dentro da caixa física: 0,1 % da altura acima não conta) */}
+      <mesh position={[0, size[1] / 2 - 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[size[0] * 0.6, size[2] * 0.55]} />
+        <meshStandardMaterial color={isHdd ? '#1e3a8a' : '#0e7490'} />
+      </mesh>
     </group>
   );
 };
@@ -500,17 +466,17 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
               aria-label={`Ações: ${label}`}
               className="min-w-[180px] max-w-[230px] p-2 rounded-xl bg-slate-950/95 border border-cyan-500/50 shadow-2xl backdrop-blur-lg text-left animate-in fade-in duration-150"
             >
-              <div className="flex items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-800 font-mono text-[10px] font-bold text-cyan-300">
+              <div className="flex items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-800 font-mono text-[11px] font-bold text-cyan-300">
                 <span className="truncate">{label}</span>
                 {isInstalled && (
-                  <span className="flex items-center gap-0.5 text-[9px] text-emerald-400 font-normal">
+                  <span className="flex items-center gap-0.5 text-[11px] text-emerald-400 font-normal">
                     <CheckCircle2 className="w-3 h-3" />
                     OK
                   </span>
                 )}
               </div>
 
-              <p aria-hidden="true" className="text-[9px] font-mono text-slate-300 leading-tight mb-1.5">
+              <p aria-hidden="true" className="text-[11px] font-mono text-slate-300 leading-tight mb-1.5">
                 {detailText}
               </p>
 
@@ -525,7 +491,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
                       e.stopPropagation();
                       onAction();
                     }}
-                    className={`w-full py-1 px-2 rounded-lg text-[9px] font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                    className={`w-full py-1 px-2 rounded-lg text-[11px] font-mono font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
                       isTargeted
                         ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md animate-pulse motion-reduce:animate-none'
                         : isInstalled
@@ -544,7 +510,7 @@ const WorkbenchPin: React.FC<WorkbenchPinProps> = ({
                       e.stopPropagation();
                       secondaryAction.onClick();
                     }}
-                    className="w-full py-0.5 px-2 rounded text-[8.5px] font-mono text-amber-300 hover:text-amber-200 hover:bg-amber-950/40 border border-amber-800/60 transition-all cursor-pointer"
+                    className="w-full py-0.5 px-2 rounded text-[11px] font-mono text-amber-300 hover:text-amber-200 hover:bg-amber-950/40 border border-amber-800/60 transition-all cursor-pointer"
                   >
                     {secondaryAction.text}
                   </button>
@@ -688,6 +654,33 @@ const SmoothCameraController: React.FC<{
 /* ====================================================================================
  * COMPONENTE PRINCIPAL: Workbench3D
  * ==================================================================================== */
+/**
+ * Sonda de geometria (apenas fora de produção): expõe as caixas REAIS das peças desenhadas na
+ * cena, medidas pelo three.js, para o teste E2E comparar com a física de encaixe do motor.
+ */
+const BenchSceneProbe: React.FC = () => {
+  const scene = useThree((state) => state.scene);
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    const readBoxes = () => {
+      const boxes: Record<string, { min: number[]; max: number[] }> = {};
+      scene.updateMatrixWorld(true);
+      scene.traverse((object) => {
+        const id: unknown = object.userData.benchPart;
+        if (typeof id !== 'string') return;
+        const box = new THREE.Box3().setFromObject(object);
+        if (!box.isEmpty()) boxes[id] = { min: box.min.toArray(), max: box.max.toArray() };
+      });
+      return boxes;
+    };
+    Object.assign(window, { __pcbaBenchBoxes: readBoxes });
+    return () => {
+      Reflect.deleteProperty(window, '__pcbaBenchBoxes');
+    };
+  }, [scene]);
+  return null;
+};
+
 export interface Workbench3DProps {
   onToggle2D?: () => void;
 }
@@ -713,6 +706,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
     installRam,
     installStorage,
     installGpu,
+    screwGpu,
     openFrontPanelModal,
   } = useAssemblyStore(
     // Seletor raso: sem ele a bancada 3D re-renderizava a cada tick do cronômetro (1 s)
@@ -730,6 +724,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
       installRam: s.installRam,
       installStorage: s.installStorage,
       installGpu: s.installGpu,
+      screwGpu: s.screwGpu,
       openFrontPanelModal: s.openFrontPanelModal,
     }))
   );
@@ -741,21 +736,12 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
       ? (selectedComponentForPlacement as MotherboardComponent)
       : null);
 
-  // Modelo da mesma família física da peça (engine/workbenchModels) e layout medido naquele GLB
-  const mbModelId = (targetMb && resolveWorkbenchModelId(targetMb)) ?? 'mb-b550m';
-  const mbModelUrl = workbenchModelUrl(mbModelId);
-  const layout = mbModelId === 'mb-z790-atx' ? MOTHERBOARD_LAYOUTS.INTEL_LGA1700 : MOTHERBOARD_LAYOUTS.AMD_AM4_AM5;
-
-  const partModel = (component: HardwareComponent) => {
-    const id = resolveWorkbenchModelId(component);
-    return id ? { id, url: workbenchModelUrl(id), rotation: workbenchModelRotation(id) } : null;
-  };
-  const cpuModel = assembly.cpuInstalled ? partModel(assembly.cpuInstalled) : null;
-  const ramModel2 = assembly.ramInstalledSlot2 ? partModel(assembly.ramInstalledSlot2) : null;
-  const ramModel4 = assembly.ramInstalledSlot4 ? partModel(assembly.ramInstalledSlot4) : null;
-
-  // Topo do IHS da CPU instalada: referência para a gota de pasta e a base do cooler
-  const ihsTopY = layout.CPU_SOCKET[1] + (cpuModel ? WORKBENCH_CPU_HEIGHTS[cpuModel.id] ?? 0.1 : 0);
+  // Geometria da bancada vem do motor (engine/benchGeometry): a MESMA função que os testes de
+  // encaixe percorrem em todas as montagens do catálogo — o que é desenhado é o que foi verificado
+  const placements = useMemo(() => benchPartPlacements(assembly, targetMb), [assembly, targetMb]);
+  const layout = placements.board.layout;
+  const mbModelUrl = workbenchModelUrl(placements.board.modelId);
+  const ihsTopY = placements.ihsTopY;
 
   // Aciona preset de câmera
   const applyViewPreset = (view: 'iso' | 'top' | 'front') => {
@@ -961,6 +947,8 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             onStart={() => setTransitionTarget(null)}
           />
 
+          <BenchSceneProbe />
+
           <SmoothCameraController
             transitionTarget={transitionTarget}
             onTransitionEnd={() => setTransitionTarget(null)}
@@ -1047,7 +1035,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                         <span>CLIQUE PARA ASSENTAR NA BANCADA</span>
                       </div>
                       <span className="text-xs text-cyan-300 font-semibold">{selectedComponentForPlacement.name}</span>
-                      <span className="text-[10px] text-cyan-400/80">
+                      <span className="text-[11px] text-cyan-400/80">
                         {(selectedComponentForPlacement as MotherboardComponent).socket} • {(selectedComponentForPlacement as MotherboardComponent).supportedRam} • {(selectedComponentForPlacement as MotherboardComponent).formFactor}
                       </span>
                     </button>
@@ -1062,7 +1050,9 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             ) : (
               <>
                 {/* 1. Placa-Mãe Auto-Normalizada (remount limpo com key) */}
-                <AutoNormalizedMotherboard key={mbModelUrl} modelUrl={mbModelUrl} />
+                <group userData={{ benchPart: 'BOARD' }}>
+                  <AutoNormalizedMotherboard key={mbModelUrl} modelUrl={mbModelUrl} />
+                </group>
 
                 {/* Botão de substituição rápida caso o usuário selecione outra placa no menu lateral */}
                 {selectedComponentForPlacement?.category === 'MOTHERBOARD' &&
@@ -1078,14 +1068,30 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                     </Html>
                   )}
 
-            {/* 2. Peças Físicas Instaladas */}
-            {/* CPU Instalada no Soquete */}
-            {cpuModel && (
-              <AutoNormalizedPart
-                modelUrl={cpuModel.url}
-                targetSize={CPU_TARGET_SIZE}
-                position={layout.CPU_SOCKET}
-              />
+            {/* 2. Peças Físicas Instaladas (posições, tamanhos reais e rotações do motor) */}
+            {placements.parts.map((p) =>
+              p.modelId ? (
+                <AutoNormalizedPart
+                  key={p.part}
+                  modelUrl={workbenchModelUrl(p.modelId)}
+                  targetSize={p.targetSize}
+                  position={p.position}
+                  rotation={p.rotation}
+                  benchPart={p.part}
+                />
+              ) : p.part === 'SATA_DRIVE' ? (
+                <group key={p.part} userData={{ benchPart: p.part }}>
+                  <SataDriveBlock box={p.box} isHdd={assembly.storageInstalled?.storageType === 'SATA_HDD'} />
+                </group>
+              ) : (
+                <group key={p.part} userData={{ benchPart: p.part }}>
+                  <AioPumpBlock
+                    position={p.position}
+                    scale={(p.box.max[0] - p.box.min[0]) / AIO_PUMP_BASE}
+                    isRunning={Boolean(postResult?.bootSuccess)}
+                  />
+                </group>
+              )
             )}
 
             {/* Pasta Térmica: gota do tamanho de uma ervilha exatamente sobre o IHS da CPU */}
@@ -1099,58 +1105,6 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                 <meshStandardMaterial color="#c4c4cc" roughness={0.3} metalness={0.7} />
               </mesh>
             )}
-
-            {/* Cooler assentado sobre a CPU e a camada de pasta espalhada */}
-            {assembly.coolerInstalled &&
-              (assembly.coolerInstalled.coolerType === 'Water' ? (
-                <AioPumpBlock
-                  position={[layout.CPU_SOCKET[0], ihsTopY + PASTE_LAYER, layout.CPU_SOCKET[2]]}
-                  isRunning={Boolean(postResult?.bootSuccess)}
-                />
-              ) : (
-                <AutoNormalizedPart
-                  modelUrl="/models/cooler-torre.glb"
-                  targetSize={2.4}
-                  position={[layout.CPU_SOCKET[0], ihsTopY + PASTE_LAYER, layout.CPU_SOCKET[2]]}
-                />
-              ))}
-
-            {/* Pentes de Memória RAM EM PÉ, encaixados no canal do slot DIMM e alinhados ao seu comprimento */}
-            {ramModel2 && (
-              <AutoNormalizedPart
-                modelUrl={ramModel2.url}
-                targetSize={layout.RAM_STICK_LENGTH}
-                position={layout.RAM_SLOT_2}
-                rotation={ramModel2.rotation}
-              />
-            )}
-            {ramModel4 && (
-              <AutoNormalizedPart
-                modelUrl={ramModel4.url}
-                targetSize={layout.RAM_STICK_LENGTH}
-                position={layout.RAM_SLOT_4}
-                rotation={ramModel4.rotation}
-              />
-            )}
-
-            {/* Armazenamento SSD M.2 */}
-            {assembly.storageInstalled && assembly.storageInstalled.storageType.includes('M2') && (
-              <AutoNormalizedPart
-                modelUrl={workbenchModelUrl('ssd-nvme-990pro')}
-                targetSize={1.3}
-                position={layout.M2_SLOT}
-                rotation={workbenchModelRotation('ssd-nvme-990pro')}
-              />
-            )}
-
-                {/* Placa de Vídeo (GPU) */}
-                {assembly.gpuInstalled && (
-                  <AutoNormalizedPart
-                    modelUrl="/models/gpu-rx-6700xt.glb"
-                    targetSize={4.2}
-                    position={layout.PCIE_SLOT}
-                  />
-                )}
               </>
             )}
           </Suspense>
@@ -1216,6 +1170,31 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                     }
                   : undefined
               }
+            />
+
+            {/* 1b. Alavanca de retenção do soquete (antes só era possível travá-la pela bancada 2D ou
+                pelo tooltip do soquete, difícil de descobrir) */}
+            <WorkbenchPin
+              position={layout.SOCKET_LEVER}
+              icon={<Lock className="w-3.5 h-3.5" />}
+              label="Alavanca do Soquete"
+              visible={!assembly.coolerInstalled}
+              status={assembly.socketLeverLocked ? 'installed' : assembly.cpuInstalled ? 'targeted' : 'empty'}
+              detailText={
+                assembly.socketLeverLocked
+                  ? 'Alavanca abaixada e travada: a CPU está presa no soquete.'
+                  : assembly.cpuInstalled
+                  ? 'Alavanca aberta: abaixe e trave para prender a CPU nos contatos.'
+                  : 'Alavanca aberta, aguardando o processador.'
+              }
+              actionText={
+                assembly.socketLeverLocked
+                  ? 'Alavanca Travada ✓'
+                  : assembly.cpuInstalled
+                  ? 'Abaixar e Travar Alavanca'
+                  : undefined
+              }
+              onAction={assembly.cpuInstalled && !assembly.socketLeverLocked ? toggleSocketLever : undefined}
             />
 
             {/* 2. Hotspots: Slots de Memória RAM (Contextuais para zero sobreposição) */}
@@ -1302,22 +1281,27 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
               position={layout.PCIE_SLOT}
               icon={<Zap className="w-3.5 h-3.5" />}
               label="PCIe 4.0 x16"
-              visible={!assembly.gpuInstalled || isGpuTarget}
-              status={assembly.gpuInstalled ? 'installed' : isGpuTarget ? 'targeted' : 'empty'}
+              visible={!assembly.gpuInstalled || !assembly.gpuScrewed || isGpuTarget}
+              status={assembly.gpuScrewed ? 'installed' : isGpuTarget ? 'targeted' : 'empty'}
               detailText={
-                assembly.gpuInstalled
-                  ? `${assembly.gpuInstalled.name} travada no slot`
+                assembly.gpuInstalled && assembly.gpuScrewed
+                  ? `${assembly.gpuInstalled.name} travada no slot e parafusada no gabinete`
+                  : assembly.gpuInstalled
+                  ? `${assembly.gpuInstalled.name} travada no slot. Parafuse o suporte traseiro para ela não envergar o PCIe.`
                   : 'Slot principal reforçado para Placas de Vídeo (GPU).'
               }
               actionText={
                 isGpuTarget
                   ? 'Encaixar GPU no Slot'
+                  : assembly.gpuInstalled && !assembly.gpuScrewed
+                  ? 'Parafusar Suporte da GPU'
                   : assembly.gpuInstalled
                   ? 'Placa Instalada ✓'
                   : undefined
               }
               onAction={() => {
                 if (isGpuTarget) installGpu(selectedComponentForPlacement as never);
+                else if (assembly.gpuInstalled && !assembly.gpuScrewed) screwGpu();
               }}
             />
 
@@ -1342,9 +1326,27 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
             {assembly.gpuInstalled && assembly.gpuInstalled.powerPins !== 'none' && (
               <CableTargetPin
                 targetId="GPU_POWER"
-                position={layout.GPU_POWER_HEADER}
+                position={placements.gpuPowerAnchor ?? layout.PCIE_SLOT}
                 name="PCIe 8P (GPU)"
               />
+            )}
+
+            {/* Cabos do gabinete e do disco SATA (os mesmos alvos da bancada 2D) */}
+            {assembly.caseInstalled && (
+              <>
+                {assembly.caseInstalled.fansIncluded > 0 && (
+                  <CableTargetPin targetId="SYS_FAN" position={layout.SYS_FAN_HEADER} name="SYS_FAN1" />
+                )}
+                <CableTargetPin targetId="USB3_HEADER" position={layout.USB3_HEADER} name="USB3 (19 pinos)" />
+                <CableTargetPin targetId="USB2_HEADER" position={layout.USB2_HEADER} name="USB2 (9 pinos)" />
+                <CableTargetPin targetId="HD_AUDIO" position={layout.HD_AUDIO_HEADER} name="HD_AUDIO" />
+              </>
+            )}
+            {assembly.storageInstalled && assembly.storageInstalled.storageType !== 'NVMe_M2' && (
+              <CableTargetPin targetId="SATA_PORT" position={layout.SATA_PORTS} name="SATA6G" />
+            )}
+            {placements.drivePowerAnchor && (
+              <CableTargetPin targetId="DRIVE_POWER" position={placements.drivePowerAnchor} name="Energia SATA do disco (15 pinos)" />
             )}
 
             {/* 6. Painel Frontal (F_PANEL) */}
@@ -1399,7 +1401,7 @@ export const Workbench3D: React.FC<Workbench3DProps> = ({ onToggle2D }) => {
                     }`}
                   />
                   <span
-                    className={`text-[10px] ${
+                    className={`text-[11px] ${
                       isGreen
                         ? 'text-emerald-300 font-bold'
                         : isRed

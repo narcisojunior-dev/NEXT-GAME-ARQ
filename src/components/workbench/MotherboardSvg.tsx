@@ -32,6 +32,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
     installRam,
     installStorage,
     installGpu,
+    screwGpu,
     openFrontPanelModal,
     fPanelConnections,
   } = useAssemblyStore(
@@ -50,6 +51,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
       installRam: s.installRam,
       installStorage: s.installStorage,
       installGpu: s.installGpu,
+      screwGpu: s.screwGpu,
       openFrontPanelModal: s.openFrontPanelModal,
       fPanelConnections: s.fPanelConnections,
     }))
@@ -83,6 +85,9 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
   const handlePcieSlotClick = () => {
     if (selectedComponentForPlacement?.category === 'GPU') {
       installGpu(selectedComponentForPlacement as never);
+    } else if (assembly.gpuInstalled && !assembly.gpuScrewed) {
+      // Suporte traseiro parafusado no gabinete: a placa não enverga o slot
+      screwGpu();
     }
   };
 
@@ -159,10 +164,10 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
       <div className="absolute top-4 right-4 z-20 flex items-center gap-2 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-1.5 backdrop-blur-md shadow-lg text-[11px] text-slate-300">
         <CircuitBoard className="w-3.5 h-3.5 text-cyan-400" />
         <span className="font-bold text-white">{selectedMotherboard.name}</span>
-        <span className="font-mono text-cyan-300 bg-slate-800 px-1.5 py-0.5 rounded text-[10px]">
+        <span className="font-mono text-cyan-300 bg-slate-800 px-1.5 py-0.5 rounded text-[11px]">
           {selectedMotherboard.socket}
         </span>
-        <span className="font-mono text-purple-300 bg-slate-800 px-1.5 py-0.5 rounded text-[10px]">
+        <span className="font-mono text-purple-300 bg-slate-800 px-1.5 py-0.5 rounded text-[11px]">
           {selectedMotherboard.supportedRam}
         </span>
         <button
@@ -171,7 +176,7 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           className="ml-1 text-slate-400 hover:text-white flex items-center gap-1 hover:bg-slate-800 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
         >
           <RefreshCw className="w-3 h-3" />
-          <span className="text-[10px]">Trocar</span>
+          <span className="text-[11px]">Trocar</span>
         </button>
       </div>
       {/* Banner Superior com Orientação Dinâmica para o Aluno */}
@@ -566,7 +571,13 @@ export const MotherboardSvg: React.FC<MotherboardSvgProps> = ({ onSlotClick }) =
           className={`cursor-pointer transition-transform hover:scale-102 ${SVG_FOCUS_RING}`}
           onClick={handlePcieSlotClick}
           {...pressableProps(
-            `Slot PCIe x16: ${assembly.gpuInstalled ? assembly.gpuInstalled.name : isGpuTarget ? 'vazio, pressione para encaixar a placa de vídeo' : 'vazio'}`,
+            `Slot PCIe x16: ${
+              assembly.gpuInstalled
+                ? `${assembly.gpuInstalled.name}${assembly.gpuScrewed ? ', parafusada' : ', pressione para parafusar o suporte'}`
+                : isGpuTarget
+                ? 'vazio, pressione para encaixar a placa de vídeo'
+                : 'vazio'
+            }`,
             handlePcieSlotClick
           )}
           filter={isGpuTarget ? 'url(#targetPulse)' : undefined}

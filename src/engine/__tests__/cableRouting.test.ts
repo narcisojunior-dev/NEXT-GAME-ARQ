@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildCableControlPoints, buildExternalCablePath, Vec3 } from '../cableRouting';
-import { DESK_DEPTH, DESK_SNAP_POINTS, DESK_TOP_HEIGHT, getSnapPointPosition } from '../deskSetup';
+import { DESK_DEPTH, DESK_SNAP_POINTS, DESK_TOP_HEIGHT, getSnapPointPosition, isTowerOnFloor } from '../deskSetup';
 import { EXTERNAL_CABLES, ExternalCableConnection, ExternalCableId, WALL_Z } from '../externalCabling';
 
 const CONNECTIONS: Record<ExternalCableId, ExternalCableConnection> = {
@@ -43,7 +43,24 @@ describe('Roteamento físico dos cabos externos (buildExternalCablePath)', () =>
         });
       });
 
-      it('cabos entre dois itens da mesa correm sobre o tampo (não atravessam a mesa)', () => {
+      it('nenhum cabo atravessa o volume da mesa (tampo e pés)', () => {
+        const half = deskWidth / 2;
+        (Object.keys(CONNECTIONS) as ExternalCableId[]).forEach((id) => {
+          const points = buildExternalCablePath(CONNECTIONS[id], deskWidth);
+          // Amostra também os segmentos entre os pontos de controle
+          points.slice(1).forEach((q, i) => {
+            const p = points[i];
+            for (let t = 0; t <= 1; t += 0.1) {
+              const [x, y, z] = [0, 1, 2].map((k) => p[k] + (q[k] - p[k]) * t);
+              const inside = Math.abs(x) < half - 0.005 && Math.abs(z) < DESK_DEPTH / 2 - 0.005 && y < DESK_TOP_HEIGHT - 0.005;
+              expect(inside, `${id} atravessa a mesa em ${[x, y, z].map((v) => v.toFixed(3))}`).toBe(false);
+            }
+          });
+        });
+      });
+
+      it('com a torre sobre o tampo, cabos entre itens da mesa correm sobre o tampo', () => {
+        if (isTowerOnFloor(deskWidth)) return;
         (['CABLE_DISPLAY', 'CABLE_USB_KEYBOARD', 'CABLE_USB_MOUSE', 'CABLE_AUDIO_JACK'] as ExternalCableId[]).forEach((id) => {
           buildExternalCablePath(CONNECTIONS[id], deskWidth).forEach((p) => {
             expect(p[1], id).toBeGreaterThanOrEqual(DESK_TOP_HEIGHT);

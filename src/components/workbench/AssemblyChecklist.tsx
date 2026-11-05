@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
 import { useShallow } from 'zustand/react/shallow';
-import { getRequiredCables, cableById } from '@/engine/cabling';
+import { buildAssemblyChecklist } from '@/engine/assemblyChecklist';
 import {
   CheckCircle2,
   Circle,
@@ -26,106 +26,33 @@ export const AssemblyChecklist: React.FC = () => {
     selectedMotherboard,
     selectedComponentForPlacement,
     cableConnections,
+    postResult,
   } = useAssemblyStore(
     useShallow((s) => ({
       assembly: s.assembly,
       selectedMotherboard: s.selectedMotherboard,
       selectedComponentForPlacement: s.selectedComponentForPlacement,
       cableConnections: s.cableConnections,
+      postResult: s.postResult,
     }))
   );
   const [isOpen, setIsOpen] = useState(true);
+  // Prova final da campanha: checklist desligado
+  const hideHelpers = useAssemblyStore((s) => s.campaignHideHelpers);
 
-  // Lista de etapas de montagem e seus status
-  const steps = [
-    {
-      id: 'esd',
-      title: '1. Descarregar Estática (ESD)',
-      desc: 'Toque no botão de aterramento para proteger os circuitos.',
-      isDone: assembly.esdDischarged,
-    },
-    {
-      id: 'motherboard',
-      title: '2. Escolher e Posicionar Placa-Mãe',
-      desc: 'Escolha a placa-mãe no inventário e assente-a na bancada.',
-      isDone: selectedMotherboard !== null,
-    },
-    {
-      id: 'cpu',
-      title: '3. Instalar Processador (CPU)',
-      desc: 'Alinhe o triângulo dourado com o soquete.',
-      isDone: assembly.cpuInstalled !== null,
-    },
-    {
-      id: 'lever',
-      title: '4. Travar a Alavanca do Soquete',
-      desc: 'Faça pressão na alavanca lateral para fixar os pinos.',
-      isDone: assembly.socketLeverLocked,
-    },
-    {
-      id: 'paste',
-      title: '5. Aplicar Pasta Térmica',
-      desc: 'Uma gota central do tamanho de uma ervilha.',
-      isDone: assembly.thermalPasteApplied,
-    },
-    {
-      id: 'cooler',
-      title: '6. Fixar Cooler & Conectar CPU_FAN',
-      desc: 'Aperte os parafusos e ligue o cabo do ventilador.',
-      isDone: assembly.coolerInstalled !== null && assembly.coolerFanConnected,
-    },
-    {
-      id: 'ram',
-      title: '7. Instalar Memória RAM (Dual Channel)',
-      desc: 'Encaixe nos slots 2 e 4 até ouvir o duplo clique.',
-      isDone: assembly.ramInstalledSlot2 !== null || assembly.ramInstalledSlot4 !== null,
-    },
-    {
-      id: 'storage',
-      title: '8. Instalar Armazenamento (SSD/HD)',
-      desc: 'NVMe vai no slot M.2 da placa; SSD SATA e HD vão na baia SATA com cabos de dados e energia.',
-      isDone:
-        assembly.storageInstalled !== null &&
-        (assembly.storageInstalled.storageType === 'NVMe_M2' || assembly.cableSataConnected),
-    },
-    {
-      id: 'case_prep',
-      title: '9. Gabinete, Espelho I/O & Espaçadores',
-      desc: 'Escolha um gabinete compatível, instale o espelho traseiro e os espaçadores dourados.',
-      isDone:
-        assembly.caseInstalled !== null &&
-        (assembly.ioShieldInstalled || Boolean(selectedMotherboard?.hasIntegratedIoShield)) &&
-        assembly.standoffsInstalled,
-    },
-    {
-      id: 'fpanel',
-      title: '10. Ligar Painel Frontal (F_PANEL)',
-      desc: assembly.frontPanelPowerSwConnected
-        ? 'Botão POWER SW conectado nos pinos da placa-mãe ✓'
-        : 'Ligue o conector POWER SW nos pinos F_PANEL da placa.',
-      isDone: assembly.frontPanelPowerSwConnected,
-    },
-    {
-      id: 'psu',
-      title: '11. Instalar Fonte & Cabos de Energia',
-      desc: 'Ligue os cabos de alimentação da fonte (ATX 24P, CPU 8P e PCIe da GPU).',
-      isDone:
-        assembly.psuInstalled !== null &&
-        getRequiredCables(assembly).every((id) => cableConnections[id] === cableById(id).target),
-    },
-    {
-      id: 'boot',
-      title: '12. Ligar o PC (Teste POST)',
-      desc: 'Ligue a chave da fonte [I] e pressione o botão Ligar!',
-      isDone: assembly.psuSwitchOn,
-    },
-  ];
+  // Etapas e status vêm do motor: as mesmas regras que liberam o PC para a mesa (derivePhase)
+  const steps = buildAssemblyChecklist(assembly, selectedMotherboard, {
+    cableConnections,
+    bootSuccess: Boolean(postResult?.bootSuccess),
+  });
 
   const completedCount = steps.filter((s) => s.isDone).length;
   const progressPercent = Math.round((completedCount / steps.length) * 100);
 
   // Determinar o próximo passo que falta fazer
   const nextStep = steps.find((s) => !s.isDone) || steps[steps.length - 1];
+
+  if (hideHelpers) return null;
 
   return (
     <div className="w-full bg-slate-900 border border-slate-800 rounded-3xl p-4 shadow-xl backdrop-blur-md mb-6">
@@ -152,7 +79,7 @@ export const AssemblyChecklist: React.FC = () => {
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
           <div className="flex items-center gap-2.5">
             <div className="text-right">
-              <div className="text-[10px] uppercase font-bold text-slate-400">Progresso</div>
+              <div className="text-[11px] uppercase font-bold text-slate-400">Progresso</div>
               <div className="text-xs font-mono font-bold text-cyan-400">{progressPercent}% Concluído</div>
             </div>
             <div className="w-24 h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
@@ -195,7 +122,7 @@ export const AssemblyChecklist: React.FC = () => {
                 )}
                 <span className="line-clamp-1">{step.title}</span>
               </div>
-              <div className="text-[10px] opacity-80 line-clamp-1 leading-normal">
+              <div className="text-[11px] opacity-80 line-clamp-1 leading-normal">
                 {step.desc}
               </div>
             </div>

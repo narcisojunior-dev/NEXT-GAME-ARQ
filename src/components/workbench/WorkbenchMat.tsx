@@ -343,7 +343,7 @@ export const WorkbenchMat: React.FC = () => {
           <div className="flex items-center gap-3">
             <SlotThumb component={assembly.caseInstalled} icon={<Server className="w-6 h-6" />} />
             <div>
-              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Gabinete</div>
+              <div className="text-[11px] uppercase font-bold tracking-wider text-slate-400">Gabinete</div>
               <div className="text-sm font-bold text-white">
                 {assembly.caseInstalled
                   ? assembly.caseInstalled.name
@@ -375,7 +375,7 @@ export const WorkbenchMat: React.FC = () => {
           <div className="flex items-center gap-3">
             <SlotThumb component={sataStorage} icon={<HardDrive className="w-6 h-6" />} />
             <div>
-              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Baia SATA (SSD 2,5&quot; / HD 3,5&quot;)</div>
+              <div className="text-[11px] uppercase font-bold tracking-wider text-slate-400">Baia SATA (SSD 2,5&quot; / HD 3,5&quot;)</div>
               <div className="text-sm font-bold text-white">
                 {sataStorage
                   ? sataStorage.name
@@ -411,7 +411,7 @@ export const WorkbenchMat: React.FC = () => {
           <div className="flex items-center gap-3">
             <SlotThumb component={assembly.psuInstalled} icon={<Zap className="w-6 h-6" />} />
             <div>
-              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+              <div className="text-[11px] uppercase font-bold tracking-wider text-slate-400">
                 Compartimento da Fonte (PSU)
               </div>
               <div className="text-sm font-bold text-white">
@@ -433,7 +433,7 @@ export const WorkbenchMat: React.FC = () => {
         {/* Parafusar Placa no Gabinete */}
         <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
           <div>
-            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+            <div className="text-[11px] uppercase font-bold tracking-wider text-slate-400">
               Fixação da Placa-Mãe no Gabinete
             </div>
             <div className="text-xs font-medium text-slate-300 mt-0.5">

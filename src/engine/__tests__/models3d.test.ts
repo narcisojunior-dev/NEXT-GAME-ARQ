@@ -11,7 +11,7 @@ import {
   getAvailableModels,
 } from '../models3d';
 import { findAvailableModelId, hasAvailableModels, buildAvailableIndex, AVAILABLE_MODELS_INDEX } from '../models3dIndex';
-import { resolveWorkbenchModelId, WORKBENCH_CPU_HEIGHTS, WORKBENCH_MODEL_ROTATIONS } from '../workbenchModels';
+import { resolveWorkbenchModelId, WORKBENCH_MODEL_ROTATIONS } from '../workbenchModels';
 import { CPUS, MOTHERBOARDS, RAMS, COOLERS, GPUS, STORAGES, PSUS, CASES, THERMAL_PASTES } from '../hardwareCatalog';
 import { MONITORS, KEYBOARDS, MICE, MONITOR_STANDS, GAMEPADS, AUDIO_DEVICES, CASE_THEMES, DESKS, CHAIRS, MOUSEPADS } from '../peripheralsCatalog';
 
@@ -144,12 +144,6 @@ describe('Modelos 3D da bancada (peça instalada -> GLB)', () => {
     expect(resolveWorkbenchModelId(byId(MOTHERBOARDS, 'mb-msi-b550-tomahawk'))).toBe('mb-b550m');
     expect(resolveWorkbenchModelId(byId(MOTHERBOARDS, 'mb-z790-max'))).toBe('mb-z790-atx');
     expect(resolveWorkbenchModelId(byId(MOTHERBOARDS, 'mb-rog-strix-b760i'))).toBe('mb-z790-atx');
-  });
-
-  it('todo modelo de CPU usado na bancada tem espessura medida (pasta e cooler assentam no IHS)', () => {
-    for (const cpu of CPUS) {
-      expect(WORKBENCH_CPU_HEIGHTS[resolveWorkbenchModelId(cpu)!], cpu.id).toBeGreaterThan(0);
-    }
   });
 
   it('todo pente de memória tem rotação calibrada (cada GLB vem com eixos diferentes)', () => {

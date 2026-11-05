@@ -40,23 +40,40 @@ export const BIOSSimulatorModal: React.FC = () => {
     }
   }, [isBiosOpen, postResult]);
 
+  // O botão promete "ESC / FECHAR": a tecla Esc também fecha a tela da BIOS
+  useEffect(() => {
+    if (!isBiosOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeBios();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isBiosOpen, closeBios]);
+
   if (!isBiosOpen || !postResult) return null;
 
   const isSuccess = postResult.bootSuccess;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bios-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300"
+    >
       <div className="relative w-full max-w-3xl bg-slate-950 border-2 border-slate-700 rounded-3xl p-6 shadow-2xl font-mono text-xs overflow-hidden">
         {/* Cabeçalho do Monitor / BIOS */}
         <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
           <div className="flex items-center gap-2 text-cyan-400">
             <Terminal className="w-5 h-5" />
-            <span className="font-bold tracking-widest uppercase">
+            <span id="bios-title" className="font-bold tracking-widest uppercase">
               ACADEMY UEFI BIOS UTILITY — POWER-ON SELF-TEST (POST)
             </span>
           </div>
           <button
+            type="button"
             onClick={closeBios}
+            aria-label="Fechar a BIOS (Esc)"
             className="text-slate-400 hover:text-white px-2 py-1 rounded-md border border-slate-800 hover:bg-slate-900 cursor-pointer"
           >
             ESC / FECHAR

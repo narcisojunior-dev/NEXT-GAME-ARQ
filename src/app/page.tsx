@@ -18,6 +18,10 @@ import { VirtualRoomModal } from '@/components/room/VirtualRoomModal';
 import { TeacherDashboardModal } from '@/components/teacher/TeacherDashboardModal';
 import dynamic from 'next/dynamic';
 import { useModel3DStore } from '@/components/three/model3dStore';
+import { useProgressStore } from '@/store/useProgressStore';
+import { CampaignMapModal } from '@/components/campaign/CampaignMapModal';
+import { ActiveMissionPanel } from '@/components/campaign/ActiveMissionPanel';
+import { MissionDebriefModal } from '@/components/campaign/MissionDebriefModal';
 
 // Manifesto 3D e modal só são baixados quando o aluno abre o 3D (RNF08)
 const Model3DModal = dynamic(() => import('@/components/three/Model3DModal').then((m) => m.Model3DModal), { ssr: false });
@@ -25,10 +29,13 @@ const Model3DModal = dynamic(() => import('@/components/three/Model3DModal').the
 export default function Home() {
   const is3DOpen = useModel3DStore((s) => Boolean(s.modelId) || s.isGalleryOpen);
 
+  // Progresso salvo (#30): hidratado só no cliente, depois do primeiro render (mesmo HTML do servidor).
+  // A store só é exposta aos testes E2E depois da hidratação: antes disso, o estado salvo ainda
+  // pode substituir o que o teste acabou de montar (e interromper um POST em andamento).
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      (window as any).useAssemblyStore = useAssemblyStore;
-    }
+    void Promise.all([useAssemblyStore.persist.rehydrate(), useProgressStore.persist.rehydrate()]).then(() => {
+      Object.assign(window, { useAssemblyStore });
+    });
   }, []);
   return (
     <LazyMotion features={domAnimation} strict>
@@ -38,6 +45,9 @@ export default function Home() {
       <TopHUD />
 
       <div className="max-w-7xl w-full mx-auto px-4 mt-6 space-y-6">
+        {/* Missão da campanha em andamento: objetivos ao vivo e entrega ao cliente */}
+        <ActiveMissionPanel />
+
         {/* Banner de Missão com Cliente (se ativo) */}
         <MissionHeader />
 
@@ -64,6 +74,8 @@ export default function Home() {
       <AcademyOSDesktop />
       <VirtualRoomModal />
       <TeacherDashboardModal />
+      <CampaignMapModal />
+      <MissionDebriefModal />
       {is3DOpen && <Model3DModal />}
     </main>
     </MotionConfig>

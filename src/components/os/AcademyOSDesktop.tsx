@@ -91,7 +91,7 @@ export const AcademyOSDesktop: React.FC = () => {
               <span className="text-xs font-black text-white font-mono tracking-wider">
                 AcademyOS
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">
                 v2.4 LTS Desktop
               </span>
             </div>
@@ -205,7 +205,7 @@ export const AcademyOSDesktop: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Cartão de FPS Médio */}
                 <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
                     Taxa Média de Quadros
                   </div>
                   <div className="my-2">
@@ -225,10 +225,10 @@ export const AcademyOSDesktop: React.FC = () => {
 
                 {/* Cartão de 1% Low FPS (Estabilidade de Frametime) */}
                 <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 flex items-center justify-between">
                     <span>1% Low (Estabilidade)</span>
                     {res.singleChannelPenalty && (
-                      <span className="text-amber-400 text-[10px] font-bold">⚠️ Stutter</span>
+                      <span className="text-amber-400 text-[11px] font-bold">⚠️ Stutter</span>
                     )}
                   </div>
                   <div className="my-2">
@@ -250,7 +250,7 @@ export const AcademyOSDesktop: React.FC = () => {
 
                 {/* Cartão de Medidor de Gargalo (Bottleneck Gauge) */}
                 <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
                     Índice de Gargalo (Bottleneck)
                   </div>
                   <div className="my-2 flex items-baseline gap-2">
@@ -290,7 +290,7 @@ export const AcademyOSDesktop: React.FC = () => {
 
                 {/* Cartão de Pontuação Geral */}
                 <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col justify-between">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
                     Pontuação CyberRacer
                   </div>
                   <div className="my-2">

@@ -22,7 +22,7 @@ export const viewport: Viewport = {
   themeColor: '#0284c7',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  // Zoom liberado (#28, WCAG 1.4.4): alunos com baixa visão precisam ampliar a tela
 };
 
 export default function RootLayout({

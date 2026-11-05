@@ -25,7 +25,7 @@ export interface DeskSnapPointSpec {
   label: string;
   /**
    * Posição nominal em metros (1 unidade de mundo = 1 m) na mesa de referência de 140 cm.
-   * Use getSnapPointPosition() para a posição na largura da mesa realmente posicionada.
+   * Use getSnapPointPosition() para a posição na mesa realmente posicionada (X empacotado).
    */
   nominalPosition: [number, number, number];
   /** Rotação em Y (radianos): frente do item voltada para o aluno (+Z) por padrão */
@@ -80,7 +80,7 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
     id: 'PC_TOWER',
     label: 'Gabinete do PC (Torre)',
     // Lado direito do tampo, painel traseiro (portas) voltado para a parede
-    nominalPosition: [0.55, DESK_TOP_HEIGHT, -0.03],
+    nominalPosition: [0.56, DESK_TOP_HEIGHT, -0.03],
     nominalRotation: [0, 0, 0],
     footprint: [0.23, 0.47],
     isRequiredForBoot: true,
@@ -90,9 +90,10 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   MONITOR_MAIN: {
     id: 'MONITOR_MAIN',
     label: 'Monitor Principal',
-    nominalPosition: [-0.1, DESK_TOP_HEIGHT, -0.17],
+    // Recuado o bastante para a base não pisar no mousepad
+    nominalPosition: [-0.015, DESK_TOP_HEIGHT, -0.195],
     nominalRotation: [0, 0, 0],
-    footprint: [0.3, 0.22],
+    footprint: [0.3, 0.18],
     isRequiredForBoot: true,
     allowedCategories: ['MONITOR'],
     parentSnapPoint: 'DESK_BASE',
@@ -101,7 +102,7 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
     id: 'MONITOR_ARM',
     label: 'Braço Articulado do Monitor',
     // Grampo preso na borda traseira do tampo
-    nominalPosition: [-0.1, DESK_TOP_HEIGHT, -0.25],
+    nominalPosition: [-0.015, DESK_TOP_HEIGHT, -0.25],
     nominalRotation: [0, 0, 0],
     footprint: [0.12, 0.1],
     isRequiredForBoot: false,
@@ -111,7 +112,7 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   MOUSEPAD: {
     id: 'MOUSEPAD',
     label: 'Mousepad Gamer / Deskmat',
-    nominalPosition: [-0.13, DESK_TOP_HEIGHT, 0.095],
+    nominalPosition: [-0.045, DESK_TOP_HEIGHT, 0.095],
     nominalRotation: [0, 0, 0],
     footprint: [0.9, 0.4],
     isRequiredForBoot: false,
@@ -121,7 +122,7 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   KEYBOARD: {
     id: 'KEYBOARD',
     label: 'Teclado',
-    nominalPosition: [-0.2, DESK_TOP_HEIGHT + 0.004, 0.12],
+    nominalPosition: [-0.115, DESK_TOP_HEIGHT + 0.004, 0.12],
     nominalRotation: [0, 0, 0],
     footprint: [0.36, 0.13],
     isRequiredForBoot: true,
@@ -131,7 +132,7 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   MOUSE: {
     id: 'MOUSE',
     label: 'Mouse',
-    nominalPosition: [0.2, DESK_TOP_HEIGHT + 0.004, 0.13],
+    nominalPosition: [0.285, DESK_TOP_HEIGHT + 0.004, 0.13],
     nominalRotation: [0, 0, 0],
     footprint: [0.07, 0.12],
     isRequiredForBoot: true,
@@ -141,7 +142,8 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   HEADSET: {
     id: 'HEADSET',
     label: 'Headset / Áudio',
-    nominalPosition: [-0.58, DESK_TOP_HEIGHT, -0.12],
+    // Canto traseiro esquerdo, atrás do mousepad
+    nominalPosition: [-0.555, DESK_TOP_HEIGHT, -0.2],
     nominalRotation: [0, 0.3, 0],
     footprint: [0.19, 0.1],
     isRequiredForBoot: false,
@@ -151,7 +153,7 @@ export const DESK_SNAP_POINTS: Record<DeskSnapPointId, DeskSnapPointSpec> = {
   CHAIR: {
     id: 'CHAIR',
     label: 'Cadeira do Aluno',
-    nominalPosition: [-0.1, 0, 0.75],
+    nominalPosition: [-0.115, 0, 0.75],
     nominalRotation: [0, Math.PI, 0],
     footprint: [0.65, 0.65],
     isRequiredForBoot: false,
@@ -165,16 +167,96 @@ export function getDeskWidth(placedItems: Partial<Record<DeskSnapPointId, Placed
   return (deskId && DESK_WIDTH_BY_ID[deskId]) || REFERENCE_DESK_WIDTH;
 }
 
+/* ------------------------------------------------------------------------------------
+ * Arranjo da mesa: as posições em X são EMPACOTADAS a partir das larguras reais reservadas
+ * (zona de áudio à esquerda, monitor, torre à direita; mousepad, teclado e mouse na frente).
+ * As reservas cobrem o maior item de cada categoria (validado em deskGeometry.test.ts), então
+ * nenhum item muda de lugar quando outro é posicionado e nenhuma combinação se sobrepõe.
+ * ------------------------------------------------------------------------------------ */
+/** Folga até a borda do tampo e entre itens vizinhos (m) */
+export const DESK_EDGE_MARGIN = 0.02;
+export const DESK_ITEM_GAP = 0.01;
+/** Larguras reservadas (m): maior gabinete, maior dispositivo de áudio, maior monitor, maior mousepad */
+export const TOWER_ZONE_WIDTH = 0.24;
+export const AUDIO_ZONE_WIDTH = 0.25;
+export const MONITOR_ZONE_WIDTH = 0.82;
+export const MOUSEPAD_ZONE_WIDTH = 0.9;
+
+/** Largura mínima de tampo para a torre ficar sobre a mesa junto com áudio e monitor */
+export const MIN_DESK_WIDTH_FOR_TOWER_ON_TOP =
+  2 * DESK_EDGE_MARGIN + AUDIO_ZONE_WIDTH + MONITOR_ZONE_WIDTH + TOWER_ZONE_WIDTH + 2 * DESK_ITEM_GAP;
+
 /**
- * Posição do snap point na mesa de largura `deskWidth`: as posições em X acompanham
- * proporcionalmente a largura do tampo (uma mesa de 120 cm aproxima o PC do centro).
+ * Em mesas compactas (120 cm) a torre não cabe ao lado de um monitor ultrawide e do áudio:
+ * ela fica no chão, ao lado direito da mesa — como nos laboratórios de informática reais.
+ */
+export function isTowerOnFloor(deskWidth: number): boolean {
+  return deskWidth < MIN_DESK_WIDTH_FOR_TOWER_ON_TOP;
+}
+
+/** Posições relativas na frente: mousepad à frente do monitor, teclado à esquerda do centro do pad e mouse à direita */
+const PAD_OFFSET_FROM_MONITOR = -0.03;
+const KEYBOARD_OFFSET_FROM_PAD = -0.07;
+const MOUSE_OFFSET_FROM_PAD = 0.33;
+
+const clamp = (v: number, lo: number, hi: number) => (lo <= hi ? Math.min(hi, Math.max(lo, v)) : (lo + hi) / 2);
+
+interface DeskRowLayout {
+  towerX: number;
+  monitorX: number;
+  audioX: number;
+  padX: number;
+}
+
+function deskRowLayout(deskWidth: number): DeskRowLayout {
+  const half = deskWidth / 2;
+  const onFloor = isTowerOnFloor(deskWidth);
+  const towerX = onFloor ? half + DESK_EDGE_MARGIN + TOWER_ZONE_WIDTH / 2 : half - DESK_EDGE_MARGIN - TOWER_ZONE_WIDTH / 2;
+  // Limite direito livre do tampo (a torre sobre a mesa ocupa a faixa direita inteira, de trás até a frente)
+  const rightLimit = onFloor ? half - DESK_EDGE_MARGIN : towerX - TOWER_ZONE_WIDTH / 2 - DESK_ITEM_GAP;
+  const audioX = -half + DESK_EDGE_MARGIN + AUDIO_ZONE_WIDTH / 2;
+  const monitorX = clamp(
+    DESK_SNAP_POINTS.MONITOR_MAIN.nominalPosition[0],
+    audioX + AUDIO_ZONE_WIDTH / 2 + DESK_ITEM_GAP + MONITOR_ZONE_WIDTH / 2,
+    rightLimit - MONITOR_ZONE_WIDTH / 2
+  );
+  // Mousepad centrado à frente do monitor (levemente à direita, onde fica o mouse)
+  const padX = clamp(
+    monitorX + PAD_OFFSET_FROM_MONITOR,
+    -half + DESK_EDGE_MARGIN + MOUSEPAD_ZONE_WIDTH / 2,
+    rightLimit - MOUSEPAD_ZONE_WIDTH / 2
+  );
+  return { towerX, monitorX, audioX, padX };
+}
+
+/**
+ * Posição do snap point na mesa de largura `deskWidth` (metros). Y é a base do item:
+ * tampo para os itens de mesa, chão para mesa, cadeira e a torre em mesas compactas.
  */
 export function getSnapPointPosition(
   snapPointId: DeskSnapPointId,
   deskWidth: number = REFERENCE_DESK_WIDTH
 ): [number, number, number] {
-  const [x, y, z] = DESK_SNAP_POINTS[snapPointId].nominalPosition;
-  return [x * (deskWidth / REFERENCE_DESK_WIDTH), y, z];
+  const [, y, z] = DESK_SNAP_POINTS[snapPointId].nominalPosition;
+  const row = deskRowLayout(deskWidth);
+  switch (snapPointId) {
+    case 'DESK_BASE':
+      return [0, y, z];
+    case 'PC_TOWER':
+      return [row.towerX, isTowerOnFloor(deskWidth) ? 0 : y, z];
+    case 'MONITOR_MAIN':
+    case 'MONITOR_ARM':
+      return [row.monitorX, y, z];
+    case 'HEADSET':
+      return [row.audioX, y, z];
+    case 'MOUSEPAD':
+      return [row.padX, y, z];
+    case 'KEYBOARD':
+    case 'CHAIR':
+      return [row.padX + KEYBOARD_OFFSET_FROM_PAD, y, z];
+    case 'MOUSE':
+      return [row.padX + MOUSE_OFFSET_FROM_PAD, y, z];
+  }
 }
 
 export function createInitialDeskSetupState(): DeskSetupState {
@@ -187,6 +269,8 @@ export function createInitialDeskSetupState(): DeskSetupState {
 
 export interface PlaceOnDeskContext {
   isPcAssembled?: boolean;
+  /** Passos da bancada que faltam (para dizer exatamente o que impede levar o PC) */
+  pendingBenchSteps?: string[];
   studentSetup?: StudentSetupConfig;
 }
 
@@ -274,7 +358,9 @@ export function canPlaceOnDesk(
       allowed: false,
       isErrorPenalty: false,
       message:
-        'Finalize a montagem do computador na bancada (incluindo os cabos internos) antes de levá-lo para a mesa.',
+        context.pendingBenchSteps && context.pendingBenchSteps.length > 0
+          ? `Finalize a montagem do computador na bancada antes de levá-lo para a mesa. Falta: ${context.pendingBenchSteps.join('; ')}.`
+          : 'Finalize a montagem do computador na bancada (incluindo os cabos internos) antes de levá-lo para a mesa.',
     };
   }
 

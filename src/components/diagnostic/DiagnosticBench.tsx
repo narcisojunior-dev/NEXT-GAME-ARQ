@@ -65,7 +65,7 @@ export const DiagnosticBench: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono font-bold tracking-widest uppercase px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800/60">
+              <span className="text-[11px] font-mono font-bold tracking-widest uppercase px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800/60">
                 Assistência Técnica de Hardware
               </span>
               <span className="text-xs text-slate-400">
@@ -145,7 +145,7 @@ export const DiagnosticBench: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded font-mono ${
                   current.difficulty === 'FÁCIL'
                     ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                     : current.difficulty === 'MÉDIO'
@@ -154,7 +154,7 @@ export const DiagnosticBench: React.FC = () => {
                 }`}>
                   Dificuldade: {current.difficulty}
                 </span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-yellow-950/80 text-yellow-300 border border-yellow-800/60 flex items-center gap-1">
+                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-yellow-950/80 text-yellow-300 border border-yellow-800/60 flex items-center gap-1">
                   <Award className="w-3 h-3" />
                   +{current.rewardPoints} XP
                 </span>
@@ -169,7 +169,7 @@ export const DiagnosticBench: React.FC = () => {
             {/* Sintoma Técnico e Inspeção */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800/80">
               <div className="space-y-1">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3 text-amber-400" />
                   <span>Sintoma Observado</span>
                 </div>
@@ -179,7 +179,7 @@ export const DiagnosticBench: React.FC = () => {
               </div>
 
               <div className="space-y-1">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1">
                   <ShieldAlert className="w-3 h-3 text-rose-400" />
                   <span>Leitura do Multímetro / Telemetria</span>
                 </div>
@@ -194,7 +194,7 @@ export const DiagnosticBench: React.FC = () => {
         {/* Coluna 3: Status da Resolução e Dica Pedagógica */}
         <div className="flex flex-col justify-between p-4 rounded-2xl bg-slate-950/80 border border-slate-800">
           <div>
-            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-2">
+            <div className="text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-2">
               Status do Diagnóstico
             </div>
 

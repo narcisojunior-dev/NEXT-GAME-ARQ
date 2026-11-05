@@ -17,7 +17,11 @@ import {
   Cpu,
   Box,
   Monitor,
+  Map as MapIcon,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
+import { useProgressStore } from '@/store/useProgressStore';
 import { hasAvailableModels } from '@/engine/models3dIndex';
 import { PHASE_LABELS } from '@/engine/phases';
 import { useModel3DStore } from '@/components/three/model3dStore';
@@ -57,6 +61,9 @@ export const TopHUD: React.FC = () => {
     }))
   );
   const currentPhase = useAssemblyStore(selectCurrentPhase);
+  const openCampaignMap = useAssemblyStore((s) => s.openCampaignMap);
+  const soundMuted = useProgressStore((s) => s.soundMuted);
+  const setSoundMuted = useProgressStore((s) => s.setSoundMuted);
   const openGallery = useModel3DStore((s) => s.openGallery);
   const currentPhaseNumber = PHASES.find((p) => p.id === currentPhase)?.number ?? 1;
 
@@ -89,7 +96,7 @@ export const TopHUD: React.FC = () => {
               <h1 className="text-sm font-extrabold text-white tracking-wider uppercase font-mono">
                 PC Builder Academy
               </h1>
-              <p className="text-[10px] text-slate-400 font-medium">1º Ano do Ensino Médio</p>
+              <p className="text-[11px] text-slate-400 font-medium">1º Ano do Ensino Médio</p>
             </div>
           </div>
 
@@ -146,6 +153,29 @@ export const TopHUD: React.FC = () => {
 
         {/* Métricas: Orçamento e Cronômetro */}
         <div className="flex items-center gap-3">
+          {/* Campanha: missões sequenciais por módulo de jogo */}
+          <button
+            type="button"
+            onClick={openCampaignMap}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black transition-all cursor-pointer"
+            title="Campanha: missões de cada módulo do jogo"
+          >
+            <MapIcon className="w-3.5 h-3.5" aria-hidden />
+            <span>Campanha</span>
+          </button>
+
+          {/* Som: preferência salva (#28) */}
+          <button
+            type="button"
+            onClick={() => setSoundMuted(!soundMuted)}
+            aria-pressed={soundMuted}
+            aria-label={soundMuted ? 'Ativar o som' : 'Silenciar o som'}
+            title={soundMuted ? 'Ativar o som' : 'Silenciar o som'}
+            className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 cursor-pointer"
+          >
+            {soundMuted ? <VolumeX className="w-4 h-4" aria-hidden /> : <Volume2 className="w-4 h-4" aria-hidden />}
+          </button>
+
           {/* Botão de Abrir Painel do Professor */}
           <button
             onClick={openTeacherDashboard}
@@ -205,7 +235,7 @@ export const TopHUD: React.FC = () => {
             }`}>
               <Coins className="w-4 h-4" />
               <div className="text-right">
-                <div className="text-[10px] uppercase font-bold text-slate-400">Orçamento Restante</div>
+                <div className="text-[11px] uppercase font-bold text-slate-400">Orçamento Restante</div>
                 <div className="text-xs font-mono font-bold">
                   R$ {budgetRemaining.toLocaleString('pt-BR')}
                 </div>
@@ -216,7 +246,7 @@ export const TopHUD: React.FC = () => {
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200">
             <Clock className="w-4 h-4 text-cyan-400" />
             <div>
-              <div className="text-[10px] uppercase font-bold text-slate-400">Tempo</div>
+              <div className="text-[11px] uppercase font-bold text-slate-400">Tempo</div>
               <div className="text-xs font-mono font-bold">{formatTime(elapsedSeconds)}</div>
             </div>
           </div>
