@@ -147,7 +147,8 @@ test('professor e duas bancadas: turma, Desafio de Orçamento, envios, ranking, 
 
 test('o link do painel do professor exige login e a turma inexistente é explicada ao aluno', async ({ page }) => {
   await page.goto('/professor/turmas');
-  await expect(page).toHaveURL(/\/professor$/);
+  // Primeira visita: no servidor de desenvolvimento frio do CI, a página e a rota /auth/me compilam agora
+  await expect(page).toHaveURL(/\/professor$/, { timeout: 30_000 });
   await expect(page.getByRole('heading', { name: 'Entrar' })).toBeVisible();
   await page.goto('/t/ZZZZZZ');
   await waitStores(page);
