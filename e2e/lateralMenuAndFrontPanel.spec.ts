@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
+import './support/windowStores';
 
 test.describe('Menu Lateral de Escolha de Componentes e Verificação do Painel Frontal', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('body')).toBeVisible();
+    // Espera a hidratação: antes dela, o HTML do servidor aparece mas os cliques não têm efeito
+    await page.waitForFunction(() => typeof window.useAssemblyStore !== 'undefined');
   });
 
   test('renderiza o menu lateral de componentes ao lado da bancada e permite alternar abas e categorias', async ({ page }) => {
