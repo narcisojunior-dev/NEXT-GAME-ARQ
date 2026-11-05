@@ -11,7 +11,8 @@ export default defineConfig({
   },
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  // WebGL por software no runner de 2 núcleos: uma nova tentativa no CI, com trace gravado nela
+  retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: 'list',
   use: {
