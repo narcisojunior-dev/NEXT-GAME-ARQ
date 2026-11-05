@@ -53,6 +53,8 @@ export default defineConfig({
     command: `npm run dev -- -p ${new URL(baseURL).port || '3001'}`,
     url: baseURL,
     reuseExistingServer: true,
+    // Modo Professor nos testes: repositório em memória, nunca o banco de produção (#80)
+    env: { CLASSROOM_REPO: 'memory' },
     timeout: 120 * 1000,
   },
 });

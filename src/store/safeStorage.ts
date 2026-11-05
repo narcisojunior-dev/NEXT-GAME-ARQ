@@ -50,4 +50,5 @@ export const STORAGE_KEYS = {
   assembly: 'pcba-montagem-v1',
   progress: 'pcba-progresso-v1',
   room: 'pcba-quarto-v1',
+  classroom: 'pcba-turma-v1',
 } as const;

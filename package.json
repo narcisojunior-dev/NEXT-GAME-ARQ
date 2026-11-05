@@ -10,9 +10,11 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "models:optimize": "node scripts/optimize-models.mjs",
-    "models:measure": "node scripts/measure-models.mjs"
+    "models:measure": "node scripts/measure-models.mjs",
+    "db:migrate": "node scripts/db-migrate.mjs"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.4.0",
     "canvas-confetti": "^1.9.4",
@@ -22,6 +24,7 @@
     "next": "^15.2.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^3.0.2",
     "three": "^0.180.0",
     "zustand": "^5.0.3"

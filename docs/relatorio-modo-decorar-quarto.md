@@ -66,7 +66,7 @@ Tudo do modo é baixado só quando é usado: a bancada não fica mais pesada.
 | `room3d/DecorDrawer.tsx` (#87) | Gaveta, item em mãos, lista "Itens no quarto", teclado e foto |
 | `room3d/decorShapes.ts`, `posterArt.ts` (#88) | Versões leves feitas por código e arte original dos pôsteres em `<canvas>` |
 
-Carregamento: `DecorScene` por `React.lazy` (só depois que o PC ligou na mesa ou ao abrir o modo) e
+Carregamento: `DecorScene` por `React.lazy` (só ao abrir o Modo Decorar ou com um quarto já salvo) e
 `DecorDrawer` por `next/dynamic`. O estado efêmero (item em mãos, seleção) fica em
 `decorModeStore.ts`, um módulo de 3 KB sem o catálogo.
 

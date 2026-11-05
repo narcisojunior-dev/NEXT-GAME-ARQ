@@ -44,3 +44,4 @@ graphify-out/.graphify_analysis.json
 
 # prompts e orquestracao de IA
 
+.env*

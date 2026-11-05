@@ -29,9 +29,9 @@ import { DeskCablesLayer } from './DeskCablesLayer';
 import { MonitorView } from './MonitorView';
 import { RoomShell } from '../room3d/RoomShell';
 import { useDecorModeStore } from '../room3d/decorModeStore';
-import { useProgressStore } from '@/store/useProgressStore';
+import { STORAGE_KEYS, safeStateStorage } from '@/store/safeStorage';
 
-/** Decoração do quarto: baixada só depois que o PC ligou na mesa ou ao abrir o Modo Decorar (#87) */
+/** Decoração do quarto: baixada só ao abrir o Modo Decorar ou quando já existe um quarto salvo (#87, #91) */
 const DecorScene = React.lazy(() => import('../room3d/DecorScene'));
 
 /* ====================================================================================
@@ -536,7 +536,14 @@ export const DeskStationScene: React.FC<DeskStationSceneProps> = ({ isRunning })
   const monitorZ = getSnapPointPosition('MONITOR_MAIN', deskWidth)[2];
   const roomTheme = useAssemblyStore((s) => s.selectedRoomTheme);
   const decorOpen = useDecorModeStore((s) => s.isOpen);
-  const showDecor = useProgressStore((s) => Boolean(s.deskRunningAt)) || decorOpen;
+  // A decoração só entra na cena depois que o aluno abre o Modo Decorar (ou se já tem um quarto salvo):
+  // quem nunca decora não paga o custo de desenhar o quarto na mesa (#91)
+  const [hasSavedRoom] = useState(() => Boolean(safeStateStorage.getItem(STORAGE_KEYS.room)));
+  const [openedThisSession, setOpenedThisSession] = useState(false);
+  useEffect(() => {
+    if (decorOpen) setOpenedThisSession(true);
+  }, [decorOpen]);
+  const showDecor = decorOpen || openedThisSession || hasSavedRoom;
 
   return (
     <group>

@@ -33,8 +33,10 @@ lia a sessão inteira (com o cronômetro) mesmo sem missão ativa.
 ## Modo Decorar o Quarto (#91)
 **Bundle.** Build de produção antes e depois da feature: o JS inicial da página `/` foi de
 291 kB para 292 kB (First Load). O catálogo, as regras, a cena e a gaveta ficam em chunks baixados
-sob demanda (12 a 15 kB gzip cada): a cena só depois que o PC liga na mesa, a gaveta só ao abrir o
-modo. Na página inicial entram apenas o store efêmero do modo (item em mãos, seleção) e o nome da
+sob demanda (12 a 15 kB gzip cada): a cena e a gaveta só quando o aluno abre o Modo Decorar (ou já
+tem um quarto salvo). Quem nunca decora não paga o custo de desenhar o quarto na mesa: no CI, com
+WebGL por software, carregar a decoração assim que o PC ligava deixava a jornada da mesa mais de
+duas vezes mais lenta. Na página inicial entram apenas o store efêmero do modo (item em mãos, seleção) e o nome da
 chave do `localStorage`.
 
 **Orçamento por nível de qualidade** (verificado em `canPlace`, que recusa com `LIMITE_DO_QUARTO`):

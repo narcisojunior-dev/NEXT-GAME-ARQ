@@ -23,12 +23,14 @@ import {
   Wallet,
   AlertTriangle,
   XCircle,
+  Users,
 } from 'lucide-react';
 import { soundEngine } from '@/engine/audio/soundEngine';
 import { useProgressStore } from '@/store/useProgressStore';
 import { hasAvailableModels } from '@/engine/models3dIndex';
 import { PHASE_LABELS } from '@/engine/phases';
 import { useModel3DStore } from '@/components/three/model3dStore';
+import { useClassroomStore } from '@/store/useClassroomStore';
 
 const HAS_3D_MODELS = hasAvailableModels();
 const PHASES = PHASE_LABELS;
@@ -97,6 +99,25 @@ const BudgetBalance: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+/** Entrar na turma (#78): sem turma abre a entrada; na turma mostra o código e leva ao banner */
+const ClassroomButton: React.FC = () => {
+  const code = useClassroomStore((s) => s.session?.code ?? null);
+  const openJoin = useClassroomStore((s) => s.openJoin);
+  return (
+    <button
+      type="button"
+      onClick={() => (code ? document.querySelector('section[aria-label^="Turma "]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) : openJoin())}
+      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer border ${
+        code ? 'bg-fuchsia-950/60 border-fuchsia-500/70 text-fuchsia-200' : 'bg-slate-900 border-fuchsia-500/60 text-fuchsia-200 hover:bg-fuchsia-950/50'
+      }`}
+      title={code ? `Na turma ${code}` : 'Entrar na turma do professor com o código'}
+    >
+      <Users className="w-3.5 h-3.5" aria-hidden />
+      <span>{code ? `Turma ${code}` : 'Entrar na turma'}</span>
+    </button>
   );
 };
 
@@ -216,6 +237,9 @@ export const TopHUD: React.FC = () => {
             <MapIcon className="w-3.5 h-3.5" aria-hidden />
             <span>Campanha</span>
           </button>
+
+          {/* Turma do professor (#78): entrar com o código da turma */}
+          <ClassroomButton />
 
           {/* Som: preferência salva (#28) */}
           <button
