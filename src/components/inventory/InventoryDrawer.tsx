@@ -15,6 +15,7 @@ import {
 } from '@/engine/hardwareCatalog';
 import { ComponentCard } from './ComponentCard';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import {
   Cpu,
   Layers,
@@ -46,7 +47,13 @@ type FilterCategory = 'ALL' | ComponentCategory;
 
 export const InventoryDrawer: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<FilterCategory>('ALL');
-  const { selectedComponentForPlacement } = useAssemblyStore();
+  const {
+    selectedComponentForPlacement,
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      selectedComponentForPlacement: s.selectedComponentForPlacement,
+    }))
+  );
 
   const categories: { id: FilterCategory; label: string; icon: React.ReactNode }[] = [
     { id: 'ALL', label: 'Todos', icon: <Box className="w-3.5 h-3.5" /> },

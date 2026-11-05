@@ -2,10 +2,27 @@
 
 import React, { useState } from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import { Trophy, Users, Award, ShieldAlert } from 'lucide-react';
 
 export const TeamChallengeBanner: React.FC = () => {
-  const { gameMode, teamName, setTeamName, calculateFinalScore, penaltiesCount, elapsedSeconds } = useAssemblyStore();
+  const {
+    gameMode,
+    teamName,
+    setTeamName,
+    calculateFinalScore,
+    penaltiesCount,
+    elapsedSeconds,
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      gameMode: s.gameMode,
+      teamName: s.teamName,
+      setTeamName: s.setTeamName,
+      calculateFinalScore: s.calculateFinalScore,
+      penaltiesCount: s.penaltiesCount,
+      elapsedSeconds: s.elapsedSeconds,
+    }))
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [nameInput, setNameInput] = useState(teamName);
   const [generatedScore, setGeneratedScore] = useState<ReturnType<typeof calculateFinalScore> | null>(null);

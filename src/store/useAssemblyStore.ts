@@ -28,6 +28,7 @@ import {
   validateRamType,
   validateEsdDischarged,
   validateCoolerSocket,
+  validateCoolerPrerequisites,
   validateCoolerCapacity,
   validateThermalPasteApplication,
   validateStorageSlot,
@@ -38,6 +39,7 @@ import {
 import { INITIAL_ASSEMBLY_STATE } from '../engine/assemblyState';
 import { derivePhase } from '../engine/phases';
 import { soundEngine } from '../engine/audio/soundEngine';
+import { MonitorScreenInfo, deriveMonitorScreen } from '../engine/monitorScreen';
 import {
   DeskSnapPointId,
   DeskStage,
@@ -47,6 +49,8 @@ import {
   canPlaceOnDesk,
   canRemoveFromDesk,
   deriveDeskStage,
+  isPcReadyForDesk,
+  canPowerOnDesk,
   PlacementValidationResult,
   RemovalValidationResult,
 } from '../engine/deskSetup';
@@ -183,7 +187,8 @@ interface AssemblyStore {
   placeDeskItem: (snapPointId: DeskSnapPointId, item: PlacedDeskItem) => boolean;
   removeDeskItem: (snapPointId: DeskSnapPointId) => boolean;
   clearDeskSetup: () => void;
-  setDeskPower: (on: boolean) => void;
+  /** Liga/desliga a estação. Ligar só é aceito em READY_TO_BOOT; retorna se a ação foi aplicada. */
+  setDeskPower: (on: boolean) => boolean;
   setDeskCameraPreset: (preset: 'setup-wide' | 'setup-top' | 'setup-pc' | 'setup-seat') => void;
   canPlaceOnDeskSnapPoint: (snapPointId: DeskSnapPointId, item: unknown) => PlacementValidationResult;
   canRemoveDeskSnapPoint: (snapPointId: DeskSnapPointId) => RemovalValidationResult;
@@ -200,14 +205,42 @@ interface AssemblyStore {
  */
 export const selectDeskStage = (
   state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard' | 'deskSetup' | 'externalCabling'>
-): DeskStage =>
-  deriveDeskStage({
+): DeskStage => deriveDeskStage(deskStageParams(state));
+
+/** POST do PC montado, como se a chave da fonte estivesse ligada (a mesa liga o PC pelo botão) */
+const evaluateDeskPost = (state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard'>) =>
+  evaluatePostTest({ ...state.assembly, psuSwitchOn: true }, state.selectedMotherboard);
+
+const deskStageParams = (
+  state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard' | 'deskSetup' | 'externalCabling'>
+) => ({
+  assembly: state.assembly,
+  selectedMotherboard: state.selectedMotherboard,
+  deskSetup: state.deskSetup,
+  isDeskPoweredOn: state.deskSetup.isDeskPoweredOn,
+  externalCablesStatus: evaluateExternalCablesStatus(state.externalCabling, state.assembly),
+  postBootSuccess: evaluateDeskPost(state).bootSuccess,
+});
+
+/** Pode ligar a estação? (PC montado, itens obrigatórios na mesa e cabo de força na tomada) */
+export const selectCanPowerOnDesk = (
+  state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard' | 'deskSetup' | 'externalCabling'>
+) => canPowerOnDesk(deskStageParams(state));
+
+/** O que a tela do monitor 3D mostra agora (Issue 05) */
+export const selectMonitorScreen = (
+  state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard' | 'deskSetup' | 'externalCabling'>
+): MonitorScreenInfo => {
+  const post = state.deskSetup.isDeskPoweredOn ? evaluateDeskPost(state) : null;
+  const firstError = post && !post.bootSuccess ? post.issues.find((i) => i.type === 'ERROR') : undefined;
+  return deriveMonitorScreen({
+    placedDeskItems: state.deskSetup.placedDeskItems,
+    externalCabling: state.externalCabling,
     assembly: state.assembly,
-    selectedMotherboard: state.selectedMotherboard,
-    deskSetup: state.deskSetup,
-    isDeskPoweredOn: state.deskSetup.isDeskPoweredOn,
-    externalCablesStatus: evaluateExternalCablesStatus(state.externalCabling, state.assembly),
+    isPcPoweredOn: state.deskSetup.isDeskPoweredOn,
+    postFailure: firstError ? { title: firstError.title, message: firstError.message } : null,
   });
+};
 
 export const selectCurrentPhase = (state: Pick<AssemblyStore, 'assembly' | 'selectedMotherboard'>): AssemblyPhase =>
   derivePhase(state.assembly, state.selectedMotherboard);
@@ -224,6 +257,13 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
         message: issue.suggestedAction ? `${issue.message} ${issue.suggestedAction}` : issue.message,
       },
     }));
+  };
+
+  /** POST em andamento (giro das ventoinhas antes do bip); evita boots duplicados e resultados obsoletos */
+  let pendingPostBoot: ReturnType<typeof setTimeout> | null = null;
+  const cancelPendingPostBoot = () => {
+    if (pendingPostBoot) clearTimeout(pendingPostBoot);
+    pendingPostBoot = null;
   };
 
   return {
@@ -576,22 +616,24 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   },
 
   installCooler: (cooler) => {
-    const cpu = get().assembly.cpuInstalled;
+    const { assembly } = get();
+    const cpu = assembly.cpuInstalled;
+    // Ordem didática CPU → Pasta → Cooler: regra do motor, válida para a bancada 2D e 3D
+    const prerequisiteIssue = validateCoolerPrerequisites(assembly);
     if (!cpu) {
-      soundEngine.playErrorBuzz();
-      set({
-        activeAlert: {
-          type: 'error',
-          title: 'Soquete Vazio',
-          message: 'Instale a CPU e aplique a pasta térmica antes de fixar o cooler.',
-        },
-      });
+      if (prerequisiteIssue) rejectAction(prerequisiteIssue, false);
       return false;
     }
 
+    // Soquete incompatível é erro de escolha de peça (penaliza) e tem prioridade sobre a falta de pasta
     const socketIssue = validateCoolerSocket(cooler, cpu);
     if (socketIssue) {
       rejectAction(socketIssue, true);
+      return false;
+    }
+
+    if (prerequisiteIssue) {
+      rejectAction(prerequisiteIssue, false);
       return false;
     }
 
@@ -873,6 +915,9 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   },
 
   triggerPostBoot: () => {
+    // Cliques repetidos durante o giro das ventoinhas não agendam um segundo POST
+    if (pendingPostBoot) return;
+
     const { assembly, selectedMotherboard } = get();
     if (!selectedMotherboard) {
       soundEngine.playErrorBuzz();
@@ -890,7 +935,20 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
 
     if (result.canPowerOn) {
       soundEngine.playFanSpinUp();
-      setTimeout(() => {
+      pendingPostBoot = setTimeout(() => {
+        pendingPostBoot = null;
+        // A bancada mudou durante o POST (fonte desligada, peça removida...): o resultado avaliado ficou obsoleto
+        const current = get();
+        if (current.assembly !== assembly || current.selectedMotherboard !== selectedMotherboard) {
+          set({
+            activeAlert: {
+              type: 'warning',
+              title: 'Boot Interrompido',
+              message: 'A montagem foi alterada durante o teste de energia. Ligue o PC novamente.',
+            },
+          });
+          return;
+        }
         soundEngine.playBiosBeep(result.bootSuccess);
         set({
           postResult: result,
@@ -951,21 +1009,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   },
 
   placeDeskItem: (snapPointId, item) => {
-    const { deskSetup, assembly, selectedMotherboard, studentSetup } = get();
-    const isPcAssembled =
-      Boolean(selectedMotherboard) &&
-      Boolean(assembly.cpuInstalled) &&
-      Boolean(assembly.coolerInstalled) &&
-      Boolean(assembly.socketLeverLocked) &&
-      (Boolean(assembly.ramInstalledSlot2) || Boolean(assembly.ramInstalledSlot4)) &&
-      Boolean(assembly.caseInstalled) &&
-      Boolean(assembly.psuInstalled) &&
-      (Boolean(assembly.cpuInstalled?.hasIntegratedGpu) || Boolean(assembly.gpuInstalled));
-
-    const validation = canPlaceOnDesk(snapPointId, item, deskSetup.placedDeskItems, {
-      isPcAssembled,
-      studentSetup,
-    });
+    const validation = get().canPlaceOnDeskSnapPoint(snapPointId, item);
 
     if (!validation.allowed) {
       if (validation.isErrorPenalty) {
@@ -996,7 +1040,8 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
         ...st.deskSetup,
         placedDeskItems: {
           ...st.deskSetup.placedDeskItems,
-          [snapPointId]: item,
+          // O snap point de destino é a fonte da verdade (evita item gravado com snapPointId divergente)
+          [snapPointId]: { ...item, snapPointId },
         },
       },
     }));
@@ -1040,12 +1085,30 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
         placedDeskItems: {},
         isDeskPoweredOn: false,
       },
+      // Mesa vazia: nenhum cabo pode continuar ligado a dispositivos que não existem mais
+      externalCabling: createInitialExternalCablesState(),
     }));
   },
 
   setDeskPower: (on) => {
     if (on) {
-      soundEngine.playBootChime();
+      const power = selectCanPowerOnDesk(get());
+      if (!power.allowed) {
+        soundEngine.playErrorBuzz();
+        set({
+          activeAlert: {
+            type: 'warning',
+            title: 'Não Foi Possível Ligar',
+            message: power.message ?? 'A estação ainda não está pronta para ligar.',
+          },
+        });
+        return false;
+      }
+      // Chave da fonte + ventoinhas acelerando; o bip de POST toca quando a imagem aparece
+      soundEngine.playPowerSwitch();
+      soundEngine.playFanSpinUp();
+    } else if (get().deskSetup.isDeskPoweredOn) {
+      soundEngine.playPowerSwitch();
     }
     set((st) => ({
       deskSetup: {
@@ -1053,6 +1116,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
         isDeskPoweredOn: on,
       },
     }));
+    return true;
   },
 
   setDeskCameraPreset: (preset) => {
@@ -1066,18 +1130,8 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
 
   canPlaceOnDeskSnapPoint: (snapPointId, item) => {
     const { deskSetup, assembly, selectedMotherboard, studentSetup } = get();
-    const isPcAssembled =
-      Boolean(selectedMotherboard) &&
-      Boolean(assembly.cpuInstalled) &&
-      Boolean(assembly.coolerInstalled) &&
-      Boolean(assembly.socketLeverLocked) &&
-      (Boolean(assembly.ramInstalledSlot2) || Boolean(assembly.ramInstalledSlot4)) &&
-      Boolean(assembly.caseInstalled) &&
-      Boolean(assembly.psuInstalled) &&
-      (Boolean(assembly.cpuInstalled?.hasIntegratedGpu) || Boolean(assembly.gpuInstalled));
-
     return canPlaceOnDesk(snapPointId, item, deskSetup.placedDeskItems, {
-      isPcAssembled,
+      isPcAssembled: isPcReadyForDesk(assembly, selectedMotherboard),
       studentSetup,
     });
   },
@@ -1088,8 +1142,11 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   },
 
   connectExternalCable: (cableId, sourcePort, destPort) => {
-    const { assembly } = get();
-    const validation = validateExternalCableConnection(cableId, sourcePort, destPort, assembly);
+    const { assembly, deskSetup, externalCabling } = get();
+    const validation = validateExternalCableConnection(cableId, sourcePort, destPort, assembly, {
+      placedDeskItems: deskSetup.placedDeskItems,
+      cablingState: externalCabling,
+    });
 
     if (!validation.allowed) {
       soundEngine.playErrorBuzz();
@@ -1122,7 +1179,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
         ...st.externalCabling,
         connections: {
           ...st.externalCabling.connections,
-          [cableId]: { sourcePort, destPort },
+          [cableId]: validation.connection ?? { sourcePort, destPort },
         },
       },
     }));
@@ -1150,6 +1207,7 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
   },
 
   resetAssembly: () => {
+    cancelPendingPostBoot();
     set({
       selectedMotherboard: null,
       assembly: { ...INITIAL_ASSEMBLY_STATE },
@@ -1175,3 +1233,24 @@ export const useAssemblyStore = create<AssemblyStore>((set, get) => {
 if (typeof window !== 'undefined') {
   (window as any).useAssemblyStore = useAssemblyStore;
 }
+
+/**
+ * Guarda central de energia da mesa (Fase 4).
+ * Se a estação estiver ligada e deixar de cumprir qualquer requisito (cabo puxado, periférico
+ * retirado, peça removida na bancada...), o PC apaga. Assim, reconectar o cabo leva a
+ * READY_TO_BOOT e exige apertar o botão de novo, em vez de "pular" direto para RUNNING.
+ */
+useAssemblyStore.subscribe((state) => {
+  if (!state.deskSetup.isDeskPoweredOn) return;
+  // Vídeo errado/desconectado não desliga o PC (o monitor mostra SEM SINAL); falta de energia sim
+  if (selectCanPowerOnDesk(state).allowed) return;
+  useAssemblyStore.setState({
+    deskSetup: { ...state.deskSetup, isDeskPoweredOn: false },
+    activeAlert: {
+      type: 'warning',
+      title: 'Computador Desligado',
+      message:
+        'A estação perdeu a energia ou um item essencial (cabo de força, gabinete, periférico ou peça) e desligou. Corrija e ligue novamente.',
+    },
+  });
+});

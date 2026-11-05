@@ -1,9 +1,44 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+import type { useAssemblyStore } from '../src/store/useAssemblyStore';
+
+// Store exposto em window pela página (hook de teste em src/app/page.tsx)
+declare global {
+  interface Window {
+    useAssemblyStore: typeof useAssemblyStore;
+  }
+}
+
+/** Pinos e âncoras da bancada 3D só existem com uma placa-mãe assentada */
+async function seatMotherboard(page: Page) {
+    await page.evaluate(() => {
+      const store = window.useAssemblyStore.getState();
+      store.dischargeEsd();
+      store.installMotherboard({
+        id: 'mb-b550m-am4',
+        name: 'B550M AM4',
+        category: 'MOTHERBOARD',
+        socket: 'AM4',
+        supportedRam: 'DDR4',
+        formFactor: 'Micro-ATX',
+        ramSlotsCount: 4,
+        m2SlotsCount: 1,
+        pcieSlotsCount: 1,
+        hasIntegratedIoShield: false,
+        chipset: 'B550',
+        price: 0,
+        tdpWatts: 0,
+        description: '',
+        analogy: '',
+        trivia: '',
+      });
+    });
+}
 
 test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('body')).toBeVisible();
+    // Aguarda a hidratação (o alternador 3D/2D só liga o WebGL depois do mount)
+    await page.waitForFunction(() => typeof (window as any).useAssemblyStore !== 'undefined', { timeout: 15000 });
   });
 
   test('exibe o alternador 3D / 2D na bancada e permite trocar de modo', async ({ page }) => {
@@ -15,9 +50,9 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
 
     // Alterna para o modo 2D leve
     await btn2D.click();
-    // No modo 2D deve renderizar o container 2D da bancada
-    const heading2D = page.getByRole('heading', { name: 'Bancada Pronta: Escolha uma Placa-Mãe' });
-    await expect(heading2D).toBeVisible();
+    // No modo 2D deve renderizar a bancada vetorial (placa-mãe SVG ou a área para assentá-la)
+    await expect(page.getByTestId('workbench-2d')).toBeVisible();
+    await expect(btn2D).toHaveAttribute('aria-pressed', 'true');
 
     // Retorna para o modo 3D
     await btn3D.click();
@@ -30,6 +65,9 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
     // Garante que o modo 3D está ativo
     const btn3D = page.locator('button[title*="Modo 3D da Bancada"]');
     await btn3D.click();
+
+    // As âncoras de cabos só existem com uma placa-mãe assentada na bancada
+    await seatMotherboard(page);
 
     // As âncoras projetadas com data-cable-target devem estar presentes e acessíveis
     const atxAnchor = page.locator('[data-cable-target="ATX_PWR"]');
@@ -51,7 +89,7 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
     await isoBtn.click();
   });
 
-  test('oferece controles de câmera (Frente, Zoom, Reset) e exibe barra de EZ Debug LEDs', async ({ page }) => {
+  test('oferece controles de câmera (Frente, Zoom, Reset) e exibe barra de EZ Debug LEDs', async ({ page }, testInfo) => {
     const btn3D = page.locator('button[title*="Modo 3D da Bancada"]');
     await btn3D.click();
 
@@ -84,6 +122,45 @@ test.describe('Bancada 3D Interativa com Âncoras Projetadas (Fase 2)', () => {
     // Salva screenshot do visual limpo da bancada
     await page.waitForTimeout(1000);
     const canvas = page.locator('canvas').first();
-    await canvas.screenshot({ path: 'workbench3d-clean.png' });
+    await canvas.screenshot({ path: testInfo.outputPath('workbench3d-clean.png') });
+  });
+
+  test('pinos 3D são operáveis só pelo teclado: Tab alcança a ação do tooltip e Esc o dispensa', async ({ page }) => {
+    await page.locator('button[title*="Modo 3D da Bancada"]').click();
+    await seatMotherboard(page);
+    const pin = page.getByRole('button', { name: 'Painel Frontal', exact: true });
+    await expect(pin).toBeAttached({ timeout: 15000 });
+
+    await pin.focus();
+    const actions = page.getByRole('group', { name: 'Ações: Painel Frontal' });
+    await expect(actions).toBeVisible();
+
+    // O tooltip continua aberto quando o foco entra nele (antes ele sumia no blur do pino)
+    await page.keyboard.press('Tab');
+    await expect(actions.getByRole('button', { name: 'Ligar Painel Frontal (F_PANEL)' })).toBeFocused();
+    await expect(actions).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(actions).toBeHidden();
+  });
+
+  test('modo 2D: a placa-mãe é assentada com Enter, sem mouse', async ({ page }) => {
+    await page.locator('button[title*="Modo 2D Leve da Bancada"]').click();
+    await page.evaluate(() => {
+      const store = (window as any).useAssemblyStore.getState();
+      store.resetAssembly();
+      store.dischargeEsd();
+      const mb = { id: 'mb-b550m-am4', name: 'ASRock B550M', category: 'MOTHERBOARD', formFactor: 'Micro-ATX', socket: 'AM4',
+        chipset: 'B550', supportedRam: 'DDR4', ramSlotsCount: 4, maxMemoryGb: 128, pciSlots16x: 1, m2SlotsCount: 1,
+        sataPortsCount: 4, hasIntegratedIoShield: false, price: 500, description: '', levelRequired: 1, tdpWatts: 30, image: '' };
+      store.setSelectedComponentForPlacement(mb);
+    });
+
+    const dropZone = page.getByRole('button', { name: /Assentar ASRock B550M na bancada/ });
+    await dropZone.focus();
+    await page.keyboard.press('Enter');
+
+    await expect(page.getByRole('group', { name: /Bancada 2D: placa-mãe ASRock B550M/ })).toBeVisible();
+    expect(await page.evaluate(() => (window as any).useAssemblyStore.getState().selectedMotherboard?.id)).toBe('mb-b550m-am4');
   });
 });

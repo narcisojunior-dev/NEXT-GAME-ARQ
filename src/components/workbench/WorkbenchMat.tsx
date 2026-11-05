@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAssemblyStore } from '@/store/useAssemblyStore';
+import { useShallow } from 'zustand/react/shallow';
 import { MotherboardSvg } from './MotherboardSvg';
 import { CableTray } from './CableTray';
 import { WorkbenchSidebar } from './WorkbenchSidebar';
@@ -25,6 +26,7 @@ import { HardwareImage } from '@/components/common/HardwareImage';
 import dynamic from 'next/dynamic';
 import { Box } from 'lucide-react';
 import { isWebGLAvailable } from '@/components/three/webglDetect';
+import { DeskInventoryPanel } from '@/components/workbench/DeskInventoryPanel';
 
 const DeskSetup3D = dynamic(() => import('@/components/three/DeskSetup3D'), {
   ssr: false,
@@ -37,6 +39,7 @@ const DeskSetup3D = dynamic(() => import('@/components/three/DeskSetup3D'), {
     </div>
   ),
 });
+import { pressableProps, FOCUS_RING } from '@/components/common/pressable';
 
 const Workbench3D = dynamic(() => import('@/components/three/Workbench3D'), {
   ssr: false,
@@ -59,9 +62,12 @@ const SlotThumb: React.FC<{ component: HardwareComponent | null; icon: React.Rea
 
 export const WorkbenchMat: React.FC = () => {
   const [is3DMode, setIs3DMode] = React.useState<boolean>(false);
+  const [hasWebGL, setHasWebGL] = React.useState<boolean>(true);
 
   React.useEffect(() => {
-    setIs3DMode(isWebGLAvailable());
+    const available = isWebGLAvailable();
+    setHasWebGL(available);
+    setIs3DMode(available);
   }, []);
 
   const {
@@ -81,7 +87,26 @@ export const WorkbenchMat: React.FC = () => {
     selectedComponentForPlacement,
     activeWorkbenchView,
     setActiveWorkbenchView,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      assembly: s.assembly,
+      dischargeEsd: s.dischargeEsd,
+      installIoShield: s.installIoShield,
+      installStandoffs: s.installStandoffs,
+      installPsu: s.installPsu,
+      installCase: s.installCase,
+      installStorage: s.installStorage,
+      cableConnections: s.cableConnections,
+      screwMotherboard: s.screwMotherboard,
+      togglePsuSwitch: s.togglePsuSwitch,
+      triggerPostBoot: s.triggerPostBoot,
+      resetAssembly: s.resetAssembly,
+      openFrontPanelModal: s.openFrontPanelModal,
+      selectedComponentForPlacement: s.selectedComponentForPlacement,
+      activeWorkbenchView: s.activeWorkbenchView,
+      setActiveWorkbenchView: s.setActiveWorkbenchView,
+    }))
+  );
 
   const handlePsuAreaClick = () => {
     if (selectedComponentForPlacement?.category === 'PSU') {
@@ -219,7 +244,12 @@ export const WorkbenchMat: React.FC = () => {
           {/* Alternador 3D / 2D da Bancada */}
           <div className="bg-slate-950/80 rounded-xl border border-slate-800 p-1 flex items-center gap-1">
             <button
-              onClick={() => setIs3DMode(true)}
+              type="button"
+              aria-pressed={activeWorkbenchView === 'bench' && is3DMode}
+              onClick={() => {
+                setIs3DMode(true);
+                setActiveWorkbenchView('bench');
+              }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
                 is3DMode
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow'
@@ -231,7 +261,12 @@ export const WorkbenchMat: React.FC = () => {
               <span>3D</span>
             </button>
             <button
-              onClick={() => setIs3DMode(false)}
+              type="button"
+              aria-pressed={activeWorkbenchView === 'bench' && !is3DMode}
+              onClick={() => {
+                setIs3DMode(false);
+                setActiveWorkbenchView('bench');
+              }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-all ${
                 !is3DMode
                   ? 'bg-cyan-500 text-slate-950 font-bold shadow'
@@ -247,6 +282,7 @@ export const WorkbenchMat: React.FC = () => {
           <button
             onClick={resetAssembly}
             title="Reiniciar Montagem da Bancada"
+            aria-label="Reiniciar Montagem da Bancada"
             className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" />
@@ -258,7 +294,26 @@ export const WorkbenchMat: React.FC = () => {
       <div className="relative z-10 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_370px] xl:grid-cols-[minmax(0,1fr)_420px] items-start">
         <div className="min-w-0">
           {activeWorkbenchView === 'desk' ? (
-            <DeskSetup3D onBackToWorkbench={() => setActiveWorkbenchView('bench')} />
+            hasWebGL ? (
+              <DeskSetup3D onBackToWorkbench={() => setActiveWorkbenchView('bench')} />
+            ) : (
+              <div
+                role="alert"
+                className="w-full h-[620px] rounded-2xl border border-amber-700/60 bg-slate-950 flex flex-col items-center justify-center gap-3 p-6 text-center font-mono"
+              >
+                <p className="text-sm font-bold text-amber-300">Mesa 3D indisponível neste computador</p>
+                <p className="text-xs text-slate-400 max-w-md">
+                  O navegador não oferece WebGL (aceleração 3D). A montagem continua salva: volte à bancada 2D para prosseguir.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveWorkbenchView('bench')}
+                  className="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 text-xs font-bold cursor-pointer"
+                >
+                  Voltar à Bancada
+                </button>
+              </div>
+            )
           ) : is3DMode ? (
             <Workbench3D onToggle2D={() => setIs3DMode(false)} />
           ) : (
@@ -266,7 +321,8 @@ export const WorkbenchMat: React.FC = () => {
           )}
         </div>
         <div className="w-full">
-          <WorkbenchSidebar />
+          {/* Na mesa, a gaveta lateral vira o inventário de móveis e periféricos */}
+          {activeWorkbenchView === 'desk' ? <DeskInventoryPanel /> : <WorkbenchSidebar />}
         </div>
       </div>
 
@@ -275,7 +331,8 @@ export const WorkbenchMat: React.FC = () => {
         {/* Gabinete */}
         <div
           onClick={handleCaseAreaClick}
-          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+          {...pressableProps(`Gabinete: preparar ${selectedComponentForPlacement?.name ?? ''}`, handleCaseAreaClick, isCaseTarget)}
+          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${FOCUS_RING} ${
             assembly.caseInstalled
               ? 'bg-slate-950/90 border-emerald-500/50 text-emerald-300 shadow-md'
               : isCaseTarget
@@ -306,7 +363,8 @@ export const WorkbenchMat: React.FC = () => {
         {/* Baia SATA (SSD 2,5" / HD 3,5") */}
         <div
           onClick={handleSataBayClick}
-          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${
+          {...pressableProps(`Baia SATA: fixar ${selectedComponentForPlacement?.name ?? ''}`, handleSataBayClick, isSataTarget)}
+          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-3 ${FOCUS_RING} ${
             sataStorage
               ? 'bg-slate-950/90 border-emerald-500/50 text-emerald-300 shadow-md'
               : isSataTarget
@@ -341,7 +399,8 @@ export const WorkbenchMat: React.FC = () => {
         {/* Slot da Fonte de Alimentação */}
         <div
           onClick={handlePsuAreaClick}
-          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+          {...pressableProps(`Compartimento da fonte: encaixar ${selectedComponentForPlacement?.name ?? ''}`, handlePsuAreaClick, isPsuTarget)}
+          className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${FOCUS_RING} ${
             assembly.psuInstalled
               ? 'bg-slate-950/90 border-emerald-500/50 text-emerald-300 shadow-md'
               : isPsuTarget

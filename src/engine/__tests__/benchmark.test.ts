@@ -152,5 +152,47 @@ describe('Motor de Simulação de Benchmark e Telemetria (AcademyOS)', () => {
       expect(res1080p.didacticTip).toMatch(/resoluções mais altas.*gargalo diminui|aumentar a resolução reduz o gargalo/i);
     });
   });
-});
 
+  describe('Robustez numérica e determinismo', () => {
+    const isFiniteResult = (r: ReturnType<typeof calculateBenchmark>) =>
+      [r.avgFps, r.onePercentLowFps, r.bottleneckPercent, r.cpuTempC, r.gpuTempC, r.totalPowerWatts, r.score, ...r.frametimeHistory].every(
+        Number.isFinite
+      );
+
+    it('é determinístico: a mesma montagem gera o mesmo gráfico de frametime', () => {
+      const a = calculateBenchmark(baseAssembly, mb, '1440p');
+      const b = calculateBenchmark(baseAssembly, mb, '1440p');
+      expect(a.frametimeHistory).toEqual(b.frametimeHistory);
+    });
+
+    it('não gera NaN/Infinity com cooler de capacidade zero e CPU de TDP zero', () => {
+      const result = calculateBenchmark(
+        { ...baseAssembly, cpuInstalled: { ...i5Cpu, tdpWatts: 0 }, coolerInstalled: { ...cooler, maxTdpWatts: 0 } },
+        mb,
+        '4K'
+      );
+      expect(isFiniteResult(result)).toBe(true);
+      expect(result.cpuTempC).toBeLessThanOrEqual(105);
+    });
+
+    it('não gera NaN com dados de catálogo corrompidos (score/clock ausentes)', () => {
+      const result = calculateBenchmark(
+        {
+          ...baseAssembly,
+          cpuInstalled: { ...i5Cpu, boostClockGhz: Number.NaN },
+          gpuInstalled: { ...rtx4070, benchmarkScore: Number.NaN, tdpWatts: Number.NaN },
+        },
+        { ...mb, tdpWatts: Number.NaN },
+        '1080p'
+      );
+      expect(isFiniteResult(result)).toBe(true);
+      expect(result.avgFps).toBeGreaterThanOrEqual(12);
+    });
+
+    it('limita a temperatura da CPU ao TjMax de 105°C com cooler subdimensionado', () => {
+      const result = calculateBenchmark({ ...baseAssembly, coolerInstalled: { ...cooler, maxTdpWatts: 1 } }, mb, '1080p');
+      expect(result.cpuTempC).toBe(105);
+      expect(result.thermalThrottlePenalty).toBe(true);
+    });
+  });
+});

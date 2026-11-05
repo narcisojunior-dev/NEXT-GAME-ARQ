@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useAssemblyStore, selectCurrentPhase } from '../useAssemblyStore';
 import { CPUS, MOTHERBOARDS, RAMS, COOLERS, STORAGES, GPUS, CASES, PSUS } from '../../engine/hardwareCatalog';
 import { calculateTotalSpent } from '../../engine/compatibility';
+import { soundEngine } from '../../engine/audio/soundEngine';
 
 const byId = <T extends { id: string }>(list: T[], id: string): T => list.find((x) => x.id === id)!;
 
@@ -48,14 +49,25 @@ describe('Store de montagem: integração das regras', () => {
       expect(store().penaltiesCount).toBe(1);
     });
 
+    it('recusa cooler sem pasta térmica (regra válida na bancada 2D e 3D) sem penalizar', () => {
+      expect(store().installCooler(byId(COOLERS, 'cooler-deepcool-ag400'))).toBe(false);
+      expect(store().assembly.coolerInstalled).toBeNull();
+      expect(store().activeAlert?.title).toMatch(/Pasta Térmica/i);
+      expect(store().penaltiesCount).toBe(0);
+    });
+
     it('recusa pasta com o cooler já instalado e permite após remover o cooler', () => {
-      store().installCooler(byId(COOLERS, 'cooler-deepcool-ag400'));
-      store().connectCableTo('CPU_FAN_CABLE', 'CPU_FAN');
       store().applyThermalPaste();
-      expect(store().assembly.thermalPasteApplied).toBe(false);
+      expect(store().installCooler(byId(COOLERS, 'cooler-deepcool-ag400'))).toBe(true);
+      store().connectCableTo('CPU_FAN_CABLE', 'CPU_FAN');
+
+      // Segunda camada com o cooler parafusado por cima: impossível
+      store().applyThermalPaste();
       expect(store().activeAlert?.type).toBe('error');
+      expect(store().activeAlert?.title).toMatch(/Cooler Está no Caminho/i);
 
       store().removeCooler();
+      expect(store().assembly.thermalPasteApplied).toBe(false);
       expect(store().assembly.coolerInstalled).toBeNull();
       expect(store().assembly.coolerFanConnected).toBe(false);
 
@@ -247,6 +259,90 @@ describe('Store de montagem: integração das regras', () => {
       // Preço total deve cobrar a placa-mãe + o kit de RAM apenas UMA vez
       const totalSpent = calculateTotalSpent(store().assembly, store().selectedMotherboard);
       expect(totalSpent).toBe(intelMb.price + ramDual.price);
+    });
+  });
+
+  describe('Teste de boot (POST) assíncrono', () => {
+    const montarPcBootavel = () => {
+      store().dischargeEsd();
+      store().installStandoffs();
+      store().installIoShield();
+      const mb = MOTHERBOARDS.find((m) => m.socket === 'AM4' && m.supportedRam === 'DDR4')!;
+      store().installMotherboard(mb);
+      store().screwMotherboard();
+      const cpu = CPUS.find((c) => c.socket === 'AM4')!;
+      store().installCpu(cpu);
+      store().toggleSocketLever();
+      store().applyThermalPaste();
+      store().installCooler(COOLERS.find((k) => k.supportedSockets.includes('AM4') && k.maxTdpWatts >= cpu.tdpWatts)!);
+      const ram = RAMS.find((r) => r.ramType === 'DDR4')!;
+      store().installRam(2, ram);
+      store().installRam(4, ram);
+      store().installStorage(STORAGES.find((s) => s.storageType === 'NVMe_M2')!, 'M2');
+      const gpu = GPUS.find((g) => g.price <= 2000)!;
+      store().installGpu(gpu);
+      store().screwGpu();
+      store().installCase(CASES.find((c) => c.supportedFormFactors.includes(mb.formFactor) && c.maxGpuLengthMm >= gpu.lengthMm)!);
+      store().installPsu(PSUS.find((p) => p.wattage >= 650)!);
+      store().connectCableTo('ATX_24PIN', 'ATX_PWR');
+      store().connectCableTo('EPS_8PIN', 'ATX12V');
+      store().connectCableTo('CPU_FAN_CABLE', 'CPU_FAN');
+      store().connectCableTo('PCIE_8PIN', 'GPU_POWER');
+      store().connectFPanelJumper('POWER_SW', [6, 8]);
+      store().togglePsuSwitch();
+    };
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      montarPcBootavel();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    it('conclui o POST após o giro das ventoinhas', () => {
+      store().triggerPostBoot();
+      expect(store().postResult).toBeNull();
+      vi.advanceTimersByTime(700);
+      expect(store().postResult?.bootSuccess).toBe(true);
+      expect(store().isBiosOpen).toBe(true);
+    });
+
+    it('ignora cliques repetidos no botão de ligar enquanto o POST está em andamento', () => {
+      const beep = vi.spyOn(soundEngine, 'playBiosBeep');
+      store().triggerPostBoot();
+      store().triggerPostBoot();
+      store().triggerPostBoot();
+      vi.advanceTimersByTime(2000);
+      expect(beep).toHaveBeenCalledTimes(1);
+    });
+
+    it('reiniciar a montagem durante o POST cancela o resultado pendente', () => {
+      store().triggerPostBoot();
+      store().resetAssembly();
+      vi.advanceTimersByTime(700);
+      expect(store().postResult).toBeNull();
+      expect(store().isBiosOpen).toBe(false);
+      expect(store().isTimerRunning).toBe(true);
+    });
+
+    it('desligar a fonte durante o POST aborta o boot em vez de aplicar um resultado obsoleto', () => {
+      store().triggerPostBoot();
+      store().togglePsuSwitch();
+      vi.advanceTimersByTime(700);
+      expect(store().postResult?.bootSuccess).not.toBe(true);
+      expect(store().isBiosOpen).toBe(false);
+    });
+
+    it('permite ligar de novo depois que um POST termina', () => {
+      store().triggerPostBoot();
+      vi.advanceTimersByTime(700);
+      store().closeBios();
+      store().triggerPostBoot();
+      vi.advanceTimersByTime(700);
+      expect(store().postResult?.bootSuccess).toBe(true);
     });
   });
 });

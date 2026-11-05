@@ -116,6 +116,30 @@ export function validateThermalPasteApplication(state: AssemblyState): Validatio
   return null;
 }
 
+/**
+ * Ordem didática obrigatória: CPU → Pasta Térmica → Cooler.
+ * Fonte única da regra para as bancadas 2D (SVG) e 3D (Three.js).
+ */
+export function validateCoolerPrerequisites(state: AssemblyState): ValidationIssue | null {
+  if (!state.cpuInstalled) {
+    return {
+      type: 'ERROR',
+      title: 'Soquete Vazio!',
+      message: 'Instale o processador no soquete antes de fixar o cooler.',
+    };
+  }
+  if (!state.thermalPasteApplied) {
+    return {
+      type: 'ERROR',
+      title: 'Pasta Térmica Obrigatória!',
+      message:
+        'Você não pode instalar o cooler sem antes aplicar a pasta térmica sobre o processador! Sem ela, o ar entre o IHS e a base do cooler funciona como isolante térmico.',
+      suggestedAction: 'Selecione a pasta térmica no catálogo e aplique uma gota do tamanho de uma ervilha no centro da CPU.',
+    };
+  }
+  return null;
+}
+
 export function validateEsdDischarged(state: AssemblyState): ValidationIssue | null {
   if (!state.esdDischarged) {
     return {

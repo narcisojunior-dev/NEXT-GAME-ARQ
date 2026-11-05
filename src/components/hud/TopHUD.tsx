@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useAssemblyStore, GameMode, selectCurrentPhase } from '@/store/useAssemblyStore';
-import { AssemblyPhase } from '@/engine/types';
+import { useShallow } from 'zustand/react/shallow';
 import { calculateTotalSpent } from '@/engine/compatibility';
 import {
   GraduationCap,
@@ -19,19 +19,12 @@ import {
   Monitor,
 } from 'lucide-react';
 import { hasAvailableModels } from '@/engine/models3dIndex';
+import { PHASE_LABELS } from '@/engine/phases';
 import { useModel3DStore } from '@/components/three/model3dStore';
 
 const HAS_3D_MODELS = hasAvailableModels();
+const PHASES = PHASE_LABELS;
 
-const PHASES: { id: AssemblyPhase; label: string; number: number }[] = [
-  { id: 'PHASE_1_PREPARATION', label: '1. Bancada & ESD', number: 1 },
-  { id: 'PHASE_2_BENCH_ASSEMBLY', label: '2. Pré-Gabinete', number: 2 },
-  { id: 'PHASE_3_CASE_PREPARATION', label: '3. Gabinete & Fonte', number: 3 },
-  { id: 'PHASE_4_MOTHERBOARD_INSTALL', label: '4. Fixar Placa', number: 4 },
-  { id: 'PHASE_5_GPU_EXPANSION', label: '5. Placa de Vídeo', number: 5 },
-  { id: 'PHASE_6_CABLING', label: '6. Cabeamento', number: 6 },
-  { id: 'PHASE_7_BOOT_POST', label: '7. Teste de Boot', number: 7 },
-];
 
 export const TopHUD: React.FC = () => {
   const {
@@ -47,7 +40,22 @@ export const TopHUD: React.FC = () => {
     openTeacherDashboard,
     activeWorkbenchView,
     setActiveWorkbenchView,
-  } = useAssemblyStore();
+  } = useAssemblyStore(
+    useShallow((s) => ({
+      gameMode: s.gameMode,
+      setGameMode: s.setGameMode,
+      elapsedSeconds: s.elapsedSeconds,
+      tickTimer: s.tickTimer,
+      activeMission: s.activeMission,
+      assembly: s.assembly,
+      selectedMotherboard: s.selectedMotherboard,
+      penaltiesCount: s.penaltiesCount,
+      openVirtualRoomModal: s.openVirtualRoomModal,
+      openTeacherDashboard: s.openTeacherDashboard,
+      activeWorkbenchView: s.activeWorkbenchView,
+      setActiveWorkbenchView: s.setActiveWorkbenchView,
+    }))
+  );
   const currentPhase = useAssemblyStore(selectCurrentPhase);
   const openGallery = useModel3DStore((s) => s.openGallery);
   const currentPhaseNumber = PHASES.find((p) => p.id === currentPhase)?.number ?? 1;
@@ -162,13 +170,19 @@ export const TopHUD: React.FC = () => {
 
           {/* Botão de Alternância: Bancada vs Mesa Battlestation 3D (Fase 4) */}
           <button
+            type="button"
+            aria-pressed={activeWorkbenchView === 'desk'}
             onClick={() => setActiveWorkbenchView(activeWorkbenchView === 'desk' ? 'bench' : 'desk')}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
               activeWorkbenchView === 'desk'
                 ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-500/20'
                 : 'bg-slate-900 hover:bg-slate-800 border-purple-700/60 text-purple-300'
             }`}
-            title="Alternar para a Mesa Battlestation 3D"
+            title={
+              activeWorkbenchView === 'desk'
+                ? 'Voltar para a Bancada de Montagem'
+                : 'Alternar para a Mesa Battlestation 3D'
+            }
           >
             <Monitor className="w-3.5 h-3.5" />
             <span>{activeWorkbenchView === 'desk' ? 'Bancada' : 'Mesa 3D'}</span>

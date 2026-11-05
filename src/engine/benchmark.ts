@@ -17,6 +17,24 @@ export interface BenchmarkResult {
   frametimeHistory: number[]; // Milissegundos por quadro para o gráfico
 }
 
+/** Temperatura máxima de junção (TjMax): acima disso a CPU desliga por proteção */
+const TJ_MAX_C = 105;
+
+/** Valor numérico do catálogo ou um padrão seguro, para que dados ausentes nunca virem NaN na telemetria */
+const finiteOr = (value: number | undefined, fallback: number): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+
+/** PRNG Mulberry32: o "ruído" do frametime é reproduzível para a mesma montagem e resolução */
+function seededRandom(seed: number): () => number {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /**
  * Motor determinístico de cálculo de benchmark, gargalo (bottleneck) e telemetria
  */
@@ -32,7 +50,7 @@ export function calculateBenchmark(
   // Se não houver GPU dedicada, usar gráfico integrado básico se a CPU tiver iGPU
   let gpuPower = 0;
   if (gpuInstalled) {
-    gpuPower = gpuInstalled.benchmarkScore;
+    gpuPower = Math.max(0, finiteOr(gpuInstalled.benchmarkScore, 0));
   } else if (cpuInstalled?.hasIntegratedGpu) {
     gpuPower = 1200; // Gráfico integrado Intel UHD básico
   } else {
@@ -43,8 +61,8 @@ export function calculateBenchmark(
   // Calculado por (núcleos * clock boost) com bônus IPC
   let cpuPower = 0;
   if (cpuInstalled) {
-    const coreWeight = Math.min(cpuInstalled.cores, 8); // Jogos aproveitam até 8 núcleos
-    const clockWeight = cpuInstalled.boostClockGhz * 1000;
+    const coreWeight = Math.min(Math.max(1, finiteOr(cpuInstalled.cores, 1)), 8); // Jogos aproveitam até 8 núcleos
+    const clockWeight = Math.max(0, finiteOr(cpuInstalled.boostClockGhz, finiteOr(cpuInstalled.baseClockGhz, 1))) * 1000;
     cpuPower = Math.round(coreWeight * 400 + clockWeight * 0.7);
   } else {
     cpuPower = 1000;
@@ -106,9 +124,10 @@ export function calculateBenchmark(
   let thermalThrottlePenalty = false;
 
   if (cpuInstalled) {
-    const coolerCapacity = coolerInstalled ? coolerInstalled.maxTdpWatts : 65;
-    const thermalRatio = cpuInstalled.tdpWatts / coolerCapacity;
-    cpuTempC = Math.min(105, Math.round(28 + thermalRatio * 45));
+    // Capacidade mínima de 1 W evita divisão por zero com cooler passivo/dados ausentes
+    const coolerCapacity = Math.max(1, coolerInstalled ? finiteOr(coolerInstalled.maxTdpWatts, 65) : 65);
+    const thermalRatio = Math.max(0, finiteOr(cpuInstalled.tdpWatts, 65)) / coolerCapacity;
+    cpuTempC = Math.min(TJ_MAX_C, Math.round(28 + thermalRatio * 45));
 
     if (!thermalPasteApplied) {
       cpuTempC = 98; // Superaquecimento severo
@@ -128,11 +147,12 @@ export function calculateBenchmark(
 
   // 8. Histórico Sintético de Frametime (ms por quadro)
   const targetMs = 1000 / avgFps;
+  const random = seededRandom(avgFps * 7919 + onePercentLowFps * 104729 + resolution.length);
   const frametimeHistory: number[] = [];
   for (let i = 0; i < 30; i++) {
     // Se for single channel, adicionar picos ocasionais de micro-travamento (stuttering)
     const stutter = singleChannelPenalty && i % 6 === 0 ? targetMs * 1.8 : 0;
-    const jitter = (Math.random() - 0.5) * (targetMs * 0.2);
+    const jitter = (random() - 0.5) * (targetMs * 0.2);
     frametimeHistory.push(Math.max(4, Math.round((targetMs + jitter + stutter) * 10) / 10));
   }
 
@@ -166,9 +186,9 @@ export function calculateBenchmark(
   }
 
   const totalPowerWatts =
-    (cpuInstalled ? cpuInstalled.tdpWatts : 50) +
-    (gpuInstalled ? gpuInstalled.tdpWatts : 15) +
-    (motherboard ? motherboard.tdpWatts : 30) +
+    (cpuInstalled ? finiteOr(cpuInstalled.tdpWatts, 50) : 50) +
+    (gpuInstalled ? finiteOr(gpuInstalled.tdpWatts, 15) : 15) +
+    (motherboard ? finiteOr(motherboard.tdpWatts, 30) : 30) +
     25;
 
   return {

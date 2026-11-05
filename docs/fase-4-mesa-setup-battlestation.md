@@ -84,3 +84,22 @@ Os monitores no espaço 3D utilizam uma **CanvasTexture** dinâmica do Three.js:
 - **Issue 05:** CanvasTexture Viva para Monitores 3D com AcademyOS e Sincronização RGB.
 - **Issue 06:** Testes Automatizados (Vitest TDD para regras de cabeamento externo + Playwright E2E).
 
+
+---
+
+## 6. Status de Implementação (03/11/2026)
+
+| Issue | Status | Onde |
+| :--- | :--- | :--- |
+| 01 · Motor de regras da mesa | ✅ Concluída (revisada na auditoria) | `src/engine/deskSetup.ts` |
+| 02 · Cena `DeskSetup3D` | ✅ Concluída | `src/components/three/DeskSetup3D.tsx`, `DeskStationScene.tsx` |
+| 03 · Snap points com hologramas | ✅ Concluída | `evaluateDeskSnapPoints`, `buildDeskInventory`, `DeskInventoryPanel.tsx` |
+| 04 · Cabeamento externo | ✅ Concluída | `externalCabling.ts`, `cableRouting.ts`, `DeskCablesLayer.tsx`, `DeskCablingPanel.tsx` |
+| 05 · Tela viva do monitor | ✅ Concluída | `monitorScreen.ts`, `monitorCanvas.ts`, `MonitorView.tsx` |
+| 06 · Testes automatizados | ✅ Concluída | Vitest (`deskLayout`, `cableRouting`, `monitorScreen`…) e Playwright (`deskPlacement`, `deskBootJourney`) |
+
+**Decisões registradas:**
+- Unidades em **metros** (1 unidade de mundo = 1 m); mesa de 140 × 60 cm (120 cm na versão de madeira), tampo a 75 cm.
+- A mesa e o mousepad são **procedurais**: o GLB `mesa-gamer` tem periféricos embutidos e malhas fundidas pelo otimizador.
+- O PC **liga** com o cabo de força na tomada mesmo com o vídeo errado — é assim que o aluno vê o **SEM SINAL**. O estágio `RUNNING` exige todo o cabeamento correto e o POST aprovado; mover o cabo de vídeo para a GPU com o PC ligado faz a imagem aparecer (hot-plug).
+- A tela do monitor é uma `CanvasTexture` aplicada à malha da tela do GLB, com UVs planares geradas da própria geometria (funciona na tela curva do ultrawide).
