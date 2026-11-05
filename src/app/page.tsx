@@ -10,6 +10,7 @@ import { TeamChallengeBanner } from '@/components/challenges/TeamChallengeBanner
 import { DiagnosticBench } from '@/components/diagnostic/DiagnosticBench';
 import { AssemblyChecklist } from '@/components/workbench/AssemblyChecklist';
 import { WorkbenchMat } from '@/components/workbench/WorkbenchMat';
+import { NextStepBanner } from '@/components/workbench/NextStepBanner';
 import { InspectModal } from '@/components/modals/InspectModal';
 import { BIOSSimulatorModal } from '@/components/modals/BIOSSimulatorModal';
 import { FrontPanelZoomModal } from '@/components/modals/FrontPanelZoomModal';
@@ -72,6 +73,9 @@ export default function Home() {
 
         {/* Checklist Visual Interativo com Objetivo Atual & Barra de Progresso */}
         <AssemblyChecklist />
+
+        {/* Jornada: PC aprovado no POST → montar a estação na mesa */}
+        <NextStepBanner />
 
         {/* Mascote Didático (Byte) com Dicas Pedagógicas */}
         <DidacticCompanion />

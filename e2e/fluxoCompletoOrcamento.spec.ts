@@ -101,7 +101,7 @@ test('fluxo completo: Desafio de Orçamento do cliente até o PC na mesa (montan
   await open.getByRole('button', { name: 'Fechar o modo Abrir o PC' }).click({ noWaitAfter: true });
 
   // 7. O PC montado vai para a mesa
-  await page.getByRole('button', { name: 'Mesa 3D' }).click();
+  await page.getByRole('button', { name: 'Mesa 3D', exact: true }).click();
   const desk = page.getByRole('complementary', { name: 'Inventário da mesa' });
   await desk.getByRole('button', { name: /^Pegar Mesa / }).first().click();
   await desk.getByRole('button', { name: 'Encaixar em: Mesa de Trabalho' }).click();

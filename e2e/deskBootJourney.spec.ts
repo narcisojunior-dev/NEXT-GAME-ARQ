@@ -38,7 +38,7 @@ test.describe('Jornada completa da Fase 4: bancada → mesa → cabos → boot (
       { assembly: buildReadyAssembly({ withGpu: true }), mb: READY_MB }
     );
 
-    await page.getByRole('button', { name: 'Mesa 3D' }).click();
+    await page.getByRole('button', { name: 'Mesa 3D', exact: true }).click();
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15000 });
 
     // 1. Mobília e periféricos
@@ -97,7 +97,7 @@ test.describe('Jornada completa da Fase 4: bancada → mesa → cabos → boot (
       ({ assembly, mb }) => window.useAssemblyStore.setState({ assembly, selectedMotherboard: mb }),
       { assembly: buildReadyAssembly({ withGpu: true }), mb: READY_MB }
     );
-    await page.getByRole('button', { name: 'Mesa 3D' }).click();
+    await page.getByRole('button', { name: 'Mesa 3D', exact: true }).click();
     await place(page, 'Mesa Gamer Fibra de Carbono 140cm', 'Mesa de Trabalho');
     await place(page, 'Suporte Articulado a Gás ELG F80N 360°', 'Braço Articulado do Monitor');
     await place(page, 'Monitor Gamer LG UltraGear 27" Fast IPS 180Hz', 'Monitor Principal');

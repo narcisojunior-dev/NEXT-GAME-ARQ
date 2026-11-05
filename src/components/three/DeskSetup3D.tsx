@@ -12,6 +12,7 @@ import { DeskStationScene } from './DeskStationScene';
 import { useDeskPlacementStore } from './deskPlacementStore';
 import { Eye, ArrowUpFromLine, Monitor, User, ZoomIn, ZoomOut, RotateCw, Wrench, Sofa, LogOut } from 'lucide-react';
 import { useProgressStore } from '@/store/useProgressStore';
+import { STORAGE_KEYS, safeStateStorage } from '@/store/safeStorage';
 import { ROOM_VIEWS, useDecorModeStore } from '../room3d/decorModeStore';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -179,6 +180,10 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
   // Sair da mesa fecha o modo
   useEffect(() => () => useDecorModeStore.getState().close(), []);
   const canDecorate = deskStage === 'RUNNING' || decorOpen;
+  // Jornada: estação ligada pela primeira vez → convite para decorar o quarto (até abrir o modo ou dispensar)
+  const [hasSavedRoom] = useState(() => Boolean(safeStateStorage.getItem(STORAGE_KEYS.room)));
+  const [decorInviteDismissed, setDecorInviteDismissed] = useState(false);
+  const showDecorInvite = deskStage === 'RUNNING' && !decorOpen && !hasSavedRoom && !decorInviteDismissed;
 
   const applyPreset = (preset: DeskCameraPreset) => {
     setDeskCameraPreset(preset);
@@ -220,6 +225,7 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
     holdItem(null);
     holdCable(null);
     inspect(null);
+    setDecorInviteDismissed(true);
     useDecorModeStore.getState().open();
   };
 
@@ -451,6 +457,27 @@ export const DeskSetup3D: React.FC<DeskSetup3DProps> = ({ onBackToWorkbench }) =
             <DeskStationScene isRunning={deskStage === 'RUNNING'} />
           </Suspense>
         </Canvas>
+
+        {/* Próxima etapa da jornada: decorar o quarto */}
+        {showDecorInvite && !heldItem && !heldCable && (
+          <div
+            role="region"
+            aria-label="Próxima etapa: decorar o quarto"
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 z-40 w-[min(560px,calc(100%-24px))] px-4 py-3 rounded-2xl bg-slate-950/95 border border-fuchsia-500/70 text-xs text-slate-200 shadow-2xl backdrop-blur-md flex flex-wrap items-center justify-between gap-3"
+          >
+            <p role="status" className="min-w-0">
+              <b className="text-fuchsia-200">AcademyOS em execução!</b> Próxima etapa: decorar o seu quarto. Móveis, plantas e itens gamer e nerd são liberados pelas suas conquistas.
+            </p>
+            <span className="flex gap-2">
+              <button type="button" onClick={toggleDecor} className="min-h-[40px] px-3 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold cursor-pointer flex items-center gap-1.5">
+                <Sofa className="w-3.5 h-3.5" aria-hidden /> Decorar o quarto
+              </button>
+              <button type="button" onClick={() => setDecorInviteDismissed(true)} className="min-h-[40px] px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer">
+                Agora não
+              </button>
+            </span>
+          </div>
+        )}
 
         {/* Item em mãos: instrução de encaixe (anunciada a leitores de tela) */}
         {heldItem && !decorOpen && (

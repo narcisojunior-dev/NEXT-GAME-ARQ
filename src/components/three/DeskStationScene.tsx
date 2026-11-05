@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { ThreeEvent, useFrame } from '@react-three/fiber';
+import { ThreeEvent, useFrame, useThree } from '@react-three/fiber';
 import { Edges, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useShallow } from 'zustand/react/shallow';
@@ -160,9 +160,11 @@ const ProceduralMousepad: React.FC<{ itemId: string; ghost?: boolean; isRunning?
         <boxGeometry args={[w, thickness, d]} />
         <meshStandardMaterial color={isFelt ? '#3f4654' : '#0b1220'} roughness={0.95} transparent={ghost} opacity={ghost ? 0.4 : 1} />
       </mesh>
-      {/* Costura iluminada da borda (deskmat gamer) */}
+      {/* Costura iluminada da borda (deskmat gamer). Só decoração: linhas são atingidas pelo raio a até
+          1 m de distância (tolerância padrão do three.js) e roubavam os cliques do teclado, do mouse
+          e do headset sobre o mousepad */}
       {!isFelt && !ghost && (
-        <lineSegments position={[0, thickness + 0.0008, 0]} geometry={stitch}>
+        <lineSegments position={[0, thickness + 0.0008, 0]} geometry={stitch} raycast={() => null}>
           <lineBasicMaterial ref={stitchRef} color="#22d3ee" />
         </lineSegments>
       )}
@@ -198,6 +200,8 @@ interface PlacedItemViewProps {
   isRunning: boolean;
   poweredAt: number | null;
   monitorZ: number;
+  /** Há um item em mãos: esta peça não consome o clique */
+  passThrough: boolean;
   onSelect: (snap: DeskSnapPointId) => void;
 }
 
@@ -208,6 +212,7 @@ const PlacedItemView: React.FC<PlacedItemViewProps> = ({
   isRunning,
   poweredAt,
   monitorZ,
+  passThrough,
   onSelect,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
@@ -237,6 +242,8 @@ const PlacedItemView: React.FC<PlacedItemViewProps> = ({
   const model = deskModelFor(snapPointId, item);
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    // Com um item em mãos, o clique segue para o holograma ou o plano de encaixe atrás desta peça
+    if (passThrough) return;
     e.stopPropagation();
     onSelect(snapPointId);
   };
@@ -427,6 +434,30 @@ const HeldItemGhost: React.FC<{
   );
 };
 
+/**
+ * Testes E2E (fora de produção): posição na tela do centro do holograma de cada encaixe, para
+ * clicar e arrastar no 3D como o aluno, sem chutar coordenadas.
+ */
+const DeskSceneProbe: React.FC<{ deskWidth: number }> = ({ deskWidth }) => {
+  const camera = useThree((state) => state.camera);
+  const gl = useThree((state) => state.gl);
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    const project = (snap: DeskSnapPointId) => {
+      const [x, , z] = getSnapPointPosition(snap, deskWidth);
+      const baseY = snap === 'DESK_BASE' || snap === 'CHAIR' ? 0 : DESK_TOP_HEIGHT;
+      const v = new THREE.Vector3(x, baseY + HOLOGRAM_HEIGHT[snap] / 2, z).project(camera);
+      const rect = gl.domElement.getBoundingClientRect();
+      return { x: rect.left + ((v.x + 1) / 2) * rect.width, y: rect.top + ((1 - v.y) / 2) * rect.height };
+    };
+    Object.assign(window, { __pcbaDeskSnapScreen: project });
+    return () => {
+      Reflect.deleteProperty(window, '__pcbaDeskSnapScreen');
+    };
+  }, [camera, gl, deskWidth]);
+  return null;
+};
+
 /* ====================================================================================
  * Cena completa da estação
  * ==================================================================================== */
@@ -565,12 +596,14 @@ export const DeskStationScene: React.FC<DeskStationSceneProps> = ({ isRunning })
             isRunning={isRunning}
             poweredAt={poweredAt}
             monitorZ={monitorZ}
+            passThrough={Boolean(heldItem)}
             onSelect={(snap) => (heldItem || decorOpen ? undefined : inspect(snap))}
           />
         ) : null;
       })}
 
       <DeskCablesLayer deskWidth={deskWidth} />
+      <DeskSceneProbe deskWidth={deskWidth} />
 
       {heldItem &&
         DESK_SNAP_POINT_IDS.map((id) => {

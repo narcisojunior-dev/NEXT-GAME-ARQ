@@ -18,7 +18,7 @@ const status = (page: Page) => drawer(page).getByRole('status');
 
 async function openDecor(page: Page) {
   await openRunningDesk(page);
-  await page.getByRole('button', { name: 'Decorar o quarto' }).click();
+  await page.getByRole('button', { name: 'Decorar o quarto' }).first().click();
   await expect(drawer(page)).toBeVisible({ timeout: 20000 });
   await expect(roomList(page)).toHaveCount(STARTER_SETS.ROOM_GAMER.length, { timeout: 15000 });
 }
@@ -27,9 +27,9 @@ test.describe('Modo Decorar o Quarto', () => {
   test('o botão só aparece com o AcademyOS em execução', async ({ page }) => {
     await page.goto('/');
     await page.waitForFunction(() => typeof window.useAssemblyStore !== 'undefined');
-    await page.getByRole('button', { name: 'Mesa 3D' }).click();
+    await page.getByRole('button', { name: 'Mesa 3D', exact: true }).click();
     await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15000 });
-    await expect(page.getByRole('button', { name: 'Decorar o quarto' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Decorar o quarto' }).first()).toHaveCount(0);
   });
 
   test('decorar: clique, arraste, teclado, girar, recusa, remover e desfazer', async ({ page }) => {
@@ -120,8 +120,8 @@ test.describe('Modo Decorar o Quarto', () => {
     await page.reload();
     await page.waitForFunction(() => typeof window.useAssemblyStore !== 'undefined');
     // A vista da mesa também é salva: depois do F5 a página já volta nela
-    await expect(page.getByRole('button', { name: 'Decorar o quarto' })).toBeVisible({ timeout: 20000 });
-    await page.getByRole('button', { name: 'Decorar o quarto' }).click();
+    await expect(page.getByRole('button', { name: 'Decorar o quarto' }).first()).toBeVisible({ timeout: 20000 });
+    await page.getByRole('button', { name: 'Decorar o quarto' }).first().click();
     await expect(roomList(page)).toHaveCount(STARTER_SETS.ROOM_GAMER.length + 1, { timeout: 20000 });
     expect(await roomList(page).allInnerTexts()).toEqual(before);
 
