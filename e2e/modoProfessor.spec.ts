@@ -20,7 +20,7 @@ async function newPage(browser: Browser) {
 }
 
 async function waitStores(page: Page) {
-  await page.waitForFunction(() => typeof window.useClassroomStore !== 'undefined');
+  await page.waitForFunction(() => typeof window.useClassroomStore !== 'undefined', undefined, { timeout: 60_000 });
 }
 
 /**
@@ -146,6 +146,8 @@ test('professor e duas bancadas: turma, Desafio de Orçamento, envios, ranking, 
 });
 
 test('o link do painel do professor exige login e a turma inexistente é explicada ao aluno', async ({ page }) => {
+  // Primeiras visitas às rotas: no servidor de desenvolvimento frio do CI elas compilam agora
+  test.setTimeout(150_000);
   await page.goto('/professor/turmas');
   // Primeira visita: no servidor de desenvolvimento frio do CI, a página e a rota /auth/me compilam agora
   await expect(page).toHaveURL(/\/professor$/, { timeout: 30_000 });
