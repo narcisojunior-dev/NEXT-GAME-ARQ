@@ -40,6 +40,7 @@ O **PC Builder Academy** soluciona esse gargalo oferecendo uma experiência imer
 | Abrir o PC | Vista explodida, isolamento de subsistemas com leituras do benchmark, tour por ociosidade e níveis de qualidade para vídeo integrado (#38, #59–#63) | [ADR-013](./docs/adr/ADR-013-modo-abrir-o-pc.md) |
 | **Modo Orçamento** | Desafio de Orçamento sem turma: perfis de cliente, prévia de viabilidade, saldo ao vivo, "cabe no saldo" nos cards, pontuação de custo-benefício e ranking puro (#66–#70) | [Relatório da feature](./docs/relatorio-modo-orcamento.md) |
 | **Modo Decorar o Quarto** | Com o PC ligado na mesa, o aluno decora o quarto em 3D: 74 itens em 4 pacotes liberados por conquistas, arrastar ou clicar, teclado completo, recusas didáticas, itens por código (fita LED, hexágonos, neon com texto, pôsteres com os dados do PC), quarto salvo e foto 1920 × 1080 (#83–#91) | [Relatório da feature](./docs/relatorio-modo-decorar-quarto.md) |
+| **Modo Professor online** | Login do professor sem e-mail, turmas com código, atividades (missão, desafio, diagnóstico, Modo Orçamento), entrada do aluno com apelido, pontuação oficial no servidor, ranking ao vivo, telão, relatório e CSV, no banco Neon da Vercel (#71–#81) | [Relatório da feature](./docs/relatorio-modo-professor.md) |
 | PWA e desempenho | Cache versionado pelo build com aviso de nova versão, `/api/` fora do cache, relógio isolado do HUD (#24, #31, #66) | [pwa-atualizacao.md](./docs/pwa-atualizacao.md), [performance.md](./docs/performance.md) |
 | Qualidade | ESLint no CI, Playwright com arraste real, teclado e tela de 375 px (#33) | `.github/workflows/ci.yml` |
 
@@ -198,14 +199,15 @@ NEXT-GAME-ARQ/
 ├── public/                    # PWA (manifest, sw.js versionado pelo build), modelos GLB e ícones
 ├── scripts/                   # Otimização e medição dos modelos 3D (npm run models:optimize / models:measure)
 ├── src/
-│   ├── app/                   # App Router (layout, página principal, CSS global)
+│   ├── app/                   # App Router: jogo, painel do professor (/professor), API (/api/v1) e /t/[codigo]
 │   ├── components/            # Interface: bancada 2D/3D, mesa, campanha, diagnóstico, professor, HUD, PWA
 │   │   └── room3d/            # Modo Decorar o Quarto (carregado sob demanda): quarto, gaveta, foto
 │   ├── engine/                # Regras puras em TypeScript (sem React): compatibilidade, fases, benchmark,
 │   │                          #   geometria 3D, campanha, orçamento, pontuação, ranking, detetive, corte,
 │   │                          #   quarto (catálogo, posicionamento e desbloqueios da decoração)
 │   │   └── __tests__/         # Testes do motor (Vitest)
-│   └── store/                 # Zustand: montagem (persistida), progresso, quarto decorado e armazenamento seguro
+│   ├── server/                # Só no servidor: repositório (Neon e memória), autenticação e handlers da API
+│   └── store/                 # Zustand: montagem (persistida), progresso, quarto decorado, turma e armazenamento seguro
 └── .github/workflows/ci.yml   # tsc, ESLint, Vitest, build e Playwright
 ```
 
@@ -261,6 +263,20 @@ npm run test:e2e       # Playwright (sobe o servidor de desenvolvimento)
    npm run build
    npm run start
    ```
+
+### Modo Professor online (opcional)
+Sem banco, o painel `/professor` e a API usam a memória do servidor (os dados somem ao reiniciar).
+Para usar o banco Neon do projeto na Vercel:
+
+```bash
+npx vercel link                     # liga a pasta ao projeto
+npx vercel env pull .env.local      # traz DATABASE_URL (e CLASSROOM_SECRET, se cadastrado)
+npm run db:migrate                  # cria as tabelas (idempotente)
+```
+
+Variáveis do projeto na Vercel: `DATABASE_URL` (criada pela integração do Neon), `CLASSROOM_SECRET`
+(segredo da sessão do professor, mínimo de 32 caracteres) e `CRON_SECRET` (rotina diária de
+retenção). Detalhes em [relatorio-modo-professor.md](./docs/relatorio-modo-professor.md).
 
 ---
 
