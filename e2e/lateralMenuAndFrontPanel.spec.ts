@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
-import './support/windowStores';
+import type { useAssemblyStore } from '../src/store/useAssemblyStore';
+
+// Store exposto em window pela página depois da hidratação (src/app/page.tsx)
+declare global {
+  interface Window {
+    useAssemblyStore: typeof useAssemblyStore;
+  }
+}
 
 test.describe('Menu Lateral de Escolha de Componentes e Verificação do Painel Frontal', () => {
   test.beforeEach(async ({ page }) => {
