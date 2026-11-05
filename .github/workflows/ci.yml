@@ -41,5 +41,8 @@ jobs:
         if: failure()
         with:
           name: playwright-report
-          path: playwright-report/
+          # O reporter "list" não gera playwright-report/: as capturas e o estado da página ficam em test-results/
+          path: |
+            playwright-report/
+            test-results/
           retention-days: 7
