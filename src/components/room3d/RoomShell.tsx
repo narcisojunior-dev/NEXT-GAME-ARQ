@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { EXTERNAL_PORTS, ExternalPortId, getExternalPortWorldPosition } from '@/engine/externalCabling';
-import { DOOR, ROOM_HEIGHT, ROOM_MAX_X, ROOM_MAX_Z, ROOM_MIN_X, ROOM_MIN_Z, ROOM_SIZE, WINDOW } from '@/engine/roomLayout';
+import { DOOR, ROOM_HEIGHT, ROOM_MAX_Z, ROOM_MIN_X, ROOM_MIN_Z, ROOM_SIZE, WINDOW } from '@/engine/roomLayout';
 import { RoomThemeId } from '@/engine/roomThemes';
 
 /**
@@ -128,9 +128,8 @@ export const RoomShell: React.FC<{ theme: RoomThemeId }> = ({ theme }) => {
         </group>
       ))}
 
-      {/* Luz de destaque do tema, no canto do fundo */}
+      {/* Uma única luz de destaque do tema: cada luz pontual encarece todos os pixels iluminados (#91) */}
       <pointLight position={[ROOM_MIN_X + 0.4, 2.2, ROOM_MIN_Z + 0.4]} color={p.accentLight} intensity={p.accentIntensity} distance={4.5} />
-      <pointLight position={[ROOM_MAX_X - 0.4, 2.3, centerZ]} color="#ffffff" intensity={0.5} distance={4} />
     </group>
   );
 };
