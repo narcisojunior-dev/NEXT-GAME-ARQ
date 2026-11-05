@@ -6,6 +6,7 @@
  * ajustado a ela, e enquanto ele não é baixado a cena desenha uma versão leve feita por código.
  */
 import { UnlockRule } from './decorUnlocks';
+import { containsBlockedWord, looksLikeLink } from './textFilter';
 
 export type DecorZone = 'FLOOR' | 'WALL' | 'DESK' | 'SHELF' | 'CEILING';
 export type DecorPack = 'CLASSICO' | 'GAMER' | 'NERD' | 'MUSEU';
@@ -240,22 +241,12 @@ export const MUSEUM_TIMELINE: { year: string; label: string }[] = [
 
 /** Neon com texto do aluno: até 12 caracteres, sem endereços e sem palavrões */
 export const NEON_TEXT_MAX = 12;
-const BLOCKED_WORDS = ['porra', 'caralho', 'merda', 'puta', 'buceta', 'cacete', 'foda', 'fdp', 'vsf', 'pqp', 'bosta', 'viado', 'arrombad', 'otario', 'idiota', 'burro', 'retardad'];
-
-const normalize = (text: string) =>
-  text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]/g, '');
-
 export function validateNeonText(raw: string): { ok: true; text: string } | { ok: false; message: string } {
   const text = raw.replace(/\s+/g, ' ').trim();
   if (!text) return { ok: false, message: 'Escreva o texto do neon.' };
   if (text.length > NEON_TEXT_MAX) return { ok: false, message: `O neon cabe até ${NEON_TEXT_MAX} caracteres.` };
-  if (/https?:|www|\.(com|net|org|br|gg|io|tv)\b|\/|@/i.test(text)) return { ok: false, message: 'Endereços e links não podem ir no neon.' };
+  if (looksLikeLink(text)) return { ok: false, message: 'Endereços e links não podem ir no neon.' };
   if (!/^[\p{L}\p{N} !?#&+\-]+$/u.test(text)) return { ok: false, message: 'Use só letras, números, espaço e ! ? # & + -' };
-  const flat = normalize(text);
-  if (BLOCKED_WORDS.some((w) => flat.includes(w))) return { ok: false, message: 'Esse texto não pode ir para o neon da escola.' };
+  if (containsBlockedWord(text)) return { ok: false, message: 'Esse texto não pode ir para o neon da escola.' };
   return { ok: true, text };
 }
