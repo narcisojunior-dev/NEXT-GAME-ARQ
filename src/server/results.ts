@@ -85,7 +85,7 @@ export function activityReport(activity: Activity, rows: SubmissionRow[], now: D
   const scores = ranked.map((r) => r.submission.score);
   const buckets = [0, 2000, 4000, 6000, 8000].map((from) => ({ from, to: from + 2000, count: scores.filter((s) => s >= from && (from === 8000 ? s <= 10000 : s < from + 2000)).length }));
   return {
-    activity: { id: activity.id, title: activity.title, kind: activity.kind, status: activity.status, closed, endsAt: endsAt(activity), config: activity.config },
+    activity: { id: activity.id, classroomId: activity.classroomId, title: activity.title, kind: activity.kind, status: activity.status, closed, endsAt: endsAt(activity), config: activity.config },
     ranking: ranked.map(entryView),
     highlights: closed ? highlightsView(ranked, activity) : null,
     distribution: buckets,

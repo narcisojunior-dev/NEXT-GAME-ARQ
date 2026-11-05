@@ -1,5 +1,5 @@
 import 'server-only';
-import { ClassroomRepository, RepositoryError } from './repository';
+import { ClassroomRepository, isRepositoryError } from './repository';
 import { MemoryRepository } from './memoryRepository';
 import { NeonRepository } from './neonRepository';
 import { SESSION_COOKIE, readSessionToken, sameOrigin } from './auth';
@@ -14,6 +14,7 @@ export const PUBLIC_STATE_CACHE = 'public, s-maxage=10, stale-while-revalidate=2
 export const PUBLIC_RANKING_CACHE = 'public, s-maxage=15';
 
 export class ApiError extends Error {
+  readonly name = 'ApiError';
   constructor(
     public readonly status: number,
     public readonly code: string,
@@ -47,8 +48,9 @@ export async function handle(run: () => Promise<Response>): Promise<Response> {
   try {
     return await run();
   } catch (error) {
-    if (error instanceof ApiError) return errorResponse(error.status, error.code, error.message);
-    if (error instanceof RepositoryError) return errorResponse(STATUS_BY_CODE[error.code] ?? 400, error.code, error.message);
+    const api = error as Partial<ApiError> | null;
+    if (api && api.name === 'ApiError' && typeof api.status === 'number' && api.code && api.message) return errorResponse(api.status, api.code, api.message);
+    if (isRepositoryError(error)) return errorResponse(STATUS_BY_CODE[error.code] ?? 400, error.code, error.message);
     console.error('[classroom] erro inesperado', error);
     return errorResponse(500, 'ERRO_INTERNO', 'Algo deu errado no servidor. Tente de novo em instantes.');
   }
@@ -85,25 +87,29 @@ export function clientIp(request: Request): string {
 /* ------------------------------------------------------------------------------------
  * Repositório e relógio (trocáveis nos testes)
  * ------------------------------------------------------------------------------------ */
-let repository: ClassroomRepository | null = null;
-let clock: () => Date = () => new Date();
+/**
+ * Um repositório por processo. No servidor de desenvolvimento cada rota pode receber a própria
+ * cópia deste módulo, então a instância fica no globalThis (a memória precisa ser uma só).
+ */
+const globalStore = globalThis as typeof globalThis & { __pcbaClassroom?: { repository: ClassroomRepository | null; clock: () => Date } };
+const ctx = (globalStore.__pcbaClassroom ??= { repository: null, clock: () => new Date() });
 
 export function getRepository(): ClassroomRepository {
-  if (repository) return repository;
+  if (ctx.repository) return ctx.repository;
   const url = process.env.DATABASE_URL;
-  if (process.env.CLASSROOM_REPO !== 'memory' && url) repository = new NeonRepository(url);
+  if (process.env.CLASSROOM_REPO !== 'memory' && url) ctx.repository = new NeonRepository(url);
   else {
     if (process.env.NODE_ENV === 'production' && process.env.CLASSROOM_REPO !== 'memory') throw new Error('DATABASE_URL ausente em produção.');
-    repository = new MemoryRepository(() => clock());
+    ctx.repository = new MemoryRepository(() => ctx.clock());
   }
-  return repository;
+  return ctx.repository;
 }
 
-export const now = () => clock();
+export const now = () => ctx.clock();
 
 export function setTestContext(repo: ClassroomRepository | null, testClock?: () => Date) {
-  repository = repo;
-  clock = testClock ?? (() => new Date());
+  ctx.repository = repo;
+  ctx.clock = testClock ?? (() => new Date());
 }
 
 /* ------------------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import type { useAssemblyStore } from '../../src/store/useAssemblyStore';
 import type { useProgressStore } from '../../src/store/useProgressStore';
 import type { useRoomDecorStore } from '../../src/store/useRoomDecorStore';
 import type { useDecorModeStore } from '../../src/components/room3d/decorModeStore';
+import type { useClassroomStore } from '../../src/store/useClassroomStore';
 
 declare global {
   interface Window {
@@ -13,6 +14,7 @@ declare global {
     useProgressStore: typeof useProgressStore;
     useRoomDecorStore: typeof useRoomDecorStore;
     useDecorModeStore: typeof useDecorModeStore;
+    useClassroomStore: typeof useClassroomStore;
   }
 }
 

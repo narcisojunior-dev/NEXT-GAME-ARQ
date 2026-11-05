@@ -16,7 +16,7 @@ import type {
   Teacher,
   TeacherWithSecrets,
 } from '../engine/classroom/types';
-import { ClassroomPatch, ClassroomRepository, ClassroomState, NewActivity, NewSubmission, NewTeacher, RepositoryError, SubmissionRow } from './repository';
+import { ClassroomPatch, ClassroomRepository, ClassroomState, NewActivity, NewSubmission, NewTeacher, RepositoryError, SubmissionRow, isRepositoryError } from './repository';
 
 /**
  * Repositório Postgres no Neon (#71), pelo driver HTTP `@neondatabase/serverless` e SQL puro,
@@ -209,7 +209,7 @@ export class NeonRepository implements ClassroomRepository {
       if (!r) throw new RepositoryError('ATIVIDADE_NAO_ENCONTRADA', 'Atividade não encontrada.');
       return toActivity(r);
     } catch (error) {
-      if (error instanceof RepositoryError) throw error;
+      if (isRepositoryError(error)) throw error;
       translate(error);
     }
   }

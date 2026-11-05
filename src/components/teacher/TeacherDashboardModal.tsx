@@ -110,6 +110,9 @@ export const TeacherDashboardModal: React.FC = () => {
               <h2 className="text-base font-black text-white mt-0.5">
                 Painel do Professor & Leaderboard da Turma
               </h2>
+              <a href="/professor" className="text-[11px] font-mono text-fuchsia-300 hover:text-fuchsia-200 underline-offset-2 hover:underline">
+                Turmas online, ranking ao vivo e telão → painel do professor
+              </a>
             </div>
           </div>
 

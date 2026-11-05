@@ -6,7 +6,7 @@ import type { Activity, ActivityConfig, Classroom, Teacher } from '../../engine/
 import { BUDGET_PROFILES, analyzeBudget, catalogRevision } from '../../engine/budgetChallenge';
 import { rankClass } from '../../engine/ranking';
 import { ApiError, getRepository, handle, json, now, readJson, requireTeacher } from '../http';
-import { RepositoryError } from '../repository';
+import { isRepositoryError } from '../repository';
 import { activityReport, entryView, isClosed, isOpen, rankingOf, resultsCsv } from '../results';
 
 type Params<K extends string> = { params: Promise<Record<K, string>> };
@@ -46,7 +46,7 @@ export const createClassroom = (request: Request) =>
         const classroom = await getRepository().createClassroom(teacher.id, name.value, generateClassCode(randomInt));
         return json({ classroom }, { status: 201 });
       } catch (error) {
-        if (!(error instanceof RepositoryError && error.code === 'CODIGO_EM_USO')) throw error;
+        if (!isRepositoryError(error, 'CODIGO_EM_USO')) throw error;
       }
     }
     throw new ApiError(503, 'CODIGO_INDISPONIVEL', 'Não foi possível gerar um código agora. Tente de novo.');

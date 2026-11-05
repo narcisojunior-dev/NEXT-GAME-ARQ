@@ -65,12 +65,22 @@ export interface ClassroomPatch {
 
 /** Erro de regra do banco (código e mensagem prontos para a API) */
 export class RepositoryError extends Error {
+  readonly name = 'RepositoryError';
   constructor(
     public readonly code: string,
     message: string
   ) {
     super(message);
   }
+}
+
+/**
+ * Pelo nome e não por instanceof: no servidor de desenvolvimento cada rota pode ter a própria
+ * cópia deste módulo, e o repositório compartilhado lança a classe de outra cópia.
+ */
+export function isRepositoryError(error: unknown, code?: string): error is RepositoryError {
+  const e = error as { name?: unknown; code?: unknown } | null;
+  return typeof e === 'object' && e !== null && e.name === 'RepositoryError' && typeof e.code === 'string' && (code === undefined || e.code === code);
 }
 
 export interface ClassroomRepository {

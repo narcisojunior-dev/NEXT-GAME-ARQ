@@ -22,9 +22,13 @@ import { useProgressStore } from '@/store/useProgressStore';
 import { CampaignMapModal } from '@/components/campaign/CampaignMapModal';
 import { ActiveMissionPanel } from '@/components/campaign/ActiveMissionPanel';
 import { MissionDebriefModal } from '@/components/campaign/MissionDebriefModal';
+import { useClassroomStore } from '@/store/useClassroomStore';
 
 // Manifesto 3D e modal só são baixados quando o aluno abre o 3D (RNF08)
 const Model3DModal = dynamic(() => import('@/components/three/Model3DModal').then((m) => m.Model3DModal), { ssr: false });
+// Turma (#78): o código de turma só é baixado quando o aluno entra numa turma ou abre a janela de entrada
+const ClassroomBanner = dynamic(() => import('@/components/classroom/ClassroomBanner'), { ssr: false });
+const ClassroomJoinModal = dynamic(() => import('@/components/classroom/ClassroomJoinModal'), { ssr: false });
 
 export default function Home() {
   const is3DOpen = useModel3DStore((s) => Boolean(s.modelId) || s.isGalleryOpen);
@@ -33,10 +37,16 @@ export default function Home() {
   // A store só é exposta aos testes E2E depois da hidratação: antes disso, o estado salvo ainda
   // pode substituir o que o teste acabou de montar (e interromper um POST em andamento).
   useEffect(() => {
-    void Promise.all([useAssemblyStore.persist.rehydrate(), useProgressStore.persist.rehydrate()]).then(() => {
-      Object.assign(window, { useAssemblyStore, useProgressStore });
+    void Promise.all([useAssemblyStore.persist.rehydrate(), useProgressStore.persist.rehydrate(), useClassroomStore.persist.rehydrate()]).then(() => {
+      Object.assign(window, { useAssemblyStore, useProgressStore, useClassroomStore });
+      // Link da turma (/t/CODIGO → /?turma=CODIGO): abre a entrada com o código preenchido
+      const code = new URLSearchParams(window.location.search).get('turma');
+      if (code && !useClassroomStore.getState().session) useClassroomStore.getState().openJoin(code);
+      if (code) window.history.replaceState(null, '', window.location.pathname);
     });
   }, []);
+  const inClassroom = useClassroomStore((s) => Boolean(s.session));
+  const joinOpen = useClassroomStore((s) => s.joinOpen);
   return (
     <LazyMotion features={domAnimation} strict>
     <MotionConfig reducedMotion="user">
@@ -47,6 +57,9 @@ export default function Home() {
       <div className="max-w-7xl w-full mx-auto px-4 mt-6 space-y-6">
         {/* Missão da campanha em andamento: objetivos ao vivo e entrega ao cliente */}
         <ActiveMissionPanel />
+
+        {/* Turma do professor (#78): atividade ativa, envio e posição */}
+        {inClassroom && <ClassroomBanner />}
 
         {/* Banner de Missão com Cliente (se ativo) */}
         <MissionHeader />
@@ -77,6 +90,7 @@ export default function Home() {
       <CampaignMapModal />
       <MissionDebriefModal />
       {is3DOpen && <Model3DModal />}
+      {joinOpen && <ClassroomJoinModal />}
     </main>
     </MotionConfig>
     </LazyMotion>
