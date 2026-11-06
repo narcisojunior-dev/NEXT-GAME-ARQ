@@ -12,6 +12,9 @@ Bem-vindo à documentação oficial do **PC Builder Academy**, a plataforma educ
 | 🎨 **[Design System v2.0](./design-system.md)** | Identidade visual (Cyber-Industrial & Clean Tech), design de periféricos, paletas de cores das salas virtuais (Gamer RGB, Escritório Minimalista, Laboratório Tech), áudio procedural e layout do selo de certificação em alta resolução. |
 | 🧊 **[Modelos 3D — Download e Créditos](./modelos-3d.md)** | 46 modelos do Sketchfab aprovados (licença CC BY/BY-SA, até 30 mil faces), peça do catálogo atendida por cada um, passo a passo de download e otimização e modelos rejeitados. |
 | 🏛️ **[ADRs (Architecture Decision Records)](./adr/)** | Decisões técnicas fundamentadas para todo o ecossistema da aplicação. |
+| 🎓 **[Modo Professor, Ranking e Modo Orçamento](./modo-professor-turmas-ranking-orcamento.md)** | Turmas e atividades na Vercel, Modo Orçamento (perfis, viabilidade, build de referência), pontuação, ranking, API, modelo de dados, testes e issues (#82). |
+| 🛋️ **[Modo Decorar o Quarto](./modo-decorar-quarto.md)** | Decoração 3D do quarto após o PC ligar: pacotes Clássico, Gamer, Nerd & Ciência e Museu do PC, posicionamento, desbloqueios por conquistas, itens por código e foto PNG (#92). |
+| 🪴 **[Modelos 3D de Decoração (candidatos)](./modelos-3d-decoracao.md)** | 68 modelos CC BY verificados no Sketchfab para baixar, com critérios, links, pesos e JSON pronto para o manifesto. |
 
 ---
 
@@ -28,6 +31,7 @@ Bem-vindo à documentação oficial do **PC Builder Academy**, a plataforma educ
 * **[ADR-009: Ilustrações Orientadas por Dados](./adr/ADR-009-ilustracoes-orientadas-por-dados.md)** — Desenhos SVG a partir dos dados da peça, materiais compartilhados e selo de compatibilidade nos cards. *(v2.1)*
 * **[ADR-010: Cabeamento e Arrastar e Soltar](./adr/ADR-010-cabeamento-e-arrastar-e-soltar.md)** — Modelo de cabos e conectores, Pointer Events com pointer capture, alvos `data-cable-target` e atração magnética. *(v2.1)*
 * **[ADR-011: Visualização 3D Híbrida](./adr/ADR-011-visualizacao-3d-hibrida.md)** — three.js + React Three Fiber sob demanda, modelos CC-BY do Sketchfab otimizados e âncoras projetadas. *(proposto, v3.0)*
+* **[ADR-014: Modo Professor, Turmas e Ranking na Vercel](./adr/ADR-014-modo-professor-turmas-e-ranking-na-vercel.md)** — Vercel Hobby + Neon gratuito, polling com cache na CDN, pontuação oficial no servidor e ranking. *(proposto, v5.0)*
 
 ---
 

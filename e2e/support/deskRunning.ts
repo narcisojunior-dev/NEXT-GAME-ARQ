@@ -54,6 +54,6 @@ export async function openRunningDesk(page: Page) {
       }),
     state
   );
-  await page.getByRole('button', { name: 'Mesa 3D' }).click();
+  await page.getByRole('button', { name: 'Mesa 3D', exact: true }).click();
   await expect(page.getByText('AcademyOS em Execução ✓')).toBeVisible({ timeout: 20000 });
 }

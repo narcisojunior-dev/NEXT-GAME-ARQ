@@ -5,15 +5,29 @@ import type { useAssemblyStore } from '../src/store/useAssemblyStore';
 declare global {
   interface Window {
     useAssemblyStore: typeof useAssemblyStore;
+    /** Centro do holograma de cada encaixe na tela (DeskSceneProbe, fora de produção) */
+    __pcbaDeskSnapScreen?: (snap: string) => { x: number; y: number };
   }
 }
+
+/** Centro do holograma na tela, conferindo que o canvas é o que está sob o ponteiro */
+async function hologramPoint(page: Page, snap: string) {
+  await page.locator('canvas').first().scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => typeof window.__pcbaDeskSnapScreen === 'function');
+  const point = await page.evaluate((s) => window.__pcbaDeskSnapScreen!(s), snap);
+  const under = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName, point);
+  expect(under, `${snap}: o holograma precisa estar visível na tela`).toBe('CANVAS');
+  return point;
+}
+
+const placedSnaps = (page: Page) => page.evaluate(() => Object.keys(window.useAssemblyStore.getState().deskSetup.placedDeskItems));
 
 const inventory = (page: Page) => page.getByRole('complementary', { name: 'Inventário da mesa' });
 
 async function openDesk(page: Page) {
   await page.goto('/');
   await page.waitForFunction(() => typeof window.useAssemblyStore !== 'undefined');
-  await page.getByRole('button', { name: 'Mesa 3D' }).click();
+  await page.getByRole('button', { name: 'Mesa 3D', exact: true }).click();
   await expect(inventory(page)).toBeVisible();
   await expect(page.locator('canvas').first()).toBeVisible({ timeout: 15000 });
 }
@@ -71,6 +85,38 @@ test.describe('Mesa Battlestation: snap points e hologramas (Fase 4 · Issue 03)
     await expect
       .poll(() => page.evaluate(() => Boolean(window.useAssemblyStore.getState().deskSetup.placedDeskItems.MOUSEPAD)))
       .toBe(true);
+  });
+
+  test('depois do mousepad, teclado, mouse e headset encaixam pelo 3D (clique no holograma e arraste)', async ({ page }) => {
+    test.setTimeout(120_000);
+    await openDesk(page);
+    await placeViaButtons(page, 'Mesa Gamer Fibra de Carbono 140cm', 'Mesa de Trabalho');
+    await placeViaButtons(page, 'Suporte Articulado a Gás ELG F80N 360°', 'Braço Articulado do Monitor');
+    await placeViaButtons(page, 'Monitor Gamer LG UltraGear 27" Fast IPS 180Hz', 'Monitor Principal');
+    await placeViaButtons(page, 'Mousepad Gamer Speed XL 900x400mm', 'Mousepad Gamer / Deskmat');
+
+    // Teclado: pegar e clicar no holograma (a costura iluminada do mousepad roubava este clique)
+    await inventory(page).getByRole('button', { name: 'Pegar Teclado Mecânico Redragon Kumara TKL Switch Red para posicionar' }).click();
+    const kb = await hologramPoint(page, 'KEYBOARD');
+    await page.mouse.click(kb.x, kb.y);
+    await expect.poll(() => placedSnaps(page)).toContain('KEYBOARD');
+
+    // Mouse: arrastar o card do inventário até o holograma
+    const mouseCard = inventory(page).getByRole('button', { name: 'Pegar Mouse Gamer Logitech G Pro X Superlight 63g para posicionar' });
+    await mouseCard.hover();
+    await page.mouse.down();
+    const ms = await hologramPoint(page, 'MOUSE');
+    await page.mouse.move(ms.x, ms.y, { steps: 20 });
+    await page.waitForTimeout(200);
+    await page.mouse.move(ms.x + 1, ms.y, { steps: 2 });
+    await page.mouse.up();
+    await expect.poll(() => placedSnaps(page)).toContain('MOUSE');
+
+    // Headset: clique no holograma
+    await inventory(page).getByRole('button', { name: 'Pegar Headset Gamer HyperX Cloud II 7.1 Surround para posicionar' }).click();
+    const hs = await hologramPoint(page, 'HEADSET');
+    await page.mouse.click(hs.x, hs.y);
+    await expect.poll(() => placedSnaps(page)).toContain('HEADSET');
   });
 
   test('retirar itens respeita as dependências (mesa só sai vazia)', async ({ page }) => {

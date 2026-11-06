@@ -132,7 +132,7 @@ const deskPanel = (page: Page) => page.getByRole('complementary', { name: 'Inven
 
 /** Tenta levar o PC incompleto para a mesa: recusado, com o passo que falta na mensagem; volta à bancada */
 async function expectDeskRefusesPc(page: Page, missingStep: string) {
-  await page.getByRole('button', { name: 'Mesa 3D' }).click();
+  await page.getByRole('button', { name: 'Mesa 3D', exact: true }).click();
   const desk = deskPanel(page);
   await desk.getByRole('button', { name: 'Pegar Mesa Gamer Fibra de Carbono 140cm para posicionar' }).click();
   await desk.getByRole('button', { name: 'Encaixar em: Mesa de Trabalho' }).click();
@@ -343,7 +343,7 @@ test.describe('Montagem completa pela interface com física de encaixe verificad
     await expect(page.getByRole('dialog', { name: /POWER-ON SELF-TEST/ })).toBeVisible();
     await page.keyboard.press('Escape'); // fecha a BIOS aberta pelo POST
     await expect(page.getByRole('dialog', { name: /POWER-ON SELF-TEST/ })).toBeHidden();
-    await page.getByRole('button', { name: 'Mesa 3D' }).click();
+    await page.getByRole('button', { name: 'Mesa 3D', exact: true }).click();
     const desk = deskPanel(page);
     if (!(await snapshot(page).then((s) => s.desk.DESK_BASE))) {
       await desk.getByRole('button', { name: 'Pegar Mesa Gamer Fibra de Carbono 140cm para posicionar' }).click();
