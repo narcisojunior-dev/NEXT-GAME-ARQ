@@ -1,7 +1,7 @@
 # ADR-005: Gamificação, Desafio em Grupos e Dinâmica de Sala de Aula
 
 ## Status
-Aprovado
+Aprovado. O **Modo B** (sincronização em rede) foi substituído pelo [ADR-014](./ADR-014-modo-professor-turmas-e-ranking-na-vercel.md); o Modo A continua como plano B sem internet.
 
 ## Contexto
 O usuário especificou a necessidade de uma seção de **desafios competitivos entre grupos de alunos**, onde eles disputam:

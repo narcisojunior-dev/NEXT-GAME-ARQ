@@ -2,6 +2,8 @@
 
 Fonte única: [`src/engine/models3d.data.json`](../src/engine/models3d.data.json). Todos os modelos foram conferidos na API pública do Sketchfab em 02/11/2026: baixáveis e com licença CC BY, CC BY-SA ou CC0.
 
+> Decoração do quarto: os 68 modelos candidatos (ainda não baixados) estão em [modelos-3d-decoracao.md](./modelos-3d-decoracao.md).
+
 ## Como adicionar um modelo ao jogo
 
 1. Entre no Sketchfab com a conta da equipe e abra o link do modelo.
